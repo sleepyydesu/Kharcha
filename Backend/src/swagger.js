@@ -41,27 +41,103 @@ const swaggerSpec = {
             AccountObject: {
                 type: "object",
                 properties: {
-                    account_id: { type: "string", format: "uuid", example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+                    account_id:   { type: "string", format: "uuid", example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
                     account_type: { type: "string", enum: ["user", "organization", "admin"] },
-                    email: { type: "string", format: "email", example: "john@example.com" },
+                    email:        { type: "string", format: "email", example: "john@example.com" },
                 },
             },
             SigninAccountObject: {
                 type: "object",
                 properties: {
-                    account_id: { type: "string", format: "uuid", example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+                    account_id:   { type: "string", format: "uuid", example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
                     account_type: { type: "string", enum: ["user", "organization", "admin"] },
-                    email: { type: "string", format: "email", example: "john@example.com" },
-                    mpin_set: { type: "boolean", description: "Whether the user has configured their MPIN yet", example: false },
+                    email:        { type: "string", format: "email", example: "john@example.com" },
+                    mpin_set:     { type: "boolean", description: "Whether the user has configured their MPIN yet", example: false },
+                },
+            },
+            WalletObject: {
+                type: "object",
+                properties: {
+                    wallet_id:  { type: "string", format: "uuid" },
+                    balance:    { type: "number", example: 1500.00 },
+                    currency:   { type: "string", example: "NPR" },
+                    is_active:  { type: "boolean", example: true },
+                    created_at: { type: "string", format: "date-time" },
+                    updated_at: { type: "string", format: "date-time" },
+                },
+            },
+            ProfileResponse: {
+                type: "object",
+                properties: {
+                    account_id:          { type: "string", format: "uuid" },
+                    account_type:        { type: "string", enum: ["user", "organization", "admin"] },
+                    email:               { type: "string", format: "email" },
+                    phone_number:        { type: "string", nullable: true, example: "+9779800000000" },
+                    is_verified:         { type: "boolean" },
+                    is_active:           { type: "boolean" },
+                    created_at:          { type: "string", format: "date-time" },
+                    profile_picture_url: { type: "string", nullable: true, description: "Stored on the accounts table — shared across all account types" },
+                    full_name:           { type: "string", nullable: true, description: "Present for user and admin accounts" },
+                    organization_name:   { type: "string", nullable: true, description: "Present for organization accounts" },
+                    org_type_id:         { type: "integer", nullable: true },
+                    org_type_name:       { type: "string", nullable: true },
+                    wallet:              { "$ref": "#/components/schemas/WalletObject", nullable: true },
+                },
+            },
+            CategoryObject: {
+                type: "object",
+                properties: {
+                    category_id: { type: "integer", example: 1 },
+                    name:        { type: "string", example: "Personal Use" },
+                    icon:        { type: "string", example: "user", description: "Lucide icon name for the frontend" },
+                    sort_order:  { type: "integer", example: 1 },
+                },
+            },
+            OrgTypeObject: {
+                type: "object",
+                properties: {
+                    org_type_id: { type: "integer", example: 1 },
+                    name:        { type: "string", example: "Food & Restaurant" },
+                    sort_order:  { type: "integer", example: 5 },
+                },
+            },
+            ReceiverObject: {
+                type: "object",
+                properties: {
+                    account_id:      { type: "string", format: "uuid" },
+                    account_type:    { type: "string", enum: ["user", "organization", "admin"] },
+                    display_name:    { type: "string", example: "Jane Doe" },
+                    phone_number:    { type: "string", nullable: true, example: "+9779811111111" },
+                    profile_picture: { type: "string", nullable: true },
+                },
+            },
+            StatementItem: {
+                type: "object",
+                properties: {
+                    transaction_id: { type: "string", format: "uuid" },
+                    type:           { type: "string", enum: ["sent", "received"] },
+                    amount:         { type: "number", example: 500.00 },
+                    currency:       { type: "string", example: "NPR" },
+                    balance_after:  { type: "number", example: 1000.00 },
+                    counterparty:   { "$ref": "#/components/schemas/ReceiverObject" },
+                    category:       { type: "string", nullable: true, example: "Personal Use" },
+                    category_icon:  { type: "string", nullable: true, example: "user" },
+                    remarks:        { type: "string", nullable: true },
+                    method:         { type: "string", example: "Kharcha Wallet" },
+                    status:         { type: "string", example: "completed" },
+                    created_at:     { type: "string", format: "date-time" },
                 },
             },
         },
     },
     tags: [
-        { name: "Test", description: "Connection and health check routes" },
-        { name: "Signup", description: "Multi-step account registration flow" },
-        { name: "Auth", description: "Sign in and authentication" },
-        { name: "MPIN", description: "Set up and change MPIN (requires auth token)" },
+        { name: "Test",         description: "Connection and health check routes" },
+        { name: "Signup",       description: "Multi-step account registration flow" },
+        { name: "Auth",         description: "Sign in and authentication" },
+        { name: "MPIN",         description: "Set up and change MPIN (requires auth token)" },
+        { name: "Profile",      description: "View and update profile, upload/remove profile picture" },
+        { name: "Wallet",       description: "Wallet balance, receiver lookup, and fund transfers" },
+        { name: "Transactions", description: "Statement history, transaction detail, categories, and org types" },
     ],
     paths: {
         "/": {
@@ -365,6 +441,410 @@ const swaggerSpec = {
                     400: { description: "Missing fields, invalid format, or new MPIN same as current", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
                     401: { description: "No/invalid auth token — or incorrect current MPIN", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
                     403: { description: "MPIN not yet set up — use /mpin/setup first", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ── Profile ──────────────────────────────────────────────────────────
+
+        "/api/profile": {
+            get: {
+                tags: ["Profile"],
+                summary: "Get profile",
+                description: "Returns the authenticated account's full profile including type-specific fields (full_name for users/admins, organization_name for orgs), the shared `profile_picture_url` (stored on the accounts table), and current wallet balance.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Profile returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        profile: { "$ref": "#/components/schemas/ProfileResponse" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    500: { description: "Server error", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            patch: {
+                tags: ["Profile"],
+                summary: "Update profile",
+                description: "Updates editable profile fields. `phone_number` is updated on the accounts table (all types). `full_name` applies to user/admin accounts. `organization_name` and `org_type_id` apply to organization accounts. Send only the fields you want to change.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    phone_number:      { type: "string", example: "+9779800000000" },
+                                    full_name:         { type: "string", example: "John Doe", description: "User / admin accounts only" },
+                                    organization_name: { type: "string", example: "Acme Corp", description: "Organization accounts only" },
+                                    org_type_id:       { type: "integer", example: 5, description: "Organization accounts only — references organization_types" },
+                                },
+                            },
+                            examples: {
+                                "Update user name": { value: { full_name: "Jane Doe" } },
+                                "Update phone":     { value: { phone_number: "+9779811111111" } },
+                                "Update org":       { value: { organization_name: "New Corp", org_type_id: 5 } },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: { description: "Profile updated", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessResponse" } } } },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    409: {
+                        description: "Phone number already in use",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: false },
+                                        field:   { type: "string", example: "phone_number" },
+                                        message: { type: "string", example: "This phone number is already in use." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    500: { description: "Server error", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/profile/picture": {
+            post: {
+                tags: ["Profile"],
+                summary: "Upload profile picture",
+                description: "Uploads a new profile picture and stores it in Supabase Storage. The URL is saved to `accounts.profile_picture_url` (shared across all account types). Send the image as a base64-encoded string. Supports JPEG, PNG, WebP. Max 5 MB.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["file_base64", "mime_type"],
+                                properties: {
+                                    file_base64: { type: "string", description: "Base64-encoded image data (no data: prefix)", example: "/9j/4AAQSkZJRg..." },
+                                    mime_type:   { type: "string", enum: ["image/jpeg", "image/jpg", "image/png", "image/webp"], example: "image/jpeg" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Profile picture uploaded",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:             { type: "boolean", example: true },
+                                        message:             { type: "string", example: "Profile picture updated successfully." },
+                                        profile_picture_url: { type: "string", example: "https://xyz.supabase.co/storage/v1/object/public/profile-pictures/uuid/profile.jpg?v=1234567890" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing fields, invalid MIME type, or file too large (>5MB)", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    500: { description: "Upload failed", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            delete: {
+                tags: ["Profile"],
+                summary: "Delete profile picture",
+                description: "Removes the profile picture from Supabase Storage and clears `accounts.profile_picture_url`. Attempts removal for all supported extensions (jpg, png, webp).",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: { description: "Profile picture removed", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessResponse" } } } },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    500: { description: "Server error", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ── Wallet ───────────────────────────────────────────────────────────
+
+        "/api/wallet": {
+            get: {
+                tags: ["Wallet"],
+                summary: "Get wallet",
+                description: "Returns the authenticated account's wallet details and current balance.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Wallet returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        wallet:  { "$ref": "#/components/schemas/WalletObject" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "Wallet is suspended", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Wallet not found", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/wallet/lookup": {
+            get: {
+                tags: ["Wallet"],
+                summary: "Lookup receiver",
+                description: "Preview a receiver's info before confirming a transfer. Pass a phone number or account UUID as `identifier`. Returns 400 if the identifier belongs to the caller's own account.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "identifier",
+                        in: "query",
+                        required: true,
+                        description: "Receiver's phone number or account UUID",
+                        schema: { type: "string", example: "+9779811111111" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Receiver found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:  { type: "boolean", example: true },
+                                        receiver: { "$ref": "#/components/schemas/ReceiverObject" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing identifier or self-lookup", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "No account found for this identifier", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/wallet/transfer": {
+            post: {
+                tags: ["Wallet"],
+                summary: "Transfer funds",
+                description: "Sends money from the caller's wallet to another account. `receiver_identifier` accepts a **phone number** or **account UUID**. The transfer is executed atomically in the database — balance is checked, both wallets are updated, and the transaction is recorded in a single PostgreSQL function call. Rate limited.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["receiver_identifier", "amount"],
+                                properties: {
+                                    receiver_identifier: { type: "string", description: "Receiver phone number or account UUID", example: "+9779811111111" },
+                                    amount:              { type: "number", description: "Amount in NPR (minimum 1)", example: 500 },
+                                    category_id:         { type: "integer", nullable: true, description: "Optional — from GET /api/transactions/categories", example: 1 },
+                                    remarks:             { type: "string", nullable: true, description: "Optional note / memo", example: "Lunch split" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Transfer successful",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Transfer successful." },
+                                        transaction: {
+                                            type: "object",
+                                            properties: {
+                                                transaction_id: { type: "string", format: "uuid" },
+                                                amount:         { type: "number", example: 500 },
+                                                currency:       { type: "string", example: "NPR" },
+                                                balance_after:  { type: "number", example: 1000 },
+                                                receiver:       { "$ref": "#/components/schemas/ReceiverObject" },
+                                                remarks:        { type: "string", nullable: true },
+                                                method:         { type: "string", example: "Kharcha Wallet" },
+                                                status:         { type: "string", example: "completed" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Validation error, insufficient balance, inactive wallet, or self-transfer", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Receiver not found", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    429: { description: "Too many transfer requests — rate limited", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ── Transactions ─────────────────────────────────────────────────────
+
+        "/api/transactions/categories": {
+            get: {
+                tags: ["Transactions"],
+                summary: "List transaction categories",
+                description: "Returns all active transaction categories. Use `category_id` when calling `/api/wallet/transfer`. Currently: **Personal Use** and **Food and Shopping** — more can be added directly in the database table.",
+                responses: {
+                    200: {
+                        description: "Categories returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:    { type: "boolean", example: true },
+                                        categories: { type: "array", items: { "$ref": "#/components/schemas/CategoryObject" } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    500: { description: "Server error", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/transactions/org-types": {
+            get: {
+                tags: ["Transactions"],
+                summary: "List organization types",
+                description: "Returns all active organization types. Use `org_type_id` when updating an organization's profile via `PATCH /api/profile`.",
+                responses: {
+                    200: {
+                        description: "Org types returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:   { type: "boolean", example: true },
+                                        org_types: { type: "array", items: { "$ref": "#/components/schemas/OrgTypeObject" } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    500: { description: "Server error", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/transactions": {
+            get: {
+                tags: ["Transactions"],
+                summary: "Get statement (paginated)",
+                description: "Returns a paginated list of transactions for the authenticated account. Filter by `type`: `all` (default), `sent`, or `received`. Results are ordered by most recent first.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    { name: "page",  in: "query", schema: { type: "integer", default: 1 },   description: "Page number" },
+                    { name: "limit", in: "query", schema: { type: "integer", default: 20 },  description: "Items per page (max 50)" },
+                    { name: "type",  in: "query", schema: { type: "string", enum: ["all", "sent", "received"], default: "all" }, description: "Filter by direction" },
+                ],
+                responses: {
+                    200: {
+                        description: "Statements returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:    { type: "boolean", example: true },
+                                        statements: { type: "array", items: { "$ref": "#/components/schemas/StatementItem" } },
+                                        pagination: {
+                                            type: "object",
+                                            properties: {
+                                                page:        { type: "integer" },
+                                                limit:       { type: "integer" },
+                                                total:       { type: "integer" },
+                                                total_pages: { type: "integer" },
+                                                has_next:    { type: "boolean" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/transactions/{transaction_id}": {
+            get: {
+                tags: ["Transactions"],
+                summary: "Get transaction detail",
+                description: "Returns the full detail of a single transaction including both sender and receiver info. Only accessible if the authenticated account is the sender or receiver of that transaction.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    { name: "transaction_id", in: "path", required: true, schema: { type: "string", format: "uuid" }, description: "Transaction UUID" },
+                ],
+                responses: {
+                    200: {
+                        description: "Transaction detail returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        transaction: {
+                                            type: "object",
+                                            properties: {
+                                                transaction_id: { type: "string", format: "uuid" },
+                                                type:           { type: "string", enum: ["sent", "received"] },
+                                                amount:         { type: "number" },
+                                                currency:       { type: "string", example: "NPR" },
+                                                balance_after:  { type: "number" },
+                                                sender:         { "$ref": "#/components/schemas/ReceiverObject" },
+                                                receiver:       { "$ref": "#/components/schemas/ReceiverObject" },
+                                                category: {
+                                                    type: "object",
+                                                    properties: {
+                                                        category_id: { type: "integer", nullable: true },
+                                                        name:        { type: "string",  nullable: true },
+                                                        icon:        { type: "string",  nullable: true },
+                                                    },
+                                                },
+                                                remarks:    { type: "string", nullable: true },
+                                                method:     { type: "string", example: "Kharcha Wallet" },
+                                                status:     { type: "string", example: "completed" },
+                                                created_at: { type: "string", format: "date-time" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Missing or invalid auth token", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "You are not part of this transaction", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Transaction not found", content: { "application/json": { schema: { "$ref": "#/components/schemas/ErrorResponse" } } } },
                 },
             },
         },

@@ -293,6 +293,14 @@ const completeSignup = async (req, res) => {
             if (error) throw error;
         }
 
+        // ── Create wallet for the new account ────────────────
+        const { error: walletError } = await supabase.from("wallets").insert({
+            account_id,
+            balance:  0.00,
+            currency: "NPR",
+        });
+        if (walletError) throw walletError;
+
         // ── Issue auth token ──────────────────────────────────
         const token = generateAuthToken({ account_id, account_type, email });
 
