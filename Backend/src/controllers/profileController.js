@@ -2,7 +2,12 @@ const supabase = require("../services/supabaseClient");
 
 const PROFILE_PICTURE_BUCKET = "profile-pictures";
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ALLOWED_MIME_TYPES = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+];
 
 // ─────────────────────────────────────────────────────────────
 //  GET PROFILE
@@ -16,7 +21,9 @@ const getProfile = async (req, res) => {
         // Fetch base account info (includes shared profile picture)
         const { data: account, error: accountError } = await supabase
             .from("accounts")
-            .select("account_id, account_type, email, phone_number, is_verified, is_active, created_at, profile_picture_url")
+            .select(
+                "account_id, account_type, email, phone_number, is_verified, is_active, created_at, profile_picture_url",
+            )
             .eq("account_id", account_id)
             .single();
 
@@ -34,7 +41,9 @@ const getProfile = async (req, res) => {
         } else if (account_type === "organization") {
             const { data } = await supabase
                 .from("organizations")
-                .select("organization_name, org_type_id, organization_types(name)")
+                .select(
+                    "organization_name, org_type_id, organization_types(name)",
+                )
                 .eq("account_id", account_id)
                 .single();
             profile = data;
@@ -57,23 +66,32 @@ const getProfile = async (req, res) => {
         return res.status(200).json({
             success: true,
             profile: {
-                account_id:          account.account_id,
-                account_type:        account.account_type,
-                email:               account.email,
-                phone_number:        account.phone_number,
-                is_verified:         account.is_verified,
-                is_active:           account.is_active,
-                created_at:          account.created_at,
+                account_id: account.account_id,
+                account_type: account.account_type,
+                email: account.email,
+                phone_number: account.phone_number,
+                is_verified: account.is_verified,
+                is_active: account.is_active,
+                created_at: account.created_at,
                 profile_picture_url: account.profile_picture_url || null,
                 ...buildProfileFields(account_type, profile),
                 wallet: wallet
-                    ? { balance: parseFloat(wallet.balance), currency: wallet.currency }
+                    ? {
+                          balance: parseFloat(wallet.balance),
+                          currency: wallet.currency,
+                      }
                     : null,
             },
         });
     } catch (err) {
         console.error("[getProfile]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -88,8 +106,8 @@ function buildProfileFields(account_type, profile) {
     if (account_type === "organization") {
         return {
             organization_name: profile.organization_name || null,
-            org_type_id:       profile.org_type_id || null,
-            org_type_name:     profile.organization_types?.name || null,
+            org_type_id: profile.org_type_id || null,
+            org_type_name: profile.organization_types?.name || null,
         };
     }
     return {};
@@ -146,13 +164,15 @@ const uploadProfilePicture = async (req, res) => {
             .from(PROFILE_PICTURE_BUCKET)
             .upload(storagePath, fileBuffer, {
                 contentType: mime_type,
-                upsert: true,  // overwrite existing
+                upsert: true, // overwrite existing
             });
 
         if (uploadError) throw uploadError;
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        const {
+            data: { publicUrl },
+        } = supabase.storage
             .from(PROFILE_PICTURE_BUCKET)
             .getPublicUrl(storagePath);
 
@@ -174,7 +194,13 @@ const uploadProfilePicture = async (req, res) => {
         });
     } catch (err) {
         console.error("[uploadProfilePicture]", err);
-        return res.status(500).json({ success: false, message: "Failed to upload profile picture.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Failed to upload profile picture.",
+                error: err.message,
+            });
     }
 };
 
@@ -200,10 +226,18 @@ const deleteProfilePicture = async (req, res) => {
             .update({ profile_picture_url: null })
             .eq("account_id", account_id);
 
-        return res.status(200).json({ success: true, message: "Profile picture removed." });
+        return res
+            .status(200)
+            .json({ success: true, message: "Profile picture removed." });
     } catch (err) {
         console.error("[deleteProfilePicture]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -217,7 +251,8 @@ const deleteProfilePicture = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const { account_id, account_type } = req.account;
-        const { full_name, organization_name, org_type_id, phone_number } = req.body;
+        const { full_name, organization_name, org_type_id, phone_number } =
+            req.body;
 
         // Update phone on accounts table if provided
         if (phone_number !== undefined) {
@@ -260,8 +295,9 @@ const updateProfile = async (req, res) => {
 
         if (account_type === "organization") {
             const orgUpdates = {};
-            if (organization_name !== undefined) orgUpdates.organization_name = organization_name.trim();
-            if (org_type_id       !== undefined) orgUpdates.org_type_id       = org_type_id;
+            if (organization_name !== undefined)
+                orgUpdates.organization_name = organization_name.trim();
+            if (org_type_id !== undefined) orgUpdates.org_type_id = org_type_id;
 
             if (Object.keys(orgUpdates).length > 0) {
                 await supabase
@@ -271,10 +307,49 @@ const updateProfile = async (req, res) => {
             }
         }
 
-        return res.status(200).json({ success: true, message: "Profile updated successfully." });
+        return res
+            .status(200)
+            .json({ success: true, message: "Profile updated successfully." });
     } catch (err) {
         console.error("[updateProfile]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  GET ORGANIZATION TYPES
+//  GET /api/profile/org-types
+//  Returns all active org types — used during org registration
+//  and when updating an organization's profile.
+// ─────────────────────────────────────────────────────────────
+const getOrgTypes = async (req, res) => {
+    try {
+        const { data: orgTypes, error } = await supabase
+            .from("organization_types")
+            .select("org_type_id, name, sort_order")
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true });
+
+        if (error) throw error;
+
+        return res
+            .status(200)
+            .json({ success: true, org_types: orgTypes || [] });
+    } catch (err) {
+        console.error("[getOrgTypes]", err);
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -283,4 +358,5 @@ module.exports = {
     uploadProfilePicture,
     deleteProfilePicture,
     updateProfile,
+    getOrgTypes,
 };

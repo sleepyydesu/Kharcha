@@ -4,12 +4,17 @@ const {
     uploadProfilePicture,
     deleteProfilePicture,
     updateProfile,
+    getOrgTypes,
 } = require("../controllers/profileController");
 const { authenticate } = require("../middleware/authmiddleware");
 
 const router = express.Router();
 
-// All profile routes require auth
+// Public:
+// GET /api/profile/org-types  — organization types (for registration / profile editing)
+router.get("/org-types", getOrgTypes);
+
+// All routes below require auth
 router.use(authenticate);
 
 // GET    /api/profile          — get full profile + wallet balance

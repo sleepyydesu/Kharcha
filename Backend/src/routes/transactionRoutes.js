@@ -3,22 +3,19 @@ const {
     getStatements,
     getTransactionDetail,
     getCategories,
-    getOrgTypes,
 } = require("../controllers/transactionController");
 const { authenticate } = require("../middleware/authmiddleware");
 
 const router = express.Router();
 
-// Public (still good to cache-bust with auth context):
+// Public:
 // GET /api/transactions/categories  — transaction categories list
-// GET /api/transactions/org-types   — organization type list
 router.get("/categories", getCategories);
-router.get("/org-types",  getOrgTypes);
 
 // Protected:
 router.use(authenticate);
 
-// GET /api/transactions             — paginated statement list (?page=1&limit=20&type=all|sent|received)
+// GET /api/transactions             — paginated statement list (?page=1&limit=20&type=all|sent|received&category_id=1&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD)
 router.get("/", getStatements);
 
 // GET /api/transactions/:id         — full transaction detail
