@@ -1,4 +1,4 @@
-require("dotenv").config();
+qarequire("dotenv").config();
 
 const app = require("./src/app");
 
