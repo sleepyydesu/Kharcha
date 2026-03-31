@@ -16,6 +16,10 @@ const {
     authRateLimiter,
 } = require("./middleware/securityMiddleware");
 
+const khaltiRoutes = require("./routes/khaltiRoutes");
+
+const errorHandler = require("./middlewares/errorHandler");
+
 const app = express();
 
 // ── Security Headers ─────────────────────────────────────────
@@ -51,6 +55,7 @@ app.use(
 
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/test", testRoutes);
+app.use("/api/khalti", khaltiRoutes);
 app.use("/api/auth", authRateLimiter, authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
@@ -75,5 +80,8 @@ app.use((err, req, res, next) => {
     console.error("[GlobalError]", err);
     res.status(500).json({ success: false, message: "Internal server error." });
 });
+
+// Error handling middleware
+app.use(errorHandler);
 
 module.exports = app;
