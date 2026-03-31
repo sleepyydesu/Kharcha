@@ -46,7 +46,10 @@ const securityHeaders = (req, res, next) => {
     res.setHeader("Pragma", "no-cache");
 
     // Minimal permissions policy
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()",
+    );
 
     // Content Security Policy
     // Swagger UI needs inline scripts/styles and CDN assets to render,
@@ -62,12 +65,12 @@ const securityHeaders = (req, res, next) => {
                 "font-src 'self' data:",
                 "connect-src 'self'",
                 "frame-ancestors 'none'",
-            ].join("; ")
+            ].join("; "),
         );
     } else {
         res.setHeader(
             "Content-Security-Policy",
-            "default-src 'none'; frame-ancestors 'none'"
+            "default-src 'none'; frame-ancestors 'none'",
         );
     }
 
@@ -85,7 +88,11 @@ const securityHeaders = (req, res, next) => {
  * @param {number} options.max        - Max requests per window (default: 100)
  * @param {string} options.message    - Error message when limit exceeded
  */
-const rateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, message = "Too many requests. Please try again later." } = {}) => {
+const rateLimiter = ({
+    windowMs = 15 * 60 * 1000,
+    max = 100,
+    message = "Too many requests. Please try again later.",
+} = {}) => {
     // Map<ip, { count, resetAt }>
     const store = new Map();
 
@@ -132,28 +139,30 @@ const rateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, message = "Too many
 
 /** Strict limit for auth endpoints (OTP sending, signin attempts) */
 const authRateLimiter = rateLimiter({
-    windowMs: 15 * 60 * 1000,  // 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
     max: 20,
-    message: "Too many authentication attempts. Please wait 15 minutes before trying again.",
+    message:
+        "Too many authentication attempts. Please wait 15 minutes before trying again.",
 });
 
 /** Strict limit for OTP sending (prevent SMS/email flooding) */
 const otpRateLimiter = rateLimiter({
-    windowMs: 10 * 60 * 1000,  // 10 minutes
+    windowMs: 10 * 60 * 1000, // 10 minutes
     max: 5,
-    message: "Too many OTP requests. Please wait 10 minutes before requesting a new code.",
+    message:
+        "Too many OTP requests. Please wait 10 minutes before requesting a new code.",
 });
 
 /** Standard limit for general API endpoints */
 const apiRateLimiter = rateLimiter({
-    windowMs: 15 * 60 * 1000,  // 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
     max: 200,
     message: "Rate limit exceeded. Please slow down.",
 });
 
 /** Transfer-specific limit to prevent abuse */
 const transferRateLimiter = rateLimiter({
-    windowMs: 60 * 1000,        // 1 minute
+    windowMs: 60 * 1000, // 1 minute
     max: 10,
     message: "Too many transfer requests. Please wait before trying again.",
 });

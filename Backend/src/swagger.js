@@ -23,6 +23,13 @@ const swaggerSpec = {
                 description:
                     "JWT token returned from /api/auth/signin or /api/auth/signup/complete",
             },
+            ApiKeyAuth: {
+                type: "apiKey",
+                in: "header",
+                name: "X-API-Key",
+                description:
+                    "Organisation API key for POS terminals. Format: `kh_live_<...>`. Created via POST /api/org/api-keys.",
+            },
         },
         schemas: {
             SuccessResponse: {
@@ -201,6 +208,68 @@ const swaggerSpec = {
                     created_at: { type: "string", format: "date-time" },
                 },
             },
+            PhysicalCardObject: {
+                type: "object",
+                properties: {
+                    card_id: {
+                        type: "string",
+                        example: "A3B2C1D0",
+                        description: "RFID UID (uppercase hex)",
+                    },
+                    status: {
+                        type: "string",
+                        enum: ["pending", "active", "blocked", "expired"],
+                    },
+                    daily_limit: {
+                        type: "number",
+                        example: 100000.0,
+                        description: "Maximum NPR spendable per calendar day",
+                    },
+                    activated_at: {
+                        type: "string",
+                        format: "date-time",
+                        nullable: true,
+                    },
+                    created_at: { type: "string", format: "date-time" },
+                },
+            },
+            CardRequestObject: {
+                type: "object",
+                properties: {
+                    request_id: { type: "string", format: "uuid" },
+                    status: {
+                        type: "string",
+                        enum: ["pending", "approved", "rejected", "issued"],
+                    },
+                    delivery_address: { type: "string", nullable: true },
+                    created_at: { type: "string", format: "date-time" },
+                },
+            },
+            ApiKeyInfo: {
+                type: "object",
+                properties: {
+                    api_key_id: { type: "string", format: "uuid" },
+                    key_prefix: {
+                        type: "string",
+                        example: "kh_live_ab12",
+                        description:
+                            "First 12 chars of the key — for identification only",
+                    },
+                    name: { type: "string", example: "Main POS" },
+                    is_active: { type: "boolean", example: true },
+                    last_used_at: {
+                        type: "string",
+                        format: "date-time",
+                        nullable: true,
+                    },
+                    created_at: { type: "string", format: "date-time" },
+                    expires_at: {
+                        type: "string",
+                        format: "date-time",
+                        nullable: true,
+                    },
+                },
+            },
         },
     },
     tags: [
@@ -224,6 +293,26 @@ const swaggerSpec = {
             name: "Transactions",
             description:
                 "Statement history, transaction detail, categories, and org types",
+        },
+        {
+            name: "Cards",
+            description:
+                "Physical RFID card management — request, view, block, and update daily limit",
+        },
+        {
+            name: "Admin — Cards",
+            description:
+                "Admin-only card operations: activate a card, list card requests",
+        },
+        {
+            name: "API Keys",
+            description:
+                "Organisation API key management. Keys are used by all POS terminals of the org — no per-terminal registration needed.",
+        },
+        {
+            name: "POS",
+            description:
+                "Point-of-sale tap-to-pay endpoint. Authenticated with X-API-Key header (no JWT). Hit by the terminal software when the RC522 scans a card.",
         },
     ],
     paths: {
@@ -1853,6 +1942,848 @@ const swaggerSpec = {
                     },
                     404: {
                         description: "Transaction not found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Cards ─────────────────────────────────────────────────────────
+
+        "/api/cards/request": {
+            post: {
+                tags: ["Cards"],
+                summary: "Request a physical card",
+                description:
+                    "Submits a card request for the authenticated user. Admin will approve it, program the RC522 RFID card, and activate it. Only `user` accounts can request a card. Returns 409 if a request is already pending or an active card exists.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: false,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    delivery_address: {
+                                        type: "string",
+                                        nullable: true,
+                                        example: "Baneshwor, Kathmandu",
+                                        description:
+                                            "Optional delivery address for the card",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Card request submitted",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        message: { type: "string" },
+                                        request: {
+                                            $ref: "#/components/schemas/CardRequestObject",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Only user accounts can request a card",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    409: {
+                        description:
+                            "A pending request or active card already exists",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/cards/my-card": {
+            get: {
+                tags: ["Cards"],
+                summary: "Get my card",
+                description:
+                    "Returns the authenticated user's physical card details (if issued), or their pending card request if no card exists yet.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Card or pending request returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        card: {
+                                            nullable: true,
+                                            allOf: [
+                                                {
+                                                    $ref: "#/components/schemas/PhysicalCardObject",
+                                                },
+                                            ],
+                                        },
+                                        pending_request: {
+                                            nullable: true,
+                                            allOf: [
+                                                {
+                                                    $ref: "#/components/schemas/CardRequestObject",
+                                                },
+                                            ],
+                                            description:
+                                                "Populated only when card is null",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/cards/my-card/block": {
+            post: {
+                tags: ["Cards"],
+                summary: "Block my card",
+                description:
+                    "Immediately blocks the user's active card. Once blocked, the card will be refused at all POS terminals. Contact support to unblock it.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: false,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    reason: {
+                                        type: "string",
+                                        nullable: true,
+                                        example: "Lost card",
+                                        description:
+                                            "Optional reason for blocking",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Card blocked successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/SuccessResponse",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "No active card found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/cards/my-card/limits": {
+            patch: {
+                tags: ["Cards"],
+                summary: "Update daily spend limit",
+                description:
+                    "Sets a new daily spending limit on the user's active card. The limit caps how much can be spent in a single calendar day across all POS transactions. Range: NPR 100 – 100,000. Default is 100,000.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["daily_limit"],
+                                properties: {
+                                    daily_limit: {
+                                        type: "number",
+                                        example: 50000,
+                                        description:
+                                            "New daily limit in NPR (100 – 100,000)",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Daily limit updated",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        message: { type: "string" },
+                                        updates: {
+                                            type: "object",
+                                            properties: {
+                                                daily_limit: {
+                                                    type: "number",
+                                                    example: 50000,
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing or out-of-range value",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "No active card found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Admin — Cards ─────────────────────────────────────────────────
+
+        "/api/cards/admin/activate": {
+            post: {
+                tags: ["Admin — Cards"],
+                summary: "Activate a card (admin)",
+                description:
+                    "Admin-only. After physically programming an RC522 RFID card with a UID, call this endpoint to link that UID to a user account and set the card as active. `request_id` is optional — supply it to mark the card request as issued.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["card_id", "account_id"],
+                                properties: {
+                                    card_id: {
+                                        type: "string",
+                                        example: "A3B2C1D0",
+                                        description:
+                                            "RFID UID read from the physical card (uppercase hex)",
+                                    },
+                                    account_id: {
+                                        type: "string",
+                                        format: "uuid",
+                                        description:
+                                            "UUID of the user account to link the card to",
+                                    },
+                                    request_id: {
+                                        type: "string",
+                                        format: "uuid",
+                                        nullable: true,
+                                        description:
+                                            "Optional — marks the card_request row as 'issued'",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Card activated",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        message: { type: "string" },
+                                        card: {
+                                            $ref: "#/components/schemas/PhysicalCardObject",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing required fields",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Admin access required",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "User account not found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "Card ID already registered",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/cards/admin/requests": {
+            get: {
+                tags: ["Admin — Cards"],
+                summary: "List card requests (admin)",
+                description:
+                    "Returns all card requests across all users. Optionally filter by `status`. Ordered by most recent first.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "status",
+                        in: "query",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["pending", "approved", "rejected", "issued"],
+                        },
+                        description: "Filter by request status",
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Card requests returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        requests: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    request_id: {
+                                                        type: "string",
+                                                        format: "uuid",
+                                                    },
+                                                    account_id: {
+                                                        type: "string",
+                                                        format: "uuid",
+                                                    },
+                                                    status: { type: "string" },
+                                                    delivery_address: {
+                                                        type: "string",
+                                                        nullable: true,
+                                                    },
+                                                    admin_notes: {
+                                                        type: "string",
+                                                        nullable: true,
+                                                    },
+                                                    created_at: {
+                                                        type: "string",
+                                                        format: "date-time",
+                                                    },
+                                                    updated_at: {
+                                                        type: "string",
+                                                        format: "date-time",
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Admin access required",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── API Keys ──────────────────────────────────────────────────────
+
+        "/api/org/api-keys": {
+            post: {
+                tags: ["API Keys"],
+                summary: "Create API key",
+                description:
+                    "Generates a new API key for the organisation. The raw key is returned **once only** — it is never stored in plain text. Copy it immediately and distribute it to all POS terminals. All terminals for the same org share this key. Maximum 10 active keys per org.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: false,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    name: {
+                                        type: "string",
+                                        example: "Main POS",
+                                        description:
+                                            "Human-readable label for this key",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "API key created — copy it now",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        message: { type: "string" },
+                                        api_key: {
+                                            type: "string",
+                                            example: "kh_live_a1b2c3d4e5f6...",
+                                            description:
+                                                "Full raw key — shown ONCE, never again",
+                                        },
+                                        key_info: {
+                                            $ref: "#/components/schemas/ApiKeyInfo",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "10-key limit reached",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Organization accounts only",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            get: {
+                tags: ["API Keys"],
+                summary: "List API keys",
+                description:
+                    "Returns all API keys belonging to the authenticated organisation. The raw key is never returned — only the prefix, name, and metadata.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "API keys returned",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        api_keys: {
+                                            type: "array",
+                                            items: {
+                                                $ref: "#/components/schemas/ApiKeyInfo",
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Organization accounts only",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/org/api-keys/{api_key_id}": {
+            delete: {
+                tags: ["API Keys"],
+                summary: "Revoke API key",
+                description:
+                    "Deactivates an API key. Any POS terminal still using it will immediately receive 401 errors. This cannot be undone — create a new key if needed.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "api_key_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the API key to revoke",
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "API key revoked",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/SuccessResponse",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "API key not found",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Organization accounts only",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── POS ───────────────────────────────────────────────────────────
+
+        "/api/pos/charge": {
+            post: {
+                tags: ["POS"],
+                summary: "Charge a card (tap-to-pay)",
+                description:
+                    "Core POS endpoint. Called by terminal software when the RC522 reads an RFID card. **No JWT required** — authenticated via `X-API-Key` header.\n\n**Flow:**\n1. Cashier enters amount on the POS screen\n2. Customer taps RFID card on the RC522 reader\n3. Arduino/laptop sends the card UID + amount to this endpoint\n4. Kharcha atomically checks the daily limit, debits the cardholder's wallet, and credits the merchant's wallet\n\nAll terminals of the same organisation share a single API key.",
+                security: [{ ApiKeyAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["card_id", "amount"],
+                                properties: {
+                                    card_id: {
+                                        type: "string",
+                                        example: "A3B2C1D0",
+                                        description:
+                                            "RFID UID from the RC522 (uppercase hex, 4 or 7 bytes)",
+                                    },
+                                    amount: {
+                                        type: "number",
+                                        example: 450.0,
+                                        description:
+                                            "Amount in NPR (minimum 1)",
+                                    },
+                                    remarks: {
+                                        type: "string",
+                                        nullable: true,
+                                        example: "Purchase #1042",
+                                        description:
+                                            "Optional receipt reference or note",
+                                    },
+                                },
+                            },
+                            examples: {
+                                "Basic charge": {
+                                    value: {
+                                        card_id: "A3B2C1D0",
+                                        amount: 450.0,
+                                    },
+                                },
+                                "Charge with remarks": {
+                                    value: {
+                                        card_id: "A3B2C1D0",
+                                        amount: 1250.0,
+                                        remarks: "Groceries - Receipt #4201",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Payment successful",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: {
+                                            type: "boolean",
+                                            example: true,
+                                        },
+                                        message: {
+                                            type: "string",
+                                            example: "Payment successful.",
+                                        },
+                                        transaction: {
+                                            type: "object",
+                                            properties: {
+                                                transaction_id: {
+                                                    type: "string",
+                                                    format: "uuid",
+                                                },
+                                                amount: {
+                                                    type: "number",
+                                                    example: 450.0,
+                                                },
+                                                currency: {
+                                                    type: "string",
+                                                    example: "NPR",
+                                                },
+                                                balance_after: {
+                                                    type: "number",
+                                                    example: 9550.0,
+                                                    description:
+                                                        "Cardholder's wallet balance after deduction",
+                                                },
+                                                merchant: {
+                                                    type: "object",
+                                                    properties: {
+                                                        account_id: {
+                                                            type: "string",
+                                                            format: "uuid",
+                                                        },
+                                                        display_name: {
+                                                            type: "string",
+                                                            example:
+                                                                "Bhatbhateni Superstore",
+                                                        },
+                                                    },
+                                                },
+                                                remarks: {
+                                                    type: "string",
+                                                    nullable: true,
+                                                },
+                                                method: {
+                                                    type: "string",
+                                                    example: "pos_rfid",
+                                                },
+                                                status: {
+                                                    type: "string",
+                                                    example: "completed",
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description:
+                            "Validation error, insufficient balance, or daily limit reached",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                                examples: {
+                                    "Insufficient balance": {
+                                        value: {
+                                            success: false,
+                                            message:
+                                                "Insufficient wallet balance.",
+                                        },
+                                    },
+                                    "Daily limit reached": {
+                                        value: {
+                                            success: false,
+                                            message:
+                                                "Card daily spending limit reached.",
+                                        },
+                                    },
+                                    "Self-charge": {
+                                        value: {
+                                            success: false,
+                                            message:
+                                                "Cannot charge your own account.",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid API key",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description:
+                            "Card is not active (blocked, pending, or expired)",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Card not registered in the system",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                            },
+                        },
+                    },
+                    429: {
+                        description: "Rate limit exceeded (30 req/min per IP)",
                         content: {
                             "application/json": {
                                 schema: {

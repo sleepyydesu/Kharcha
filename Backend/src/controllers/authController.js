@@ -64,7 +64,8 @@ const checkAvailability = async (req, res) => {
                 return res.status(409).json({
                     success: false,
                     field: "phone_number",
-                    message: "An account with this phone number already exists.",
+                    message:
+                        "An account with this phone number already exists.",
                 });
             }
         }
@@ -75,7 +76,13 @@ const checkAvailability = async (req, res) => {
         });
     } catch (err) {
         console.error("[checkAvailability]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -89,12 +96,16 @@ const sendOTP = async (req, res) => {
         const { email } = req.body;
 
         if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is required." });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
         const otp = generateOTP();
-        const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+        const expiresAt = new Date(
+            Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
+        ).toISOString();
 
         // Invalidate any previous unused signup OTPs for this email
         await supabase
@@ -105,12 +116,14 @@ const sendOTP = async (req, res) => {
             .eq("is_used", false);
 
         // Insert new OTP
-        const { error: insertError } = await supabase.from("otp_verifications").insert({
-            email: normalizedEmail,
-            otp_code: otp,
-            otp_type: "signup",
-            expires_at: expiresAt,
-        });
+        const { error: insertError } = await supabase
+            .from("otp_verifications")
+            .insert({
+                email: normalizedEmail,
+                otp_code: otp,
+                otp_type: "signup",
+                expires_at: expiresAt,
+            });
 
         if (insertError) throw insertError;
 
@@ -123,7 +136,13 @@ const sendOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[sendOTP]", err);
-        return res.status(500).json({ success: false, message: "Failed to send OTP.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Failed to send OTP.",
+                error: err.message,
+            });
     }
 };
 
@@ -138,7 +157,12 @@ const verifyOTP = async (req, res) => {
         const { email, otp } = req.body;
 
         if (!email || !otp) {
-            return res.status(400).json({ success: false, message: "Email and OTP are required." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Email and OTP are required.",
+                });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -157,18 +181,27 @@ const verifyOTP = async (req, res) => {
         if (error) throw error;
 
         if (!data) {
-            return res.status(400).json({ success: false, message: "Invalid verification code." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Invalid verification code.",
+                });
         }
 
         if (new Date(data.expires_at) < new Date()) {
             return res.status(400).json({
                 success: false,
-                message: "Verification code has expired. Please request a new one.",
+                message:
+                    "Verification code has expired. Please request a new one.",
             });
         }
 
         // Mark OTP as used
-        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", data.id);
+        await supabase
+            .from("otp_verifications")
+            .update({ is_used: true })
+            .eq("id", data.id);
 
         // Issue short-lived signup token (15 min) to authorize the /complete step
         const signupToken = generateSignupToken({ email: normalizedEmail });
@@ -180,7 +213,13 @@ const verifyOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[verifyOTP]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -212,24 +251,36 @@ const completeSignup = async (req, res) => {
         if (!signup_token || !account_type || !password) {
             return res.status(400).json({
                 success: false,
-                message: "signup_token, account_type, and password are required.",
+                message:
+                    "signup_token, account_type, and password are required.",
             });
         }
 
         if (!VALID_ACCOUNT_TYPES.includes(account_type)) {
-            return res.status(400).json({ success: false, message: "Invalid account type." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid account type." });
         }
 
         if (account_type === "user" && !full_name) {
-            return res.status(400).json({ success: false, message: "Full name is required." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Full name is required." });
         }
 
         if (account_type === "organization" && !organization_name) {
-            return res.status(400).json({ success: false, message: "Organization name is required." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Organization name is required.",
+                });
         }
 
         if (account_type === "admin" && !full_name) {
-            return res.status(400).json({ success: false, message: "Full name is required." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Full name is required." });
         }
 
         // ── Validate signup_token ─────────────────────────────
@@ -237,7 +288,8 @@ const completeSignup = async (req, res) => {
         if (!decoded) {
             return res.status(401).json({
                 success: false,
-                message: "Signup session has expired or is invalid. Please start over.",
+                message:
+                    "Signup session has expired or is invalid. Please start over.",
             });
         }
 
@@ -254,7 +306,7 @@ const completeSignup = async (req, res) => {
                 email,
                 phone_number: phone_number ? phone_number.trim() : null,
                 password_hash,
-                mpin_hash: null,   // set via profile later
+                mpin_hash: null, // set via profile later
                 is_verified: true,
             })
             .select("account_id, account_type, email")
@@ -264,7 +316,8 @@ const completeSignup = async (req, res) => {
             if (accountError.code === "23505") {
                 return res.status(409).json({
                     success: false,
-                    message: "An account with this email or phone number already exists.",
+                    message:
+                        "An account with this email or phone number already exists.",
                 });
             }
             throw accountError;
@@ -296,7 +349,7 @@ const completeSignup = async (req, res) => {
         // ── Create wallet for the new account ────────────────
         const { error: walletError } = await supabase.from("wallets").insert({
             account_id,
-            balance:  0.00,
+            balance: 0.0,
             currency: "NPR",
         });
         if (walletError) throw walletError;
@@ -312,7 +365,13 @@ const completeSignup = async (req, res) => {
         });
     } catch (err) {
         console.error("[completeSignup]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -342,25 +401,32 @@ const signin = async (req, res) => {
 
         const isEmail = identifier.includes("@");
         const lookupField = isEmail ? "email" : "phone_number";
-        const lookupValue = isEmail ? identifier.toLowerCase().trim() : identifier.trim();
+        const lookupValue = isEmail
+            ? identifier.toLowerCase().trim()
+            : identifier.trim();
 
         // ── Fetch account by email or phone ───────────────────
         const { data: account, error } = await supabase
             .from("accounts")
-            .select("account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active")
+            .select(
+                "account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active",
+            )
             .eq(lookupField, lookupValue)
             .maybeSingle();
 
         if (error) throw error;
 
         if (!account) {
-            return res.status(401).json({ success: false, message: "Invalid credentials." });
+            return res
+                .status(401)
+                .json({ success: false, message: "Invalid credentials." });
         }
 
         if (!account.is_active) {
             return res.status(403).json({
                 success: false,
-                message: "Your account has been deactivated. Please contact support.",
+                message:
+                    "Your account has been deactivated. Please contact support.",
             });
         }
 
@@ -374,19 +440,29 @@ const signin = async (req, res) => {
 
         if (looksLikeMpin && account.mpin_hash) {
             // Try MPIN
-            authenticated = await bcrypt.compare(credentialStr, account.mpin_hash);
+            authenticated = await bcrypt.compare(
+                credentialStr,
+                account.mpin_hash,
+            );
         }
 
         if (!authenticated) {
             // Try password (covers: non-MPIN credential, MPIN not set, or MPIN mismatch)
             if (!account.password_hash) {
-                return res.status(401).json({ success: false, message: "Invalid credentials." });
+                return res
+                    .status(401)
+                    .json({ success: false, message: "Invalid credentials." });
             }
-            authenticated = await bcrypt.compare(credentialStr, account.password_hash);
+            authenticated = await bcrypt.compare(
+                credentialStr,
+                account.password_hash,
+            );
         }
 
         if (!authenticated) {
-            return res.status(401).json({ success: false, message: "Invalid credentials." });
+            return res
+                .status(401)
+                .json({ success: false, message: "Invalid credentials." });
         }
 
         const token = generateAuthToken({
@@ -408,7 +484,13 @@ const signin = async (req, res) => {
         });
     } catch (err) {
         console.error("[signin]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 // ─────────────────────────────────────────────────────────────
@@ -450,11 +532,15 @@ const setupMpin = async (req, res) => {
         if (account.mpin_hash) {
             return res.status(409).json({
                 success: false,
-                message: "MPIN is already set up. Use the change-mpin endpoint to update it.",
+                message:
+                    "MPIN is already set up. Use the change-mpin endpoint to update it.",
             });
         }
 
-        const passwordMatch = await bcrypt.compare(password, account.password_hash);
+        const passwordMatch = await bcrypt.compare(
+            password,
+            account.password_hash,
+        );
         if (!passwordMatch) {
             return res.status(401).json({
                 success: false,
@@ -477,7 +563,13 @@ const setupMpin = async (req, res) => {
         });
     } catch (err) {
         console.error("[setupMpin]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -527,11 +619,15 @@ const changeMpin = async (req, res) => {
         if (!account.mpin_hash) {
             return res.status(403).json({
                 success: false,
-                message: "MPIN has not been set up yet. Use the setup-mpin endpoint first.",
+                message:
+                    "MPIN has not been set up yet. Use the setup-mpin endpoint first.",
             });
         }
 
-        const mpinMatch = await bcrypt.compare(current_mpin.toString(), account.mpin_hash);
+        const mpinMatch = await bcrypt.compare(
+            current_mpin.toString(),
+            account.mpin_hash,
+        );
         if (!mpinMatch) {
             return res.status(401).json({
                 success: false,
@@ -539,7 +635,10 @@ const changeMpin = async (req, res) => {
             });
         }
 
-        const new_mpin_hash = await bcrypt.hash(new_mpin.toString(), SALT_ROUNDS);
+        const new_mpin_hash = await bcrypt.hash(
+            new_mpin.toString(),
+            SALT_ROUNDS,
+        );
 
         const { error: updateError } = await supabase
             .from("accounts")
@@ -554,7 +653,13 @@ const changeMpin = async (req, res) => {
         });
     } catch (err) {
         console.error("[changeMpin]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 

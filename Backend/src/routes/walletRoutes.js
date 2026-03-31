@@ -1,5 +1,9 @@
 const express = require("express");
-const { getWallet, transfer, lookupReceiver } = require("../controllers/walletController");
+const {
+    getWallet,
+    transfer,
+    lookupReceiver,
+} = require("../controllers/walletController");
 const { authenticate } = require("../middleware/authmiddleware");
 const { transferRateLimiter } = require("../middleware/securityMiddleware");
 

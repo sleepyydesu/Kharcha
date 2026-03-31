@@ -11,18 +11,28 @@ const getWallet = async (req, res) => {
 
         const { data: wallet, error } = await supabase
             .from("wallets")
-            .select("wallet_id, balance, currency, is_active, created_at, updated_at")
+            .select(
+                "wallet_id, balance, currency, is_active, created_at, updated_at",
+            )
             .eq("account_id", account_id)
             .single();
 
         if (error) throw error;
 
         if (!wallet) {
-            return res.status(404).json({ success: false, message: "Wallet not found." });
+            return res
+                .status(404)
+                .json({ success: false, message: "Wallet not found." });
         }
 
         if (!wallet.is_active) {
-            return res.status(403).json({ success: false, message: "Your wallet has been suspended. Please contact support." });
+            return res
+                .status(403)
+                .json({
+                    success: false,
+                    message:
+                        "Your wallet has been suspended. Please contact support.",
+                });
         }
 
         return res.status(200).json({
@@ -38,7 +48,13 @@ const getWallet = async (req, res) => {
         });
     } catch (err) {
         console.error("[getWallet]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -62,23 +78,42 @@ const transfer = async (req, res) => {
 
         // ── Validation ────────────────────────────────────────
         if (!receiver_identifier) {
-            return res.status(400).json({ success: false, message: "receiver_identifier is required (phone number or account ID)." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        "receiver_identifier is required (phone number or account ID).",
+                });
         }
 
         const parsedAmount = parseFloat(amount);
         if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-            return res.status(400).json({ success: false, message: "amount must be a positive number." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "amount must be a positive number.",
+                });
         }
 
         if (parsedAmount < 1) {
-            return res.status(400).json({ success: false, message: "Minimum transfer amount is NPR 1." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Minimum transfer amount is NPR 1.",
+                });
         }
 
         // ── Resolve receiver account ──────────────────────────
         // receiver_identifier can be:
         //   - A UUID (account_id) for direct transfers
         //   - A phone number for user-friendly transfers
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(receiver_identifier);
+        const isUUID =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                receiver_identifier,
+            );
 
         let receiverQuery = supabase
             .from("accounts")
@@ -100,54 +135,100 @@ const transfer = async (req, res) => {
                 .maybeSingle();
         }
 
-        const { data: receiverAccount, error: receiverError } = await receiverQuery;
+        const { data: receiverAccount, error: receiverError } =
+            await receiverQuery;
 
         if (receiverError) throw receiverError;
 
         if (!receiverAccount) {
-            return res.status(404).json({ success: false, message: "Receiver not found. Please check the phone number or ID." });
+            return res
+                .status(404)
+                .json({
+                    success: false,
+                    message:
+                        "Receiver not found. Please check the phone number or ID.",
+                });
         }
 
         if (!receiverAccount.is_active) {
-            return res.status(400).json({ success: false, message: "Receiver account is inactive." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Receiver account is inactive.",
+                });
         }
 
         if (receiverAccount.account_id === sender_account_id) {
-            return res.status(400).json({ success: false, message: "You cannot transfer to your own wallet." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "You cannot transfer to your own wallet.",
+                });
         }
 
         // ── Execute atomic transfer via Supabase RPC ──────────
         // The PostgreSQL function handles locking, balance check, debit/credit,
         // and transaction record — all in one atomic operation.
-        const { data: result, error: transferError } = await supabase.rpc("transfer_funds", {
-            p_sender_account_id:   sender_account_id,
-            p_receiver_account_id: receiverAccount.account_id,
-            p_amount:              parsedAmount,
-            p_category_id:         category_id || null,
-            p_remarks:             remarks      || null,
-        });
+        const { data: result, error: transferError } = await supabase.rpc(
+            "transfer_funds",
+            {
+                p_sender_account_id: sender_account_id,
+                p_receiver_account_id: receiverAccount.account_id,
+                p_amount: parsedAmount,
+                p_category_id: category_id || null,
+                p_remarks: remarks || null,
+            },
+        );
 
         if (transferError) {
             // Parse known error codes from the PostgreSQL function
             const msg = transferError.message || "";
             if (msg.includes("INSUFFICIENT_BALANCE")) {
-                return res.status(400).json({ success: false, message: "Insufficient wallet balance." });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message: "Insufficient wallet balance.",
+                    });
             }
             if (msg.includes("WALLET_NOT_FOUND")) {
-                return res.status(400).json({ success: false, message: "Wallet not found for sender or receiver." });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message: "Wallet not found for sender or receiver.",
+                    });
             }
             if (msg.includes("WALLET_INACTIVE")) {
-                return res.status(400).json({ success: false, message: "One of the wallets is inactive." });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message: "One of the wallets is inactive.",
+                    });
             }
             if (msg.includes("SELF_TRANSFER")) {
-                return res.status(400).json({ success: false, message: "You cannot transfer to your own wallet." });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message: "You cannot transfer to your own wallet.",
+                    });
             }
             throw transferError;
         }
 
         // Fetch receiver display name and profile picture for the response
-        const profileTable = receiverAccount.account_type === "organization" ? "organizations" : "users";
-        const nameField    = receiverAccount.account_type === "organization" ? "organization_name" : "full_name";
+        const profileTable =
+            receiverAccount.account_type === "organization"
+                ? "organizations"
+                : "users";
+        const nameField =
+            receiverAccount.account_type === "organization"
+                ? "organization_name"
+                : "full_name";
 
         const { data: receiverProfile } = await supabase
             .from(profileTable)
@@ -165,24 +246,31 @@ const transfer = async (req, res) => {
             success: true,
             message: "Transfer successful.",
             transaction: {
-                transaction_id:       result.transaction_id,
-                amount:               parsedAmount,
-                currency:             "NPR",
-                balance_after:        parseFloat(result.sender_balance_after),
+                transaction_id: result.transaction_id,
+                amount: parsedAmount,
+                currency: "NPR",
+                balance_after: parseFloat(result.sender_balance_after),
                 receiver: {
-                    account_id:    receiverAccount.account_id,
-                    account_type:  receiverAccount.account_type,
-                    display_name:  receiverProfile?.[nameField] || "Unknown",
-                    profile_picture: receiverAccount2?.profile_picture_url || null,
+                    account_id: receiverAccount.account_id,
+                    account_type: receiverAccount.account_type,
+                    display_name: receiverProfile?.[nameField] || "Unknown",
+                    profile_picture:
+                        receiverAccount2?.profile_picture_url || null,
                 },
-                remarks:             remarks || null,
-                method:              "Kharcha Wallet",
-                status:              "completed",
+                remarks: remarks || null,
+                method: "Kharcha Wallet",
+                status: "completed",
             },
         });
     } catch (err) {
         console.error("[transfer]", err);
-        return res.status(500).json({ success: false, message: "Transfer failed.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Transfer failed.",
+                error: err.message,
+            });
     }
 };
 
@@ -197,12 +285,22 @@ const lookupReceiver = async (req, res) => {
         const { account_id: sender_account_id } = req.account;
 
         if (!identifier) {
-            return res.status(400).json({ success: false, message: "identifier query param is required." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "identifier query param is required.",
+                });
         }
 
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+        const isUUID =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                identifier,
+            );
 
-        let query = supabase.from("accounts").select("account_id, account_type, is_active, phone_number");
+        let query = supabase
+            .from("accounts")
+            .select("account_id, account_type, is_active, phone_number");
 
         if (isUUID) {
             query = query.eq("account_id", identifier);
@@ -215,20 +313,36 @@ const lookupReceiver = async (req, res) => {
         if (error) throw error;
 
         if (!account) {
-            return res.status(404).json({ success: false, message: "No account found with this phone number or ID." });
+            return res
+                .status(404)
+                .json({
+                    success: false,
+                    message: "No account found with this phone number or ID.",
+                });
         }
 
         if (account.account_id === sender_account_id) {
-            return res.status(400).json({ success: false, message: "Cannot transfer to your own account." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Cannot transfer to your own account.",
+                });
         }
 
         if (!account.is_active) {
-            return res.status(400).json({ success: false, message: "This account is inactive." });
+            return res
+                .status(400)
+                .json({ success: false, message: "This account is inactive." });
         }
 
         // Fetch profile info
-        const profileTable = account.account_type === "organization" ? "organizations" : "users";
-        const nameField    = account.account_type === "organization" ? "organization_name" : "full_name";
+        const profileTable =
+            account.account_type === "organization" ? "organizations" : "users";
+        const nameField =
+            account.account_type === "organization"
+                ? "organization_name"
+                : "full_name";
 
         const { data: profile } = await supabase
             .from(profileTable)
@@ -245,16 +359,22 @@ const lookupReceiver = async (req, res) => {
         return res.status(200).json({
             success: true,
             receiver: {
-                account_id:      account.account_id,
-                account_type:    account.account_type,
-                display_name:    profile?.[nameField] || "Unknown",
-                phone_number:    account.phone_number,
+                account_id: account.account_id,
+                account_type: account.account_type,
+                display_name: profile?.[nameField] || "Unknown",
+                phone_number: account.phone_number,
                 profile_picture: accountPic?.profile_picture_url || null,
             },
         });
     } catch (err) {
         console.error("[lookupReceiver]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 

@@ -85,13 +85,11 @@ const getProfile = async (req, res) => {
         });
     } catch (err) {
         console.error("[getProfile]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -194,13 +192,11 @@ const uploadProfilePicture = async (req, res) => {
         });
     } catch (err) {
         console.error("[uploadProfilePicture]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Failed to upload profile picture.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Failed to upload profile picture.",
+            error: err.message,
+        });
     }
 };
 
@@ -231,13 +227,11 @@ const deleteProfilePicture = async (req, res) => {
             .json({ success: true, message: "Profile picture removed." });
     } catch (err) {
         console.error("[deleteProfilePicture]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -312,13 +306,11 @@ const updateProfile = async (req, res) => {
             .json({ success: true, message: "Profile updated successfully." });
     } catch (err) {
         console.error("[updateProfile]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -343,13 +335,11 @@ const getOrgTypes = async (req, res) => {
             .json({ success: true, org_types: orgTypes || [] });
     } catch (err) {
         console.error("[getOrgTypes]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 

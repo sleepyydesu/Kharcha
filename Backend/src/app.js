@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 
-const testRoutes        = require("./routes/testRoutes");
-const authRoutes        = require("./routes/authRoutes");
-const walletRoutes      = require("./routes/walletRoutes");
+const testRoutes = require("./routes/testRoutes");
+const authRoutes = require("./routes/authRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
-const profileRoutes     = require("./routes/profileRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const posRoutes = require("./routes/posRoutes");
+const cardRoutes = require("./routes/cardRoutes");
+const apiKeyRoutes = require("./routes/apiKeyRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
     securityHeaders,
@@ -19,29 +22,42 @@ const app = express();
 app.use(securityHeaders);
 
 // ── CORS ─────────────────────────────────────────────────────
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || "*",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
-}));
+app.use(
+    cors({
+        origin: process.env.CORS_ORIGIN || "*",
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+        exposedHeaders: [
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+        ],
+    }),
+);
 
 // ── Body Parsing ─────────────────────────────────────────────
-app.use(express.json({ limit: "10mb" }));       // 10mb for base64 image uploads
+app.use(express.json({ limit: "10mb" })); // 10mb for base64 image uploads
 app.use(express.urlencoded({ extended: false }));
 
 // ── Global Rate Limit ────────────────────────────────────────
 app.use("/api", apiRateLimiter);
 
 // ── API Docs (Swagger UI) ────────────────────────────────────
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOptions));
+app.use(
+    "/api/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, swaggerOptions),
+);
 
 // ── Routes ───────────────────────────────────────────────────
-app.use("/api/test",         testRoutes);
-app.use("/api/auth",         authRateLimiter, authRoutes);
-app.use("/api/wallet",       walletRoutes);
+app.use("/api/test", testRoutes);
+app.use("/api/auth", authRateLimiter, authRoutes);
+app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
-app.use("/api/profile",      profileRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/pos", posRoutes);
+app.use("/api/cards", cardRoutes);
+app.use("/api/org/api-keys", apiKeyRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {

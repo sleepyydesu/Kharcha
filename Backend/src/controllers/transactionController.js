@@ -34,20 +34,16 @@ const getStatements = async (req, res) => {
             const end = new Date(end_date);
 
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "Invalid date format. Use YYYY-MM-DD.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid date format. Use YYYY-MM-DD.",
+                });
             }
             if (start > end) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "start_date must be before end_date.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "start_date must be before end_date.",
+                });
             }
 
             // Max 3-month window
@@ -56,23 +52,18 @@ const getStatements = async (req, res) => {
                 threeMonthsAfterStart.getMonth() + 3,
             );
             if (end > threeMonthsAfterStart) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "Date range cannot exceed 3 months.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "Date range cannot exceed 3 months.",
+                });
             }
         } else if (start_date && !end_date) {
             // If only start_date is given, cap end at start + 3 months (or today, whichever is earlier)
         } else if (!start_date && end_date) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message:
-                        "start_date is required when end_date is provided.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "start_date is required when end_date is provided.",
+            });
         }
 
         const offset = (page - 1) * limit;
@@ -176,13 +167,11 @@ const getStatements = async (req, res) => {
         });
     } catch (err) {
         console.error("[getStatements]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -215,12 +204,10 @@ const getTransactionDetail = async (req, res) => {
         const isReceiver = txn.receiver_account_id === account_id;
 
         if (!isSender && !isReceiver) {
-            return res
-                .status(403)
-                .json({
-                    success: false,
-                    message: "You do not have access to this transaction.",
-                });
+            return res.status(403).json({
+                success: false,
+                message: "You do not have access to this transaction.",
+            });
         }
 
         const counterpartyIsOrg = isSender
@@ -276,13 +263,11 @@ const getTransactionDetail = async (req, res) => {
         });
     } catch (err) {
         console.error("[getTransactionDetail]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -306,13 +291,11 @@ const getCategories = async (req, res) => {
             .json({ success: true, categories: categories || [] });
     } catch (err) {
         console.error("[getCategories]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
