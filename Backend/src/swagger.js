@@ -314,6 +314,11 @@ const swaggerSpec = {
             description:
                 "Point-of-sale tap-to-pay endpoint. Authenticated with X-API-Key header (no JWT). Hit by the terminal software when the RC522 scans a card.",
         },
+        {
+            name: "Khalti",
+            description:
+                "Load money into a Kharcha wallet via Khalti payment gateway. Two-step flow: initiate (returns a Khalti payment URL) → user pays → Khalti redirects to verify (credits the wallet).",
+        },
     ],
     paths: {
         "/": {
@@ -2789,6 +2794,181 @@ const swaggerSpec = {
                                 schema: {
                                     $ref: "#/components/schemas/ErrorResponse",
                                 },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Khalti ───────────────────────────────────────────────────────────
+
+        "/api/khalti/initiate": {
+            post: {
+                tags: ["Khalti"],
+                summary: "Initiate a Khalti top-up",
+                description:
+                    "Creates a Khalti payment session for the authenticated user. Returns a `payment_url` — redirect the user there to complete the payment on Khalti's page. After the user pays, Khalti redirects them to `GET /api/khalti/verify` which credits their wallet automatically.\n\n**Min:** NPR 10 &nbsp; **Max:** NPR 1,00,000",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["amount"],
+                                properties: {
+                                    amount: {
+                                        type: "number",
+                                        description: "Amount in NPR to load (min 10, max 100000)",
+                                        example: 500,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Payment session created — redirect user to payment_url",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Payment initiated. Redirect the user to payment_url." },
+                                        pidx: {
+                                            type: "string",
+                                            description: "Khalti payment token — store this if you want to track the session",
+                                            example: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                        payment_url: {
+                                            type: "string",
+                                            description: "Redirect the user to this URL to complete payment on Khalti",
+                                            example: "https://dev.khalti.com/payment/HT6o2sQfNxuAFJHJmDPNnR/",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing or invalid amount",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Amount too low": {
+                                        value: { success: false, message: "Minimum load amount is NPR 10." },
+                                    },
+                                    "Amount too high": {
+                                        value: { success: false, message: "Maximum load amount is NPR 1,00,000." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Khalti API error or server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/khalti/verify": {
+            get: {
+                tags: ["Khalti"],
+                summary: "Verify payment and credit wallet (Khalti callback)",
+                description:
+                    "This endpoint is called automatically by Khalti as a redirect after the user completes (or cancels) payment. You do **not** call this manually — Khalti appends `?pidx=...&status=...` to the `return_url` you configured.\n\nIf the payment is `Completed`, this endpoint:\n1. Confirms the payment with Khalti's lookup API\n2. Credits the user's Kharcha wallet\n3. Records a transaction with method `Khalti`\n4. Marks the payment as `success`\n\nIdempotent — calling it twice with the same `pidx` is safe.",
+                parameters: [
+                    {
+                        name: "pidx",
+                        in: "query",
+                        required: true,
+                        description: "Khalti payment token (appended automatically by Khalti)",
+                        schema: { type: "string", example: "HT6o2sQfNxuAFJHJmDPNnR" },
+                    },
+                    {
+                        name: "status",
+                        in: "query",
+                        required: false,
+                        description: "Payment status sent by Khalti (e.g. Completed, Pending, User canceled)",
+                        schema: { type: "string", example: "Completed" },
+                    },
+                    {
+                        name: "transaction_id",
+                        in: "query",
+                        required: false,
+                        description: "Khalti's own transaction reference (informational)",
+                        schema: { type: "string" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Wallet credited successfully (or already processed)",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "NPR 500 loaded into your Kharcha wallet." },
+                                        transaction_id: { type: "string", format: "uuid" },
+                                        amount: { type: "number", example: 500 },
+                                        balance_after: { type: "number", example: 1500 },
+                                        pidx: { type: "string", example: "HT6o2sQfNxuAFJHJmDPNnR" },
+                                    },
+                                },
+                                examples: {
+                                    "Success": {
+                                        value: {
+                                            success: true,
+                                            message: "NPR 500 loaded into your Kharcha wallet.",
+                                            transaction_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                                            amount: 500,
+                                            balance_after: 1500,
+                                            pidx: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                    },
+                                    "Already processed": {
+                                        value: {
+                                            success: true,
+                                            message: "Payment was already processed.",
+                                            pidx: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "pidx missing",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Payment not completed by user, or Khalti/server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
                             },
                         },
                     },

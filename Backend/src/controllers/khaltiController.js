@@ -1,54 +1,98 @@
 const { initiatePayment, verifyPayment } = require("../services/khaltiService");
+
+// ─────────────────────────────────────────────────────────────
+//  INITIATE KHALTI PAYMENT
+//  POST /api/khalti/initiate
+//  Requires JWT auth (Bearer token in Authorization header)
+//
+//  Body: { amount }  — amount in NPR (min 10, max 100000)
+//
+//  Returns: { success, pidx, payment_url }
+//  The frontend should redirect the user to payment_url.
+// ─────────────────────────────────────────────────────────────
 const initiateKhaltiPayment = async (req, res, next) => {
-  try {
-    // Step 1: Get data from request body
-    const { amount, userId } = req.body;
+    try {
+        const { account_id } = req.account; // from JWT middleware — never from body
+        const { amount } = req.body;
 
-    // Step 2: Basic validation
-    if (!amount || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount and userId are required",
-      });
+        if (!amount) {
+            return res.status(400).json({
+                success: false,
+                message: "amount is required.",
+            });
+        }
+
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount < 10) {
+            return res.status(400).json({
+                success: false,
+                message: "Minimum load amount is NPR 10.",
+            });
+        }
+        if (parsedAmount > 100000) {
+            return res.status(400).json({
+                success: false,
+                message: "Maximum load amount is NPR 1,00,000.",
+            });
+        }
+
+        const { pidx, payment_url } = await initiatePayment(parsedAmount, account_id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment initiated. Redirect the user to payment_url.",
+            pidx,
+            payment_url,
+        });
+    } catch (error) {
+        console.error("[initiateKhaltiPayment]", error?.response?.data || error.message);
+        next(error);
     }
-
-    // Step 3: Call the service
-    const payment_url = await initiatePayment(amount, userId);
-
-    // Step 4: Send payment_url back to frontend
-    res.status(200).json({
-      success: true,
-      payment_url,
-    });
-  } catch (error) {
-    next(error); // passes error to errorHandler middleware
-  }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  VERIFY KHALTI PAYMENT  (Khalti redirect / callback)
+//  GET /api/khalti/verify?pidx=<token>
+//  No JWT — Khalti redirects the user here after payment.
+//
+//  Query: { pidx }
+//
+//  Returns: { success, transaction_id, amount, balance_after }
+//  The frontend can use this response to show a success screen.
+// ─────────────────────────────────────────────────────────────
 const verifyKhaltiPayment = async (req, res, next) => {
-  try {
-    // Step 1: Get pidx from query params (sent by Khalti redirect)
-    const { pidx } = req.query;
+    try {
+        const { pidx } = req.query;
 
-    // Step 2: Validate
-    if (!pidx) {
-      return res.status(400).json({
-        success: false,
-        message: "pidx is required",
-      });
+        if (!pidx) {
+            return res.status(400).json({
+                success: false,
+                message: "pidx query parameter is required.",
+            });
+        }
+
+        const result = await verifyPayment(pidx);
+
+        if (result.already_processed) {
+            return res.status(200).json({
+                success: true,
+                message: "Payment was already processed.",
+                pidx,
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `NPR ${result.amount} loaded into your Kharcha wallet.`,
+            transaction_id: result.transaction_id,
+            amount: result.amount,
+            balance_after: result.balance_after,
+            pidx,
+        });
+    } catch (error) {
+        console.error("[verifyKhaltiPayment]", error?.response?.data || error.message);
+        next(error);
     }
-
-    // Step 3: Call the service
-    const result = await verifyPayment(pidx);
-
-    // Step 4: Send response back
-    res.status(200).json({
-      success: true,
-      message: "Payment verified successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
 };
+
 module.exports = { initiateKhaltiPayment, verifyKhaltiPayment };
