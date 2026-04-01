@@ -1,4 +1,5 @@
 const supabase = require("../services/supabaseClient");
+const bcrypt = require("bcrypt");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -74,7 +75,48 @@ const getWallet = async (req, res) => {
 const transfer = async (req, res) => {
     try {
         const { account_id: sender_account_id } = req.account;
-        const { receiver_identifier, amount, category_id, remarks } = req.body;
+        const { receiver_identifier, amount, category_id, remarks, mpin } = req.body;
+
+        // ── Verification gate ─────────────────────────────────
+        // Only verified accounts (and organisations) may send money.
+        const { data: senderAccount, error: senderErr } = await supabase
+            .from("accounts")
+            .select("is_verified, account_type, mpin_hash")
+            .eq("account_id", sender_account_id)
+            .single();
+
+        if (senderErr) throw senderErr;
+
+        if (senderAccount.account_type === "user" && !senderAccount.is_verified) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Your account is not yet verified. Please submit a verification request under /api/admin/verification/request and wait for admin approval before making transactions.",
+            });
+        }
+
+        // ── MPIN gate ─────────────────────────────────────────
+        if (!mpin) {
+            return res.status(400).json({
+                success: false,
+                message: "mpin is required to authorise a transfer.",
+            });
+        }
+
+        if (!senderAccount.mpin_hash) {
+            return res.status(403).json({
+                success: false,
+                message: "You have not set up an MPIN yet. Please set one via /api/auth/mpin/setup before making transfers.",
+            });
+        }
+
+        const mpinValid = await bcrypt.compare(mpin.toString(), senderAccount.mpin_hash);
+        if (!mpinValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Incorrect MPIN.",
+            });
+        }
 
         // ── Validation ────────────────────────────────────────
         if (!receiver_identifier) {

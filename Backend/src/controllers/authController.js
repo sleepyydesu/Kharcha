@@ -307,7 +307,9 @@ const completeSignup = async (req, res) => {
                 phone_number: phone_number ? phone_number.trim() : null,
                 password_hash,
                 mpin_hash: null, // set via profile later
-                is_verified: true,
+                // Users must submit a KYC request to get verified.
+                // Organisations and admins are auto-verified on creation.
+                is_verified: account_type !== "user",
             })
             .select("account_id, account_type, email")
             .single();
@@ -409,7 +411,7 @@ const signin = async (req, res) => {
         const { data: account, error } = await supabase
             .from("accounts")
             .select(
-                "account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active",
+                "account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active, is_verified",
             )
             .eq(lookupField, lookupValue)
             .maybeSingle();
@@ -480,6 +482,7 @@ const signin = async (req, res) => {
                 account_type: account.account_type,
                 email: account.email,
                 mpin_set: !!account.mpin_hash,
+                is_verified: account.is_verified,
             },
         });
     } catch (err) {
@@ -663,6 +666,224 @@ const changeMpin = async (req, res) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  FORGOT PASSWORD — Step 1: Send OTP
+//  POST /api/auth/password/forgot-send-otp
+//  Body: { email }
+//
+//  Always returns 200 to prevent account enumeration.
+// ─────────────────────────────────────────────────────────────
+const forgotPasswordSendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Email is required." });
+        }
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const { data: account } = await supabase
+            .from("accounts")
+            .select("account_id")
+            .eq("email", normalizedEmail)
+            .maybeSingle();
+
+        if (account) {
+            const otp = generateOTP();
+            const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+            await supabase
+                .from("otp_verifications")
+                .update({ is_used: true })
+                .eq("email", normalizedEmail)
+                .eq("otp_type", "password_reset")
+                .eq("is_used", false);
+
+            await supabase.from("otp_verifications").insert({
+                email: normalizedEmail,
+                otp_code: otp,
+                otp_type: "password_reset",
+                expires_at: expiresAt,
+            });
+
+            await sendOTPEmail(normalizedEmail, otp, "password_reset");
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `If an account exists for ${normalizedEmail}, a reset code has been sent. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
+        });
+    } catch (err) {
+        console.error("[forgotPasswordSendOTP]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  FORGOT PASSWORD — Step 2: Verify OTP & set new password
+//  POST /api/auth/password/reset
+//  Body: { email, otp, new_password }
+// ─────────────────────────────────────────────────────────────
+const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, new_password } = req.body;
+
+        if (!email || !otp || !new_password) {
+            return res.status(400).json({
+                success: false,
+                message: "email, otp, and new_password are required.",
+            });
+        }
+        if (new_password.length < 8) {
+            return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const { data: otpRecord, error: otpError } = await supabase
+            .from("otp_verifications")
+            .select("*")
+            .eq("email", normalizedEmail)
+            .eq("otp_code", otp.toString().trim())
+            .eq("otp_type", "password_reset")
+            .eq("is_used", false)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (otpError) throw otpError;
+
+        if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+            return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
+        }
+
+        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", otpRecord.id);
+
+        const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
+        const { error: updateError } = await supabase
+            .from("accounts")
+            .update({ password_hash, updated_at: new Date().toISOString() })
+            .eq("email", normalizedEmail);
+
+        if (updateError) throw updateError;
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successfully. Please sign in with your new password.",
+        });
+    } catch (err) {
+        console.error("[resetPassword]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  FORGOT MPIN — Step 1: Send OTP
+//  POST /api/auth/mpin/forgot-send-otp
+//  Body: { email }
+// ─────────────────────────────────────────────────────────────
+const forgotMpinSendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Email is required." });
+        }
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const { data: account } = await supabase
+            .from("accounts")
+            .select("account_id")
+            .eq("email", normalizedEmail)
+            .maybeSingle();
+
+        if (account) {
+            const otp = generateOTP();
+            const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+            await supabase
+                .from("otp_verifications")
+                .update({ is_used: true })
+                .eq("email", normalizedEmail)
+                .eq("otp_type", "mpin_reset")
+                .eq("is_used", false);
+
+            await supabase.from("otp_verifications").insert({
+                email: normalizedEmail,
+                otp_code: otp,
+                otp_type: "mpin_reset",
+                expires_at: expiresAt,
+            });
+
+            await sendOTPEmail(normalizedEmail, otp, "mpin_reset");
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `If an account exists for ${normalizedEmail}, an MPIN reset code has been sent. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
+        });
+    } catch (err) {
+        console.error("[forgotMpinSendOTP]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  FORGOT MPIN — Step 2: Verify OTP & set new MPIN
+//  POST /api/auth/mpin/reset
+//  Body: { email, otp, new_mpin }
+// ─────────────────────────────────────────────────────────────
+const resetMpin = async (req, res) => {
+    try {
+        const { email, otp, new_mpin } = req.body;
+
+        if (!email || !otp || !new_mpin) {
+            return res.status(400).json({
+                success: false,
+                message: "email, otp, and new_mpin are required.",
+            });
+        }
+        if (new_mpin.toString().length !== 6 || isNaN(new_mpin)) {
+            return res.status(400).json({ success: false, message: "MPIN must be exactly 6 digits." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const { data: otpRecord, error: otpError } = await supabase
+            .from("otp_verifications")
+            .select("*")
+            .eq("email", normalizedEmail)
+            .eq("otp_code", otp.toString().trim())
+            .eq("otp_type", "mpin_reset")
+            .eq("is_used", false)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (otpError) throw otpError;
+
+        if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+            return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
+        }
+
+        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", otpRecord.id);
+
+        const mpin_hash = await bcrypt.hash(new_mpin.toString(), SALT_ROUNDS);
+        const { error: updateError } = await supabase
+            .from("accounts")
+            .update({ mpin_hash, updated_at: new Date().toISOString() })
+            .eq("email", normalizedEmail);
+
+        if (updateError) throw updateError;
+
+        return res.status(200).json({
+            success: true,
+            message: "MPIN reset successfully.",
+        });
+    } catch (err) {
+        console.error("[resetMpin]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
 module.exports = {
     checkAvailability,
     sendOTP,
@@ -671,4 +892,8 @@ module.exports = {
     signin,
     setupMpin,
     changeMpin,
+    forgotPasswordSendOTP,
+    resetPassword,
+    forgotMpinSendOTP,
+    resetMpin,
 };

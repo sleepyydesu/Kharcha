@@ -17,6 +17,7 @@ const {
 } = require("./middleware/securityMiddleware");
 
 const khaltiRoutes = require("./routes/khaltiRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
