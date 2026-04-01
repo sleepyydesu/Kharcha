@@ -8,7 +8,7 @@ const {
     setupMpin,
     changeMpin,
 } = require("../controllers/authController");
-const { authenticate } = require("../middleware/authMiddleware");
+const { authenticate } = require("../middleware/authmiddleware");
 
 const router = express.Router();
 

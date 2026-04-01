@@ -1,75 +1,59 @@
 import React from "react";
+import { ArrowLeftRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import "./RecentTransactions.css";
 
 const transactions = [
   {
     id: 1,
-    title: "Sent to Ram",
-    amount: -500,
-    category: "Transfer",
-    date: "Mar 29",
-    color: "#E53935",
+    title: "Fund Transferred to User",
+    time: "9:30 PM",
+    balance: 10000.4,
+    amount: 1000.0,
+    type: "credit",
   },
   {
     id: 2,
-    title: "Wallet Load",
-    amount: +2000,
-    category: "Load",
-    date: "Mar 28",
-    color: "#43A047",
+    title: "Fund Transfer",
+    time: "9:36 AM",
+    balance: 2000.4,
+    amount: 1500.0,
+    type: "debit",
   },
   {
     id: 3,
-    title: "Internet Bill",
-    amount: -899,
-    category: "Bills",
-    date: "Mar 27",
-    color: "#FB8C00",
-  },
-  {
-    id: 4,
-    title: "Sent to Sita",
-    amount: -300,
-    category: "Transfer",
-    date: "Mar 26",
-    color: "#E53935",
-  },
-  {
-    id: 5,
-    title: "Salary Received",
-    amount: +25000,
-    category: "Income",
-    date: "Mar 25",
-    color: "#43A047",
+    title: "Fund Transfer",
+    time: "9:50 AM",
+    balance: 3000.0,
+    amount: 500.0,
+    type: "debit",
   },
 ];
 
 export default function RecentTransactions() {
+  const navigate = useNavigate();
+
   return (
-    <div className="transactions-container">
-      <h3 className="transactions-heading">Recent Transactions</h3>
-      {transactions.map((item) => (
-        <div key={item.id} className="transaction-row">
-          <div
-            className="txn-icon"
-            style={{ backgroundColor: item.color + "22" }}
-          >
-            <span style={{ color: item.color }}>
-              {item.amount > 0 ? "⬇️" : "⬆️"}
-            </span>
+    <div className="recent-container">
+      <h3 className="recent-heading">Recent Transaction</h3>
+      {transactions.map((txn) => (
+        <div
+          key={txn.id}
+          className="txn-card"
+          onClick={() => navigate(`/transaction/${txn.id}`)}
+        >
+          <div className="txn-icon-box">
+            <ArrowLeftRight size={16} color="#555" strokeWidth={1.5} />
           </div>
-          <div className="txn-info">
-            <p className="txn-title">{item.title}</p>
-            <p className="txn-meta">
-              {item.category} · {item.date}
-            </p>
+          <div className="txn-details">
+            <p className="txn-title">{txn.title}</p>
+            <p className="txn-time">{txn.time}</p>
+            <p className="txn-balance">Balance {txn.balance}</p>
           </div>
           <span
-            className="txn-amount"
-            style={{ color: item.amount > 0 ? "#43A047" : "#E53935" }}
+            className={`txn-amount ${txn.type === "credit" ? "positive" : "negative"}`}
           >
-            {item.amount > 0 ? "+" : ""}NPR{" "}
-            {Math.abs(item.amount).toLocaleString()}
+            {txn.amount.toFixed(2)}
           </span>
         </div>
       ))}

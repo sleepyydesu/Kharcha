@@ -11,14 +11,24 @@ const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ success: false, message: "No token provided. Please sign in." });
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message: "No token provided. Please sign in.",
+            });
     }
 
     const token = authHeader.split(" ")[1];
     const decoded = verifyAuthToken(token);
 
     if (!decoded) {
-        return res.status(401).json({ success: false, message: "Invalid or expired token. Please sign in again." });
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message: "Invalid or expired token. Please sign in again.",
+            });
     }
 
     req.account = decoded; // { account_id, account_type, email }

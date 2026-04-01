@@ -1,22 +1,27 @@
 import React, { useState } from "react";
+import { Eye, EyeOff, Wallet } from "lucide-react";
 import "./BalanceCard.css";
 
 export default function BalanceCard() {
   const [visible, setVisible] = useState(false);
-  const balance = "NPR 12,500.00";
-  const masked = "xxxxXXX.XX";
 
   return (
     <div className="balance-card">
-      <div className="card-header">
-        <span className="wallet-icon">👜</span>
-        <span className="card-title">XXXX XXXX XXXXX</span>
+      <div className="balance-card-top">
+        <Wallet size={15} color="#666" strokeWidth={1.5} />
+        <span className="card-number">XXXX XXXX XXXXX</span>
       </div>
-      <p className="card-subtitle">XXXXXXXXX</p>
+      <p className="balance-account-type">XXXXXXXXX</p>
       <div className="balance-row">
-        <span className="balance-amount">{visible ? balance : masked}</span>
+        <span className="balance-amount">
+          {visible ? "NPR 10000.00" : "xxxxXXX.XX"}
+        </span>
         <button className="eye-btn" onClick={() => setVisible(!visible)}>
-          {visible ? "🙈" : "👁️"}
+          {visible ? (
+            <EyeOff size={20} color="#555" />
+          ) : (
+            <Eye size={20} color="#555" />
+          )}
         </button>
       </div>
     </div>
