@@ -1,29 +1,56 @@
+/* ================= CONTAINER ================= */
+.quick-actions-container {
+  margin-top: 8px;
+}
+
+/* ================= CARD ================= */
 .quick-actions-card {
   background: #f0f0eb;
-  border-radius: 12px;
-  padding: 16px 8px;
+  border-radius: 14px;
+  padding: 14px 10px;
   margin: 8px 16px;
+
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between; /* ✅ FIXED */
+
   border: 1px solid #e0e0d8;
 }
 
+/* ================= ITEM ================= */
 .action-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+
   background: none;
   border: none;
   cursor: pointer;
-  min-width: 60px;
-  padding: 4px;
+
+  width: 25%; /* ✅ equal spacing */
+  padding: 6px 0;
+
+  transition: transform 0.15s ease;
 }
 
+/* PRESS EFFECT */
+.action-item:active {
+  transform: scale(0.92);
+}
+
+/* ================= ICON ================= */
+.action-item svg {
+  background: #e6e6df;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+/* ================= LABEL ================= */
 .action-label {
   font-size: 11px;
   color: #1a1a1a;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.3;
+
   white-space: pre-line;
 }

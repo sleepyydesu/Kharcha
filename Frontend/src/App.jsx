@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 
-// Placeholder pages — other devs will build these
+/* ================= PLACEHOLDER ================= */
 const Placeholder = ({ name }) => (
   <div
     style={{
@@ -19,18 +19,32 @@ const Placeholder = ({ name }) => (
   </div>
 );
 
+/* ================= APP ================= */
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* MAIN */}
         <Route path="/" element={<Home />} />
+
+        {/* CORE FEATURES */}
         <Route path="/send" element={<Placeholder name="Send Money" />} />
         <Route path="/load" element={<Placeholder name="Load Money" />} />
+        <Route path="/qr" element={<Placeholder name="QR Scanner" />} />
+
+        {/* NAVBAR ROUTES */}
+        <Route path="/statements" element={<Placeholder name="Statements" />} />
+        <Route path="/expenses" element={<Placeholder name="expenses" />} />
+        <Route path="/account" element={<Placeholder name="Account" />} />
+
+        {/* EXTRA FEATURES */}
         <Route
           path="/bank-transfer"
           element={<Placeholder name="Bank Transfer" />}
         />
         <Route path="/topup" element={<Placeholder name="Top Up" />} />
+
+        {/* BILL PAYMENTS */}
         <Route
           path="/bills/water"
           element={<Placeholder name="Water Bill" />}
@@ -43,11 +57,14 @@ export default function App() {
           path="/bills/electricity"
           element={<Placeholder name="Electricity Bill" />}
         />
-        <Route path="/more" element={<Placeholder name="More" />} />
-        <Route path="/statement" element={<Placeholder name="Statement" />} />
-        <Route path="/qr" element={<Placeholder name="QR Code" />} />
-        <Route path="/support" element={<Placeholder name="Support" />} />
-        <Route path="/expenses" element={<Placeholder name="Expenses" />} />
+
+        {/* ✅ NEW ROUTE (IMPORTANT) */}
+        <Route
+          path="/bills/internet-tv"
+          element={<Placeholder name="Internet / TV" />}
+        />
+
+        {/* TRANSACTION DETAIL */}
         <Route
           path="/transaction/:id"
           element={<Placeholder name="Transaction Detail" />}
