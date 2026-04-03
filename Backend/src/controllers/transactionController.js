@@ -68,41 +68,54 @@ const getStatements = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        // Build filter
-        let query = supabase
-            .from("statement_view")
-            .select("*", { count: "exact" });
+        // ── Build base query helper ───────────────────────────
+        const buildBase = (matchCol) => {
+            let q = supabase
+                .from("statement_view")
+                .select("*", { count: "exact" })
+                .eq(matchCol, account_id);
+
+            if (category_id) q = q.eq("category_id", category_id);
+            if (start_date)  q = q.gte("created_at", `${start_date}T00:00:00.000Z`);
+            if (end_date)    q = q.lte("created_at", `${end_date}T23:59:59.999Z`);
+            return q;
+        };
+
+        let transactions, count, error;
 
         if (type === "sent") {
-            query = query.eq("sender_account_id", account_id);
+            ({ data: transactions, count, error } = await buildBase("sender_account_id")
+                .order("created_at", { ascending: false })
+                .range(offset, offset + limit - 1));
         } else if (type === "received") {
-            query = query.eq("receiver_account_id", account_id);
+            ({ data: transactions, count, error } = await buildBase("receiver_account_id")
+                .order("created_at", { ascending: false })
+                .range(offset, offset + limit - 1));
         } else {
-            query = query.or(
-                `sender_account_id.eq.${account_id},receiver_account_id.eq.${account_id}`,
-            );
-        }
+            // Fetch both sent and received separately then merge — avoids
+            // the Supabase JS .or() + count:exact bug on views.
+            const [sentRes, receivedRes] = await Promise.all([
+                buildBase("sender_account_id").select("*"),
+                buildBase("receiver_account_id").select("*"),
+            ]);
 
-        // Category filter
-        if (category_id) {
-            query = query.eq("category_id", category_id);
-        }
+            if (sentRes.error) throw sentRes.error;
+            if (receivedRes.error) throw receivedRes.error;
 
-        // Date range filter (inclusive — end_date goes to end of that day)
-        if (start_date) {
-            query = query.gte("created_at", `${start_date}T00:00:00.000Z`);
-        }
-        if (end_date) {
-            query = query.lte("created_at", `${end_date}T23:59:59.999Z`);
-        }
+            // Merge, deduplicate by transaction_id, sort, then paginate
+            const seen = new Set();
+            const merged = [...(sentRes.data || []), ...(receivedRes.data || [])]
+                .filter((txn) => {
+                    if (seen.has(txn.transaction_id)) return false;
+                    seen.add(txn.transaction_id);
+                    return true;
+                })
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        const {
-            data: transactions,
-            error,
-            count,
-        } = await query
-            .order("created_at", { ascending: false })
-            .range(offset, offset + limit - 1);
+            count = merged.length;
+            transactions = merged.slice(offset, offset + limit);
+            error = null;
+        }
 
         if (error) throw error;
 
@@ -110,7 +123,14 @@ const getStatements = async (req, res) => {
         const statements = (transactions || []).map((txn) => {
             const isSender = txn.sender_account_id === account_id;
 
+            const SYSTEM_ACCOUNT_ID = "00000000-0000-0000-0000-000000000000";
+            const counterpartyAccountId = isSender
+                ? txn.receiver_account_id
+                : txn.sender_account_id;
+            const isGiftCard = counterpartyAccountId === SYSTEM_ACCOUNT_ID;
+
             // Logo logic:
+            //   - Gift card system account → null (frontend shows gift card icon)
             //   - If counterparty is an org  → show their logo
             //   - If counterparty is a user  → null (frontend shows wallet icon)
             const counterpartyIsOrg = isSender
@@ -134,16 +154,18 @@ const getStatements = async (req, res) => {
                         : txn.receiver_balance_after,
                 ),
                 counterparty: {
-                    account_id: isSender
-                        ? txn.receiver_account_id
-                        : txn.sender_account_id,
-                    account_type: isSender
+                    account_id: counterpartyAccountId,
+                    account_type: isGiftCard
+                        ? "system"
+                        : isSender
                         ? txn.receiver_account_type
                         : txn.sender_account_type,
-                    display_name: isSender
+                    display_name: isGiftCard
+                        ? "Gift Card"
+                        : isSender
                         ? txn.receiver_display_name
                         : txn.sender_display_name,
-                    profile_picture: counterpartyLogo,
+                    profile_picture: isGiftCard ? null : counterpartyLogo,
                 },
                 category: txn.category_name || null,
                 category_icon: txn.category_icon || null,
@@ -210,6 +232,10 @@ const getTransactionDetail = async (req, res) => {
             });
         }
 
+        const SYSTEM_ACCOUNT_ID = "00000000-0000-0000-0000-000000000000";
+        const senderIsSystem = txn.sender_account_id === SYSTEM_ACCOUNT_ID;
+        const receiverIsSystem = txn.receiver_account_id === SYSTEM_ACCOUNT_ID;
+
         const counterpartyIsOrg = isSender
             ? txn.receiver_account_type === "organization"
             : txn.sender_account_type === "organization";
@@ -229,22 +255,24 @@ const getTransactionDetail = async (req, res) => {
 
                 sender: {
                     account_id: txn.sender_account_id,
-                    account_type: txn.sender_account_type,
-                    display_name: txn.sender_display_name,
-                    phone_number: txn.sender_phone,
-                    profile_picture:
-                        txn.sender_account_type === "organization"
+                    account_type: senderIsSystem ? "system" : txn.sender_account_type,
+                    display_name: senderIsSystem ? "Gift Card" : txn.sender_display_name,
+                    phone_number: senderIsSystem ? null : txn.sender_phone,
+                    profile_picture: senderIsSystem
+                        ? null
+                        : txn.sender_account_type === "organization"
                             ? txn.sender_logo
                             : null,
                 },
 
                 receiver: {
                     account_id: txn.receiver_account_id,
-                    account_type: txn.receiver_account_type,
-                    display_name: txn.receiver_display_name,
-                    phone_number: txn.receiver_phone,
-                    profile_picture:
-                        txn.receiver_account_type === "organization"
+                    account_type: receiverIsSystem ? "system" : txn.receiver_account_type,
+                    display_name: receiverIsSystem ? "Gift Card" : txn.receiver_display_name,
+                    phone_number: receiverIsSystem ? null : txn.receiver_phone,
+                    profile_picture: receiverIsSystem
+                        ? null
+                        : txn.receiver_account_type === "organization"
                             ? txn.receiver_logo
                             : null,
                 },
