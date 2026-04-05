@@ -14,8 +14,8 @@ const navItems = [
   {
     id: "expenses",
     label: "Expenses",
-    icon: Receipt, // ✅ changed icon
-    route: "/expenses", // ✅ changed route
+    icon: Receipt,
+    route: "/expenses",
   },
   {
     id: "account",
@@ -31,44 +31,47 @@ export default function BottomNavBar() {
 
   return (
     <div className="bottom-nav-wrapper">
-      {/* QR BUTTON (CENTER FLOAT) */}
-      <button className="qr-float-btn" onClick={() => navigate("/qr")}>
-        <QrCode size={26} strokeWidth={2} />
-      </button>
-
       {/* NAV BAR */}
       <div className="bottom-nav">
-        {navItems.map((item, index) => {
-          const isActive = location.pathname === item.route;
+        <div className="nav-inner">
+          {/* QR BUTTON */}
+          <button className="qr-float-btn" onClick={() => navigate("/qr")}>
+            <QrCode size={26} strokeWidth={2} />
+          </button>
 
-          // Leave center space for QR
-          if (index === 2) {
+          {navItems.map((item, index) => {
+            const isActive = location.pathname === item.route;
+
+            // Center gap for QR
+            if (index === 2) {
+              return (
+                <React.Fragment key="qr-space">
+                  <div className="qr-placeholder" />
+
+                  <button
+                    key={item.id}
+                    className={`nav-item ${isActive ? "nav-active" : ""}`}
+                    onClick={() => navigate(item.route)}
+                  >
+                    <item.icon size={22} />
+                    <span>{item.label}</span>
+                  </button>
+                </React.Fragment>
+              );
+            }
+
             return (
-              <React.Fragment key="qr-space">
-                <div className="qr-placeholder" />
-                <button
-                  key={item.id}
-                  className={`nav-item ${isActive ? "nav-active" : ""}`}
-                  onClick={() => navigate(item.route)}
-                >
-                  <item.icon size={22} />
-                  <span>{item.label}</span>
-                </button>
-              </React.Fragment>
+              <button
+                key={item.id}
+                className={`nav-item ${isActive ? "nav-active" : ""}`}
+                onClick={() => navigate(item.route)}
+              >
+                <item.icon size={22} />
+                <span>{item.label}</span>
+              </button>
             );
-          }
-
-          return (
-            <button
-              key={item.id}
-              className={`nav-item ${isActive ? "nav-active" : ""}`}
-              onClick={() => navigate(item.route)}
-            >
-              <item.icon size={22} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );

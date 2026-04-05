@@ -17,8 +17,12 @@ const {
 } = require("./middleware/securityMiddleware");
 
 const khaltiRoutes = require("./routes/khaltiRoutes");
+<<<<<<< HEAD
 
 const errorHandler = require("./middlewares/errorHandler");
+=======
+const adminRoutes = require("./routes/adminRoutes");
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
 
 const app = express();
 
@@ -63,6 +67,10 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
+<<<<<<< HEAD
+=======
+app.use("/api/admin", adminRoutes);
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
@@ -81,7 +89,10 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, message: "Internal server error." });
 });
 
+<<<<<<< HEAD
 // Error handling middleware
 app.use(errorHandler);
 
+=======
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
 module.exports = app;

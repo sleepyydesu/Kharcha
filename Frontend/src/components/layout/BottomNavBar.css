@@ -1,56 +1,90 @@
+/* ================= WRAPPER ================= */
 .bottom-nav-wrapper {
   position: fixed;
   bottom: 0;
   width: 100%;
-  max-width: 430px;
+  left: 0;
+  z-index: 100;
 }
 
-/* NAV BAR */
+/* ================= NAV BAR BACKGROUND ================= */
 .bottom-nav {
-  background: #f4c400; /* yellow */
+  background: #f4c400;
+  width: 100%;
+  padding: 12px 0;
+}
+
+/* ================= INNER CONTAINER (FIXED) ================= */
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px; /* 🔥 IMPORTANT FIX */
+
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 12px 0;
   position: relative;
 }
 
-/* NAV ITEMS */
+/* ================= NAV ITEMS ================= */
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+
   border: none;
   background: none;
+
   font-size: 11px;
   color: #5a4e00;
+  cursor: pointer;
 }
 
-/* ACTIVE */
+/* ================= ACTIVE ================= */
 .nav-active {
   color: #1e5c38;
   font-weight: 600;
 }
 
-/* QR BUTTON */
+/* ================= QR BUTTON ================= */
 .qr-float-btn {
   position: absolute;
   top: -28px;
   left: 50%;
   transform: translateX(-50%);
+
   width: 60px;
   height: 60px;
+
   border-radius: 50%;
   background: white;
   border: none;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   z-index: 10;
 }
 
-/* SPACE FOR QR */
+/* ================= QR SPACE ================= */
 .qr-placeholder {
   width: 60px;
+}
+
+/* ================= 📱 MOBILE ================= */
+@media (max-width: 480px) {
+  .nav-inner {
+    padding: 0 12px; /* match mobile container */
+  }
+
+  .nav-item {
+    font-size: 10px;
+  }
+
+  .qr-float-btn {
+    width: 55px;
+    height: 55px;
+  }
 }

@@ -1,5 +1,10 @@
 # Environment variables
 Backend/.env
+<<<<<<< HEAD
 #node modules and lock file
 node_modules/
 package-lock.json
+=======
+Backend/node_modules/
+Frontend/node_modules/
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8

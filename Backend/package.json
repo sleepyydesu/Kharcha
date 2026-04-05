@@ -13,6 +13,10 @@
     "type": "commonjs",
     "dependencies": {
         "@supabase/supabase-js": "^2.99.3",
+<<<<<<< HEAD
+=======
+        "axios": "^1.14.0",
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
         "bcrypt": "^5.1.1",
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",

@@ -314,6 +314,39 @@ const swaggerSpec = {
             description:
                 "Point-of-sale tap-to-pay endpoint. Authenticated with X-API-Key header (no JWT). Hit by the terminal software when the RC522 scans a card.",
         },
+<<<<<<< HEAD
+=======
+        {
+            name: "Khalti",
+            description:
+                "Load money into a Kharcha wallet via Khalti payment gateway. Two-step flow: initiate (returns a Khalti payment URL) → user pays → Khalti redirects to verify (credits the wallet).",
+        },
+        {
+            name: "Password Reset",
+            description:
+                "Two-step flow to reset a forgotten password via email OTP. Step 1: send OTP → Step 2: verify OTP and set new password. No auth token required.",
+        },
+        {
+            name: "MPIN Reset",
+            description:
+                "Two-step flow to reset a forgotten MPIN via email OTP. Step 1: send OTP → Step 2: verify OTP and set new MPIN. No auth token required.",
+        },
+        {
+            name: "Verification",
+            description:
+                "KYC-style verification flow. Users submit their date of birth to request account verification. Unverified users cannot perform transactions.",
+        },
+        {
+            name: "Admin — Verification",
+            description:
+                "Admin-only endpoints to list, view, and approve/reject user verification requests.",
+        },
+        {
+            name: "Admin — Accounts",
+            description:
+                "Admin account management. Supports bootstrap mode (first admin ever, using a server-side code) and normal mode (logged-in admin creates another admin).",
+        },
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
     ],
     paths: {
         "/": {
@@ -1419,7 +1452,11 @@ const swaggerSpec = {
                 tags: ["Wallet"],
                 summary: "Transfer funds",
                 description:
+<<<<<<< HEAD
                     "Sends money from the caller's wallet to another account. `receiver_identifier` accepts a **phone number** or **account UUID**. The transfer is executed atomically in the database — balance is checked, both wallets are updated, and the transaction is recorded in a single PostgreSQL function call. Rate limited.",
+=======
+                    "Sends money from the caller's wallet to another account. `receiver_identifier` accepts a **phone number** or **account UUID**. The transfer is executed atomically in the database — balance is checked, both wallets are updated, and the transaction is recorded in a single PostgreSQL function call.\n\n**MPIN is required** — the caller must supply their 6-digit MPIN to authorise the transaction. The MPIN must be set up first via `/api/auth/mpin/setup`.\n\nUnverified user accounts cannot make transfers.",
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                 security: [{ BearerAuth: [] }],
                 requestBody: {
                     required: true,
@@ -1427,7 +1464,11 @@ const swaggerSpec = {
                         "application/json": {
                             schema: {
                                 type: "object",
+<<<<<<< HEAD
                                 required: ["receiver_identifier", "amount"],
+=======
+                                required: ["receiver_identifier", "amount", "mpin"],
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                                 properties: {
                                     receiver_identifier: {
                                         type: "string",
@@ -1441,6 +1482,15 @@ const swaggerSpec = {
                                             "Amount in NPR (minimum 1)",
                                         example: 500,
                                     },
+<<<<<<< HEAD
+=======
+                                    mpin: {
+                                        type: "string",
+                                        description:
+                                            "Sender's 6-digit MPIN — required to authorise the transfer",
+                                        example: "123456",
+                                    },
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                                     category_id: {
                                         type: "integer",
                                         nullable: true,
@@ -1518,22 +1568,73 @@ const swaggerSpec = {
                     },
                     400: {
                         description:
+<<<<<<< HEAD
                             "Validation error, insufficient balance, inactive wallet, or self-transfer",
+=======
+                            "Validation error, missing MPIN, insufficient balance, inactive wallet, or self-transfer",
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                         content: {
                             "application/json": {
                                 schema: {
                                     $ref: "#/components/schemas/ErrorResponse",
                                 },
+<<<<<<< HEAD
+=======
+                                examples: {
+                                    "Missing MPIN": {
+                                        value: { success: false, message: "mpin is required to authorise a transfer." },
+                                    },
+                                    "Insufficient balance": {
+                                        value: { success: false, message: "Insufficient wallet balance." },
+                                    },
+                                    "Self-transfer": {
+                                        value: { success: false, message: "You cannot transfer to your own wallet." },
+                                    },
+                                },
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                             },
                         },
                     },
                     401: {
+<<<<<<< HEAD
                         description: "Missing or invalid auth token",
+=======
+                        description: "Missing/invalid auth token, or incorrect MPIN",
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                         content: {
                             "application/json": {
                                 schema: {
                                     $ref: "#/components/schemas/ErrorResponse",
                                 },
+<<<<<<< HEAD
+=======
+                                examples: {
+                                    "Incorrect MPIN": {
+                                        value: { success: false, message: "Incorrect MPIN." },
+                                    },
+                                    "No auth token": {
+                                        value: { success: false, message: "Unauthorized." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Account not verified, or MPIN not set up yet",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    $ref: "#/components/schemas/ErrorResponse",
+                                },
+                                examples: {
+                                    "Not verified": {
+                                        value: { success: false, message: "Your account is not yet verified. Please submit a verification request under /api/admin/verification/request and wait for admin approval before making transactions." },
+                                    },
+                                    "MPIN not set up": {
+                                        value: { success: false, message: "You have not set up an MPIN yet. Please set one via /api/auth/mpin/setup before making transfers." },
+                                    },
+                                },
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                             },
                         },
                     },
@@ -2792,6 +2893,1009 @@ const swaggerSpec = {
                             },
                         },
                     },
+<<<<<<< HEAD
+=======
+                },
+            },
+        },
+
+        // ── Khalti ───────────────────────────────────────────────────────────
+
+        "/api/khalti/initiate": {
+            post: {
+                tags: ["Khalti"],
+                summary: "Initiate a Khalti top-up",
+                description:
+                    "Creates a Khalti payment session for the authenticated user. Returns a `payment_url` — redirect the user there to complete the payment on Khalti's page. After the user pays, Khalti redirects them to `GET /api/khalti/verify` which credits their wallet automatically.\n\n**Min:** NPR 10 &nbsp; **Max:** NPR 1,00,000",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["amount"],
+                                properties: {
+                                    amount: {
+                                        type: "number",
+                                        description: "Amount in NPR to load (min 10, max 100000)",
+                                        example: 500,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Payment session created — redirect user to payment_url",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Payment initiated. Redirect the user to payment_url." },
+                                        pidx: {
+                                            type: "string",
+                                            description: "Khalti payment token — store this if you want to track the session",
+                                            example: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                        payment_url: {
+                                            type: "string",
+                                            description: "Redirect the user to this URL to complete payment on Khalti",
+                                            example: "https://dev.khalti.com/payment/HT6o2sQfNxuAFJHJmDPNnR/",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing or invalid amount",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Amount too low": {
+                                        value: { success: false, message: "Minimum load amount is NPR 10." },
+                                    },
+                                    "Amount too high": {
+                                        value: { success: false, message: "Maximum load amount is NPR 1,00,000." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Khalti API error or server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Password Reset ────────────────────────────────────────────────────
+
+        "/api/auth/password/forgot-send-otp": {
+            post: {
+                tags: ["Password Reset"],
+                summary: "Step 1 — Send password reset OTP",
+                description:
+                    "Sends a one-time password to the given email address if an account exists for it. Always returns 200 (to prevent email enumeration). The OTP is valid for 10 minutes. Any previously issued unused OTPs for that email are invalidated.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email"],
+                                properties: {
+                                    email: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "john@example.com",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "OTP sent (or silently skipped if email not found)",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/SuccessResponse" },
+                                example: {
+                                    success: true,
+                                    message: "If an account exists for john@example.com, a reset code has been sent. Valid for 10 minutes.",
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Email missing",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/auth/password/reset": {
+            post: {
+                tags: ["Password Reset"],
+                summary: "Step 2 — Verify OTP and set new password",
+                description:
+                    "Verifies the OTP sent to the email and sets the new password. The OTP is marked as used on success and cannot be reused. Requires the new password to be at least 8 characters.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email", "otp", "new_password"],
+                                properties: {
+                                    email: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "john@example.com",
+                                    },
+                                    otp: {
+                                        type: "string",
+                                        description: "6-digit OTP received by email",
+                                        example: "482910",
+                                    },
+                                    new_password: {
+                                        type: "string",
+                                        description: "New password (minimum 8 characters)",
+                                        example: "MyNewP@ss1",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Password reset successfully",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/SuccessResponse" },
+                                example: {
+                                    success: true,
+                                    message: "Password reset successfully. Please sign in with your new password.",
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing fields, invalid OTP, expired OTP, or password too short",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Invalid OTP": {
+                                        value: { success: false, message: "Invalid or expired reset code." },
+                                    },
+                                    "Password too short": {
+                                        value: { success: false, message: "Password must be at least 8 characters." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── MPIN Reset ────────────────────────────────────────────────────────
+
+        "/api/auth/mpin/forgot-send-otp": {
+            post: {
+                tags: ["MPIN Reset"],
+                summary: "Step 1 — Send MPIN reset OTP",
+                description:
+                    "Sends an OTP to the given email address to allow the user to reset their MPIN. Always returns 200 to prevent email enumeration. Any previously issued unused MPIN-reset OTPs for that email are invalidated.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email"],
+                                properties: {
+                                    email: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "john@example.com",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "OTP sent (or silently skipped if email not found)",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/SuccessResponse" },
+                                example: {
+                                    success: true,
+                                    message: "If an account exists for john@example.com, an MPIN reset code has been sent. Valid for 10 minutes.",
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Email missing",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/auth/mpin/reset": {
+            post: {
+                tags: ["MPIN Reset"],
+                summary: "Step 2 — Verify OTP and set new MPIN",
+                description:
+                    "Verifies the OTP and sets the new 6-digit MPIN. The OTP is marked as used on success. No auth token is required — this is the recovery path for users who forgot their MPIN.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email", "otp", "new_mpin"],
+                                properties: {
+                                    email: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "john@example.com",
+                                    },
+                                    otp: {
+                                        type: "string",
+                                        description: "6-digit OTP received by email",
+                                        example: "738291",
+                                    },
+                                    new_mpin: {
+                                        type: "string",
+                                        description: "New 6-digit numeric MPIN",
+                                        example: "654321",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "MPIN reset successfully",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/SuccessResponse" },
+                                example: { success: true, message: "MPIN reset successfully." },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing fields, invalid OTP, expired OTP, or MPIN not 6 digits",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Invalid OTP": {
+                                        value: { success: false, message: "Invalid or expired reset code." },
+                                    },
+                                    "Bad MPIN format": {
+                                        value: { success: false, message: "MPIN must be exactly 6 digits." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Verification (user submits) ───────────────────────────────────────
+
+        "/api/admin/verification/request": {
+            post: {
+                tags: ["Verification"],
+                summary: "Submit verification request (user)",
+                description:
+                    "Allows a logged-in **user** account to submit a KYC verification request by providing their date of birth. The DOB is also saved to the user's profile.\n\n**Rules:**\n- Only `user` account types can call this\n- Must be at least 16 years old\n- Only one pending request can exist at a time (409 if a pending request already exists)\n- Unverified users cannot perform wallet transactions",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["dob"],
+                                properties: {
+                                    dob: {
+                                        type: "string",
+                                        format: "date",
+                                        description: "Date of birth in YYYY-MM-DD format",
+                                        example: "1995-08-20",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Verification request submitted",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Verification request submitted. An admin will review it shortly." },
+                                        request: {
+                                            type: "object",
+                                            properties: {
+                                                request_id: { type: "string", format: "uuid" },
+                                                status: { type: "string", example: "pending" },
+                                                created_at: { type: "string", format: "date-time" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing or invalid DOB, or user is under 16",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Missing DOB": {
+                                        value: { success: false, message: "dob (date of birth) is required." },
+                                    },
+                                    "Bad format": {
+                                        value: { success: false, message: "dob must be in YYYY-MM-DD format." },
+                                    },
+                                    "Under 16": {
+                                        value: { success: false, message: "You must be at least 16 years old." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Account type is not 'user'",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "Only user accounts can submit verification requests." },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "A pending verification request already exists",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "You already have a pending verification request. Please wait for it to be reviewed." },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Admin — Verification ──────────────────────────────────────────────
+
+        "/api/admin/verification/requests": {
+            get: {
+                tags: ["Admin — Verification"],
+                summary: "List verification requests (admin)",
+                description:
+                    "Returns a paginated list of verification requests filtered by status. Each item includes enriched user details (name, email, phone, profile picture). Oldest pending requests appear first; reviewed requests are newest-first.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "status",
+                        in: "query",
+                        required: false,
+                        description: "Filter by request status (default: pending)",
+                        schema: {
+                            type: "string",
+                            enum: ["pending", "approved", "rejected"],
+                            default: "pending",
+                        },
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        required: false,
+                        schema: { type: "integer", minimum: 1, default: 1 },
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        required: false,
+                        description: "Results per page (max 50)",
+                        schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "List of verification requests",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    request_id: { type: "string", format: "uuid" },
+                                                    account_id: { type: "string", format: "uuid" },
+                                                    dob: { type: "string", format: "date", example: "1995-08-20" },
+                                                    status: { type: "string", enum: ["pending", "approved", "rejected"] },
+                                                    admin_notes: { type: "string", nullable: true },
+                                                    reviewed_by: { type: "string", format: "uuid", nullable: true },
+                                                    created_at: { type: "string", format: "date-time" },
+                                                    updated_at: { type: "string", format: "date-time" },
+                                                    user: {
+                                                        type: "object",
+                                                        properties: {
+                                                            full_name: { type: "string", nullable: true },
+                                                            email: { type: "string", format: "email", nullable: true },
+                                                            phone_number: { type: "string", nullable: true },
+                                                            profile_picture_url: { type: "string", nullable: true },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        pagination: {
+                                            type: "object",
+                                            properties: {
+                                                page: { type: "integer" },
+                                                limit: { type: "integer" },
+                                                total: { type: "integer" },
+                                                total_pages: { type: "integer" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Invalid status value",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Caller is not an admin",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/admin/verification/requests/{request_id}": {
+            get: {
+                tags: ["Admin — Verification"],
+                summary: "Get single verification request (admin)",
+                description:
+                    "Returns full details of a single verification request including enriched user information: full name, DOB on profile, email, phone, wallet balance, transaction count, and account age. Useful for making an informed approve/reject decision.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "request_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the verification request",
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Full verification request details",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: {
+                                            type: "object",
+                                            properties: {
+                                                request_id: { type: "string", format: "uuid" },
+                                                account_id: { type: "string", format: "uuid" },
+                                                dob: { type: "string", format: "date", example: "1995-08-20" },
+                                                status: { type: "string", enum: ["pending", "approved", "rejected"] },
+                                                admin_notes: { type: "string", nullable: true },
+                                                reviewed_by: { type: "string", format: "uuid", nullable: true },
+                                                created_at: { type: "string", format: "date-time" },
+                                                updated_at: { type: "string", format: "date-time" },
+                                                user: {
+                                                    type: "object",
+                                                    properties: {
+                                                        full_name: { type: "string", nullable: true },
+                                                        dob_on_profile: { type: "string", format: "date", nullable: true },
+                                                        email: { type: "string", format: "email", nullable: true },
+                                                        phone_number: { type: "string", nullable: true },
+                                                        profile_picture_url: { type: "string", nullable: true },
+                                                        account_created_at: { type: "string", format: "date-time", nullable: true },
+                                                        transaction_count: { type: "integer", example: 12 },
+                                                        wallet_balance: { type: "number", example: 3500.0 },
+                                                        wallet_currency: { type: "string", example: "NPR" },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Caller is not an admin",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Verification request not found",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "Verification request not found." },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/admin/verification/requests/{request_id}/review": {
+            post: {
+                tags: ["Admin — Verification"],
+                summary: "Approve or reject a verification request (admin)",
+                description:
+                    "Reviews a pending verification request.\n\n- **approve** → sets `accounts.is_verified = true`, allowing the user to make transactions\n- **reject** → leaves `is_verified = false`; the user can resubmit a new request\n\nCannot review a request that has already been approved or rejected (409).",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "request_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the verification request to review",
+                    },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["action"],
+                                properties: {
+                                    action: {
+                                        type: "string",
+                                        enum: ["approve", "reject"],
+                                        description: "Decision on the verification request",
+                                        example: "approve",
+                                    },
+                                    admin_notes: {
+                                        type: "string",
+                                        description: "Optional notes from the reviewing admin (stored on the request)",
+                                        example: "DOB verified against provided info.",
+                                        nullable: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Request reviewed successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Verification request approved." },
+                                        data: {
+                                            type: "object",
+                                            properties: {
+                                                request_id: { type: "string", format: "uuid" },
+                                                status: { type: "string", enum: ["approved", "rejected"] },
+                                                reviewed_by: { type: "string", format: "uuid" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing or invalid action",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "action must be \"approve\" or \"reject\"." },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Missing or invalid auth token",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Caller is not an admin",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Verification request not found",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "Request already reviewed",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "This request has already been approved." },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        // ── Admin — Accounts ──────────────────────────────────────────────────
+
+        "/api/admin/create": {
+            post: {
+                tags: ["Admin — Accounts"],
+                summary: "Create an admin account",
+                description:
+                    "Creates a new admin account. Supports two modes:\n\n**Bootstrap mode** (no admins exist yet): Pass `bootstrap_code` matching the `ADMIN_BOOTSTRAP_CODE` env variable. Auth token is optional.\n\n**Normal mode** (admins already exist): Must be called by an authenticated admin. `bootstrap_code` is ignored.\n\nThe new admin account is automatically verified and gets a wallet.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email", "password", "full_name"],
+                                properties: {
+                                    email: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "admin@example.com",
+                                    },
+                                    password: {
+                                        type: "string",
+                                        description: "Minimum 8 characters",
+                                        example: "SecurePass1!",
+                                    },
+                                    full_name: {
+                                        type: "string",
+                                        example: "Ramesh Shrestha",
+                                    },
+                                    bootstrap_code: {
+                                        type: "string",
+                                        description: "Required only when no admins exist yet (bootstrap mode). Must match ADMIN_BOOTSTRAP_CODE on the server.",
+                                        example: "SUPER_SECRET_CODE",
+                                        nullable: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Admin account created",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Admin account created successfully." },
+                                        admin: {
+                                            type: "object",
+                                            properties: {
+                                                account_id: { type: "string", format: "uuid" },
+                                                email: { type: "string", format: "email" },
+                                                full_name: { type: "string" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Missing required fields or password too short",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Missing fields": {
+                                        value: { success: false, message: "email, password, and full_name are required." },
+                                    },
+                                    "Short password": {
+                                        value: { success: false, message: "Password must be at least 8 characters." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Not an admin (when admins exist) or invalid/missing bootstrap code",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                examples: {
+                                    "Admins exist, not logged in as admin": {
+                                        value: { success: false, message: "Admin accounts already exist. You must be logged in as an admin to create another." },
+                                    },
+                                    "Invalid bootstrap code": {
+                                        value: { success: false, message: "Invalid bootstrap code." },
+                                    },
+                                    "Bootstrap code not configured": {
+                                        value: { success: false, message: "No ADMIN_BOOTSTRAP_CODE is configured on this server. Set it in your .env file." },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "Email already registered",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                                example: { success: false, message: "An account with this email already exists." },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        "/api/khalti/verify": {
+            get: {
+                tags: ["Khalti"],
+                summary: "Verify payment and credit wallet (Khalti callback)",
+                description:
+                    "This endpoint is called automatically by Khalti as a redirect after the user completes (or cancels) payment. You do **not** call this manually — Khalti appends `?pidx=...&status=...` to the `return_url` you configured.\n\nIf the payment is `Completed`, this endpoint:\n1. Confirms the payment with Khalti's lookup API\n2. Credits the user's Kharcha wallet\n3. Records a transaction with method `Khalti`\n4. Marks the payment as `success`\n\nIdempotent — calling it twice with the same `pidx` is safe.",
+                parameters: [
+                    {
+                        name: "pidx",
+                        in: "query",
+                        required: true,
+                        description: "Khalti payment token (appended automatically by Khalti)",
+                        schema: { type: "string", example: "HT6o2sQfNxuAFJHJmDPNnR" },
+                    },
+                    {
+                        name: "status",
+                        in: "query",
+                        required: false,
+                        description: "Payment status sent by Khalti (e.g. Completed, Pending, User canceled)",
+                        schema: { type: "string", example: "Completed" },
+                    },
+                    {
+                        name: "transaction_id",
+                        in: "query",
+                        required: false,
+                        description: "Khalti's own transaction reference (informational)",
+                        schema: { type: "string" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Wallet credited successfully (or already processed)",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "NPR 500 loaded into your Kharcha wallet." },
+                                        transaction_id: { type: "string", format: "uuid" },
+                                        amount: { type: "number", example: 500 },
+                                        balance_after: { type: "number", example: 1500 },
+                                        pidx: { type: "string", example: "HT6o2sQfNxuAFJHJmDPNnR" },
+                                    },
+                                },
+                                examples: {
+                                    "Success": {
+                                        value: {
+                                            success: true,
+                                            message: "NPR 500 loaded into your Kharcha wallet.",
+                                            transaction_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                                            amount: 500,
+                                            balance_after: 1500,
+                                            pidx: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                    },
+                                    "Already processed": {
+                                        value: {
+                                            success: true,
+                                            message: "Payment was already processed.",
+                                            pidx: "HT6o2sQfNxuAFJHJmDPNnR",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "pidx missing",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                    500: {
+                        description: "Payment not completed by user, or Khalti/server error",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+>>>>>>> f531e3a8ff24f510dd1cf8ebbaa5b83a13e7a1b8
                 },
             },
         },

@@ -17,39 +17,45 @@ export default function Home() {
     <div className="home-wrapper">
       {/* ================= HEADER ================= */}
       <header className="home-header">
-        <div className="header-left">
-          <div className="k-logo">
-            <img src={klogo} alt="Kharcha Logo" />
+        <div className="container header-container">
+          <div className="header-left">
+            <div className="k-logo">
+              <img src={klogo} alt="Kharcha Logo" />
+            </div>
+
+            <div className="header-text">
+              <p className="hi-text">Hi!</p>
+              <p className="user-text">User</p>
+            </div>
           </div>
 
-          <div className="header-text">
-            <p className="hi-text">Hi!</p>
-            <p className="user-text">User</p>
+          <div className="header-right">
+            <button className="header-icon-btn">
+              <Bell size={22} color="white" strokeWidth={1.5} />
+            </button>
+
+            <div className="header-avatar">U</div>
           </div>
-        </div>
-
-        <div className="header-right">
-          <button className="header-icon-btn">
-            <Bell size={22} color="white" strokeWidth={1.5} />
-          </button>
-
-          <div className="header-avatar">U</div>
         </div>
       </header>
 
       {/* ================= SEARCH ================= */}
       <section className="search-wrapper">
-        <div className="search-bar">
-          <Search size={16} color="#999" />
-          <input type="text" placeholder="Search" className="search-input" />
+        <div className="container">
+          <div className="search-bar">
+            <Search size={16} color="#999" />
+            <input type="text" placeholder="Search" className="search-input" />
+          </div>
         </div>
       </section>
 
       {/* ================= MAIN CONTENT ================= */}
       <main className="home-content">
-        <BalanceCard />
-        <QuickActions />
-        <RecentTransactions />
+        <div className="container">
+          <BalanceCard />
+          <QuickActions />
+          <RecentTransactions />
+        </div>
       </main>
 
       {/* ================= BOTTOM NAV ================= */}
