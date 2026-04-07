@@ -143,6 +143,19 @@ const swaggerSpec = {
                     },
                 },
             },
+            GiftCardObject: {
+                type: "object",
+                properties: {
+                    gift_card_id: { type: "string", format: "uuid" },
+                    code: { type: "string", example: "KHRCH-A1B2-C3D4-E5F6" },
+                    amount: { type: "number", example: 500 },
+                    max_uses: { type: "integer", example: 1 },
+                    times_used: { type: "integer", example: 0 },
+                    is_active: { type: "boolean", example: true },
+                    created_at: { type: "string", format: "date-time" },
+                    updated_at: { type: "string", format: "date-time" },
+                },
+            },
             CategoryObject: {
                 type: "object",
                 properties: {
@@ -313,6 +326,10 @@ const swaggerSpec = {
             name: "POS",
             description:
                 "Point-of-sale tap-to-pay endpoint. Authenticated with X-API-Key header (no JWT). Hit by the terminal software when the RC522 scans a card.",
+        },
+        {
+            name: "Gift Cards",
+            description: "Generate gift card codes (admin only) and redeem them to top up a wallet balance. Supports multi-use cards with per-user redemption tracking.",
         },
         {
             name: "Khalti",
@@ -3865,6 +3882,199 @@ const swaggerSpec = {
                             },
                         },
                     },
+                },
+            },
+
+        },
+        // ── Gift Cards ────────────────────────────────────────────
+        "/api/gift-cards/generate": {
+            post: {
+                tags: ["Gift Cards"],
+                summary: "Generate gift cards (Admin only)",
+                description:
+                    "Bulk-generate gift cards with specified amounts and quantities.\n\n" +
+                    "The request body is a map of `amount → numberOfCards`, plus an optional `max_uses` field.\n\n" +
+                    "**Example:** `{ \"500\": 3, \"1000\": 2, \"max_uses\": 5 }` — generates 3 cards worth NPR 500 and 2 cards worth NPR 1000, each redeemable 5 times by different users.\n\n" +
+                    "Each code is formatted as `KHRCH-XXXX-XXXX-XXXX`.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    max_uses: {
+                                        type: "integer",
+                                        default: 1,
+                                        minimum: 1,
+                                        description: "How many different users may redeem each card. Default: 1.",
+                                        example: 1,
+                                    },
+                                },
+                                additionalProperties: {
+                                    type: "integer",
+                                    description: "Key = amount in NPR, Value = number of cards to generate",
+                                },
+                                example: { "500": 3, "1000": 2, max_uses: 1 },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Gift cards generated successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Successfully generated 5 gift card(s)." },
+                                        max_uses: { type: "integer", example: 1 },
+                                        total_generated: { type: "integer", example: 5 },
+                                        cards: {
+                                            type: "object",
+                                            description: "Cards grouped by amount",
+                                            additionalProperties: {
+                                                type: "array",
+                                                items: {
+                                                    type: "object",
+                                                    properties: {
+                                                        gift_card_id: { type: "string", format: "uuid" },
+                                                        code: { type: "string", example: "KHRCH-A1B2-C3D4-E5F6" },
+                                                        created_at: { type: "string", format: "date-time" },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "Not an admin", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+        "/api/gift-cards/redeem": {
+            post: {
+                tags: ["Gift Cards"],
+                summary: "Redeem a gift card",
+                description:
+                    "Redeem a gift card code to credit its value into the authenticated user's wallet.\n\n" +
+                    "- A user can only redeem the same card **once**.\n" +
+                    "- Multiple users can redeem the same card up to its `max_uses` limit.\n" +
+                    "- Funds are transferred from the platform system account.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["code"],
+                                properties: {
+                                    code: {
+                                        type: "string",
+                                        example: "KHRCH-A1B2-C3D4-E5F6",
+                                        description: "The gift card code (case-insensitive)",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Gift card redeemed successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Gift card redeemed! NPR 500 has been added to your wallet." },
+                                        redemption: {
+                                            type: "object",
+                                            properties: {
+                                                amount_credited: { type: "number", example: 500 },
+                                                currency: { type: "string", example: "NPR" },
+                                                new_balance: { type: "number", example: 1500 },
+                                                transaction_id: { type: "string", format: "uuid" },
+                                                uses_remaining: { type: "integer", example: 0 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Card inactive or fully redeemed", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Invalid gift card code", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    409: { description: "User has already redeemed this card", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+        "/api/gift-cards": {
+            get: {
+                tags: ["Gift Cards"],
+                summary: "List all gift cards (Admin only)",
+                description: "Returns a paginated list of all gift cards. Filterable by active status.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    { name: "is_active", in: "query", schema: { type: "boolean" }, description: "Filter by active status" },
+                    { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+                    { name: "limit", in: "query", schema: { type: "integer", default: 20, maximum: 100 } },
+                ],
+                responses: {
+                    200: {
+                        description: "List of gift cards",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: { type: "array", items: { $ref: "#/components/schemas/GiftCardObject" } },
+                                        pagination: {
+                                            type: "object",
+                                            properties: {
+                                                page: { type: "integer" },
+                                                limit: { type: "integer" },
+                                                total: { type: "integer" },
+                                                total_pages: { type: "integer" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: { description: "Not an admin", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+        "/api/gift-cards/{gift_card_id}/deactivate": {
+            patch: {
+                tags: ["Gift Cards"],
+                summary: "Deactivate a gift card (Admin only)",
+                description: "Permanently deactivates a gift card so it can no longer be redeemed.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "gift_card_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the gift card to deactivate",
+                    },
+                ],
+                responses: {
+                    200: { description: "Gift card deactivated", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+                    404: { description: "Gift card not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    409: { description: "Gift card already inactive", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
                 },
             },
         },
