@@ -9,6 +9,7 @@ const profileRoutes = require("./routes/profileRoutes");
 const posRoutes = require("./routes/posRoutes");
 const cardRoutes = require("./routes/cardRoutes");
 const apiKeyRoutes = require("./routes/apiKeyRoutes");
+const servicesRoutes = require("./routes/servicesRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
     securityHeaders,
@@ -63,6 +64,7 @@ app.use("/api/pos", posRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/services", servicesRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
