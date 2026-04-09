@@ -9,7 +9,6 @@ const profileRoutes = require("./routes/profileRoutes");
 const posRoutes = require("./routes/posRoutes");
 const cardRoutes = require("./routes/cardRoutes");
 const apiKeyRoutes = require("./routes/apiKeyRoutes");
-const servicesRoutes = require("./routes/servicesRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
     securityHeaders,
@@ -19,6 +18,12 @@ const {
 
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const giftCardRoutes = require("./routes/giftCardRoutes");
+const categoryRoutes = require("./routes/catgoryRoutes");
+const expenseRoutes = require("./routes/expenseRoutes");
+const incomeRoutes = require("./routes/incomeRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
@@ -64,7 +69,12 @@ app.use("/api/pos", posRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/services", servicesRoutes);
+app.use("/api/gift-cards", giftCardRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/income", incomeRoutes);
+app.use("/api/budgets", budgetRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
