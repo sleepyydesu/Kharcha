@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getTransactions } from "../api/transaction"; // ✅ API
 
-import "../components/home/RecentTransactions.css";
+import "../pages/Statements.css";
 
 export default function Statements() {
   const navigate = useNavigate();

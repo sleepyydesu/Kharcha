@@ -9,6 +9,7 @@ import LoadMoney from "./pages/LoadMoney";
 import LoadMoneyConfirm from "./pages/LoadMoneyConfirm";
 import TopUp from "./pages/TopUp";
 import Statements from "./pages/Statements";
+import Services from "./pages/Services";
 
 /* ================= PLACEHOLDER ================= */
 const Placeholder = ({ name }) => (
@@ -52,7 +53,9 @@ export default function App() {
         {/* OTHER */}
         <Route path="/qr" element={<Placeholder name="QR Scanner" />} />
         <Route path="/expenses" element={<Placeholder name="Expenses" />} />
+
         <Route path="/account" element={<Placeholder name="Account" />} />
+        <Route path="/services" element={<Services />} />
         <Route
           path="/bank-transfer"
           element={<Placeholder name="Bank Transfer" />}

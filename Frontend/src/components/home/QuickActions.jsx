@@ -1,42 +1,53 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Send,
-  PlusCircle,
-  QrCode,
-  Smartphone,
-  Landmark,
-  Droplet,
-  GraduationCap,
-  Zap,
-  Phone,
-  Globe,
-  Wallet, // ✅ ADDED
-  MoreHorizontal,
-} from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import "./QuickActions.css";
+
+/* 🔥 IMPORT YOUR CUSTOM ICONS */
+import sendIcon from "../../assets/walletSendIcon.svg";
+import loadIcon from "../../assets/topupIcon.svg";
+import expenseIcon from "../../assets/walletIcon.svg";
+import bankIcon from "../../assets/bankIcon.svg";
+
+import topupIcon from "../../assets/topupIcon.svg";
+import waterIcon from "../../assets/waterIcon.svg";
+import educationIcon from "../../assets/educationIcon.svg";
+import electricityIcon from "../../assets/electricityIcon.svg";
+import landlineIcon from "../../assets/landlineIcon.svg";
+import internetIcon from "../../assets/internetIcon.svg";
 
 export default function QuickActions() {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
 
-  // 🔹 TOP ACTIONS
+  // ✅ UPDATED TOP ACTIONS (ONLY ICON CHANGED)
   const topActions = [
-    { name: "Send", icon: <Send size={22} />, path: "/send" },
-    { name: "Load", icon: <PlusCircle size={22} />, path: "/load" },
-    { name: "Scan", icon: <QrCode size={22} />, path: "/qr" },
-    { name: "Topup", icon: <Smartphone size={22} />, path: "/topup" },
+    { name: "Send", icon: sendIcon, path: "/send" },
+    { name: "Load", icon: loadIcon, path: "/load" },
+    { name: "Expenses", icon: expenseIcon, path: "/expenses" },
+    { name: "Bank", icon: bankIcon, path: "/bank-transfer" },
   ];
 
-  // 🔹 SERVICES (UPDATED ORDER ✅)
+  // ✅ SERVICES (ONLY ICON CHANGED)
   const services = [
-    { name: "Bank", icon: <Landmark size={20} /> },
-    { name: "Expenses", icon: <Wallet size={20} /> }, // ✅ ADDED (2nd position)
-    { name: "Water", icon: <Droplet size={20} /> },
-    { name: "Education", icon: <GraduationCap size={20} /> },
-    { name: "Electricity", icon: <Zap size={20} /> },
-    { name: "Landline", icon: <Phone size={20} /> },
-    { name: "Internet/TV", icon: <Globe size={20} /> },
+    { name: "Topup", icon: topupIcon, path: "/topup" },
+    { name: "Water", icon: waterIcon, path: "/bills/water" },
+    {
+      name: "Education",
+      icon: educationIcon,
+      path: "/bills/education",
+    },
+    {
+      name: "Electricity",
+      icon: electricityIcon,
+      path: "/bills/electricity",
+    },
+    { name: "Landline", icon: landlineIcon },
+    {
+      name: "Internet/TV",
+      icon: internetIcon,
+      path: "/bills/internet-tv",
+    },
   ];
 
   return (
@@ -49,17 +60,21 @@ export default function QuickActions() {
             className="quick-item primary"
             onClick={() => navigate(item.path)}
           >
-            <div className="quick-icon">{item.icon}</div>
+            <img src={item.icon} alt={item.name} className="quick-img" />
             <p>{item.name}</p>
           </div>
         ))}
       </div>
 
-      {/* 🔥 SERVICES GRID */}
+      {/* 🔥 SERVICES */}
       <div className={`quick-grid ${expanded ? "expanded" : ""}`}>
         {(expanded ? services : services.slice(0, 4)).map((item, i) => (
-          <div key={i} className="quick-item secondary">
-            <div className="quick-icon small">{item.icon}</div>
+          <div
+            key={i}
+            className="quick-item secondary"
+            onClick={() => item.path && navigate(item.path)}
+          >
+            <img src={item.icon} alt={item.name} className="quick-img small" />
             <p>{item.name}</p>
           </div>
         ))}

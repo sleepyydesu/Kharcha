@@ -1,94 +1,252 @@
-:root {
-  --primary-green: #1e5c38;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --divider: #f1f5f9;
-}
+/* ============================================
+   CONFIRM SCREEN — Kharcha Premium Style
+   Matches SendMoney Form Theme
+   ============================================ */
 
-.confirm-card {
-  background: #ffffff;
-  width: 100%;
-  max-width: 580px; /* Matching the Send Form width */
-  padding: 56px; /* Matching the large padding */
-  border-radius: 32px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
-  margin: 40px auto;
-  border: 1px solid rgba(0, 0, 0, 0.03);
-  text-align: center; /* Centering for a clean summary look */
-}
-
-.confirm-card h3 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 32px;
-  letter-spacing: -0.5px;
-}
-
-/* Individual Data Rows */
-.confirm-card p {
+.confirm-page {
+  min-height: 100vh;
+  background: var(--bg-page);
   display: flex;
-  justify-content: space-between; /* Creates a clean 'Label: Value' alignment */
+  flex-direction: column;
+}
+
+/* ============================================
+   HEADER (same as send page)
+   ============================================ */
+.confirm-header {
+  background: linear-gradient(145deg, #0d3d22 0%, #155c34 50%, #1a7a45 100%);
+  padding: 52px 0 40px;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+  box-shadow: 0 10px 40px rgba(13, 61, 34, 0.3);
+}
+
+.confirm-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
   align-items: center;
-  margin: 0;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--divider);
-  font-size: 17px;
+  gap: 16px;
+}
+
+/* ============================================
+   BODY
+   ============================================ */
+.confirm-body {
+  flex: 1;
+  padding: 32px 40px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ============================================
+   CARD
+   ============================================ */
+.confirm-card {
+  background: var(--bg-card);
+  max-width: 580px;
+  margin: 0 auto;
+  padding: 48px 44px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(13, 61, 34, 0.06);
+  position: relative;
+  overflow: hidden;
+  animation: cardEntrance 0.4s ease;
+}
+
+/* glow effect */
+.confirm-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(72, 230, 128, 0.08) 0%,
+    transparent 70%
+  );
+}
+
+/* ============================================
+   TITLE
+   ============================================ */
+.confirm-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.confirm-subtitle {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 28px;
+}
+
+/* ============================================
+   AMOUNT (MAIN HERO)
+   ============================================ */
+.confirm-amount-box {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+  border: 1px solid #d1fae5;
+  padding: 28px;
+  border-radius: 20px;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.confirm-amount-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.confirm-amount {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--primary-green);
+  margin-top: 6px;
+}
+
+/* ============================================
+   RECEIVER CARD
+   ============================================ */
+.confirm-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.confirm-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #48e680, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #0d3d22;
+}
+
+.confirm-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-user-name {
+  font-weight: 700;
   color: var(--text-main);
 }
 
-/* Style the last item without a border */
-.confirm-card p:last-of-type {
-  border-bottom: none;
-  margin-bottom: 12px;
-}
-
-/* Highlighting labels (e.g., "Amount", "To") */
-.confirm-card p strong,
-.confirm-card p span.label {
-  font-weight: 600;
+.confirm-user-phone {
+  font-size: 12px;
   color: var(--text-muted);
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-/* Special styling for the Amount to make it stand out */
-.confirm-card p.amount-row {
-  background: #f8fafc;
-  margin: 10px -20px;
-  padding: 24px 20px;
-  border-radius: 16px;
+/* ============================================
+   DETAILS
+   ============================================ */
+.confirm-details {
+  margin-top: 12px;
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirm-row:last-child {
   border-bottom: none;
 }
 
-.confirm-card p.amount-row span.value {
-  font-size: 24px;
-  font-weight: 800;
+.confirm-label {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.confirm-value {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* highlight total */
+.confirm-total {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.confirm-total span:last-child {
   color: var(--primary-green);
 }
 
+/* ============================================
+   BUTTON
+   ============================================ */
 .confirm-btn {
   width: 100%;
-  margin-top: 32px;
-  padding: 20px;
-  background: var(--primary-green);
-  color: white;
+  margin-top: 28px;
+  padding: 18px;
+  border-radius: var(--radius-btn);
   border: none;
-  border-radius: 18px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
+  color: white;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 10px 20px rgba(30, 92, 56, 0.2);
+
+  background: linear-gradient(
+    135deg,
+    var(--primary-green),
+    var(--primary-dark)
+  );
+
+  box-shadow: var(--shadow-btn);
+  transition: all 0.25s ease;
 }
 
 .confirm-btn:hover {
-  background: #144026;
   transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(30, 92, 56, 0.3);
+  box-shadow: 0 14px 32px rgba(13, 61, 34, 0.4);
 }
 
-.confirm-btn:active {
-  transform: scale(0.98);
+/* ============================================
+   SECURITY TEXT
+   ============================================ */
+.confirm-secure {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ============================================
+   ANIMATION
+   ============================================ */
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

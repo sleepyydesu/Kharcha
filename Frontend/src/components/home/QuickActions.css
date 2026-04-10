@@ -1,24 +1,20 @@
-/* ============================================
-   quickactions.css — eSewa Minimal Clean Theme
-   ============================================ */
-
 .quick-wrapper {
   margin-top: 20px;
 }
 
 /* TOP ROW */
 .quick-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   margin-bottom: 20px;
 }
 
+/* GRID */
 .quick-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  transition: all 0.3s ease;
+  gap: 12px;
 }
 
 .quick-grid.expanded {
@@ -31,55 +27,44 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  padding: 14px 8px;
+  border-radius: 18px;
+  padding: 14px 10px;
   cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: all 0.2s ease;
 }
 
 .quick-item:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* PRIMARY (TOP BUTTONS) */
+/* PRIMARY (KHALTI STYLE BUTTONS) */
 .quick-item.primary {
-  background: #1e5c38;
+  background: linear-gradient(135deg, #1e5c38, #2e7d55);
   color: white;
-  flex: 1;
-  border: none;
+  box-shadow: 0 6px 16px rgba(30, 92, 56, 0.25);
 }
 
 .quick-item.primary:hover {
-  background: #174d2f;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(30, 92, 56, 0.3);
+  transform: translateY(-3px);
 }
 
 /* SECONDARY */
 .quick-item.secondary {
-  background: white;
-  color: #222;
-  border: 1px solid #e6f0ea;
+  background: #ffffff;
+  border: 1px solid #e8f2ec;
+  color: #1e1e1e;
 }
 
 .quick-item.secondary:hover {
-  background: #f0faf4;
-  border-color: #b8d9c4;
+  background: #f3faf6;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 92, 56, 0.1);
 }
 
+/* MORE */
 .quick-item.more {
-  background: #e8f5e9;
+  background: #eaf7f0;
   color: #1e5c38;
   font-weight: 600;
-  border: 1px solid #c8e6c9;
-}
-
-.quick-item.more:hover {
-  background: #d4edda;
 }
 
 /* ICON */
@@ -87,12 +72,18 @@
   margin-bottom: 6px;
 }
 
-.quick-icon.small {
-  margin-bottom: 4px;
-}
-
 .quick-item p {
   font-size: 11px;
+  font-weight: 500;
   text-align: center;
-  line-height: 1.3;
+}
+.quick-img {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 6px;
+}
+
+.quick-img.small {
+  width: 22px;
+  height: 22px;
 }
