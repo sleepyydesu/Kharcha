@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import BalancePanel from "./components/BalancePanel";
 import Dashboard from "./pages/Dashboard";
 import LoadMoney from "./pages/LoadMoney";
+import Statements from "./pages/Statements";
 import "./styles/variables.css";
 import "./App.css";
 
@@ -11,14 +12,12 @@ function App() {
     <BrowserRouter>
       <div className="app-shell">
         <Sidebar />
-
-        {/* Always-visible balance panel — fixed right on desktop, fixed top on mobile */}
         <BalancePanel />
-
         <main className="app-content">
           <Routes>
-            <Route path="/"     element={<Dashboard />} />
-            <Route path="/load" element={<LoadMoney />} />
+            <Route path="/"           element={<Dashboard />} />
+            <Route path="/load"       element={<LoadMoney />} />
+            <Route path="/statements" element={<Statements />} />
           </Routes>
         </main>
       </div>
