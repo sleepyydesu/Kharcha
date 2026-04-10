@@ -1,9 +1,9 @@
 .dashboard { position: relative; min-height: 100vh; }
-.dashboard__balance-mobile { display: none; }
+.dashboard__balance-mobile  { display: none; }
 .dashboard__balance-desktop { display: block; }
 .dashboard__body { padding: 40px 36px; }
-.dashboard__title { font-size: 26px; font-weight: 800; margin: 0 0 8px; color: #1a1f1c; letter-spacing: -0.4px; }
-.dashboard__sub   { font-size: 15px; color: #6b7f72; margin: 0; }
+.dashboard__title { font-size: 26px; font-weight: 800; margin: 0 0 8px; color: var(--text-color); letter-spacing: -0.4px; }
+.dashboard__sub   { font-size: 15px; color: var(--text-sub); margin: 0; }
 
 @media (max-width: 900px) {
   .dashboard__balance-mobile  { display: block; }

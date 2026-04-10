@@ -52,7 +52,6 @@ export default function Sidebar() {
       {/* ── Desktop Sidebar ─────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar__logo">
-          <span className="sidebar__logo-mark">₨</span>
           <span className="sidebar__logo-text">Kharcha</span>
         </div>
 

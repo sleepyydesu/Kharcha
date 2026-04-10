@@ -1,0 +1,279 @@
+/* ── Page shell ─────────────────────────────────────────────── */
+.txd-page {
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.txd-container {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Back button ─────────────────────────────────────────────── */
+.txd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-sub);
+  font-size: .82rem;
+  font-weight: 600;
+  padding: .3rem 0;
+  transition: color .15s;
+  width: fit-content;
+}
+.txd-back:hover { color: var(--primary); }
+
+/* ── Error ───────────────────────────────────────────────────── */
+.txd-error {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  padding: .875rem 1rem;
+  font-size: .85rem;
+  color: var(--error-text);
+}
+
+/* ── Skeletons ───────────────────────────────────────────────── */
+.txd-skeletons { display: flex; flex-direction: column; gap: 1rem; }
+
+.txd-skeleton {
+  background: linear-gradient(90deg, var(--skel-from) 25%, var(--skel-to) 50%, var(--skel-from) 75%);
+  background-size: 200% 100%;
+  animation: skelPulse 1.4s ease-in-out infinite;
+  border-radius: 14px;
+}
+.txd-skeleton--hero  { height: 172px; }
+.txd-skeleton--card  { height: 140px; }
+
+@keyframes skelPulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Hero card ───────────────────────────────────────────────── */
+.txd-hero {
+  border-radius: 16px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.txd-hero--sent {
+  background: linear-gradient(135deg, #1a5c39 0%, #0f3d26 100%);
+  color: #fff;
+}
+.txd-hero--received {
+  background: linear-gradient(135deg, #14532d 0%, #15803d 100%);
+  color: #fff;
+}
+
+.txd-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .25rem;
+}
+
+.txd-hero__label {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+
+.txd-hero__amount {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+
+.txd-hero__sign {
+  opacity: .8;
+  margin-right: .1em;
+}
+
+.txd-hero__meta {
+  font-size: .8rem;
+  opacity: .7;
+  margin-top: .15rem;
+}
+
+.txd-hero__balance {
+  font-size: .78rem;
+  opacity: .6;
+  margin-top: .05rem;
+}
+
+/* ── Status badge ────────────────────────────────────────────── */
+.txd-status {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,.35);
+  color: #fff;
+  background: rgba(255,255,255,.15);
+}
+.txd-status--completed { border-color: rgba(134,239,172,.5); background: rgba(134,239,172,.2); }
+.txd-status--pending   { border-color: rgba(253,224,71,.5);  background: rgba(253,224,71,.2); }
+.txd-status--failed    { border-color: rgba(252,165,165,.5); background: rgba(252,165,165,.2); }
+
+/* ── Card ────────────────────────────────────────────────────── */
+.txd-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.txd-card__title {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--primary);
+  padding-bottom: .875rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ── Parties ─────────────────────────────────────────────────── */
+.txd-parties {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.txd-parties__arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.txd-party {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.txd-party__info {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+}
+
+.txd-party__role {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.txd-party__name {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.txd-party__sub {
+  font-size: .78rem;
+  color: var(--text-sub);
+}
+
+.txd-party__type {
+  font-size: .7rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+/* ── Avatars ─────────────────────────────────────────────────── */
+.txd-avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.txd-avatar--img {
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.txd-avatar--initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── Details list ────────────────────────────────────────────── */
+.txd-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.txd-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: .65rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.txd-detail-row:last-child { border-bottom: none; }
+
+.txd-detail-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.txd-detail-value {
+  font-size: .83rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-align: right;
+  word-break: break-all;
+}
+
+.txd-detail-value--mono {
+  font-family: 'Courier New', monospace;
+  font-size: .75rem;
+  color: var(--text-sub);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 500px) {
+  .txd-page { padding: 1.5rem 1rem; }
+  .txd-hero__amount { font-size: 1.9rem; }
+  .txd-parties { flex-direction: column; gap: .75rem; align-items: flex-start; }
+  .txd-parties__arrow { transform: rotate(90deg); align-self: center; }
+}

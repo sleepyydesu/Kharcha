@@ -2,17 +2,148 @@ html {
   font-size: 16px;
 }
 
+/* Light mode */
 :root {
-  --primary: #1a5c39;
-  --background: #faf9f6;
-  --shaded-background: #f4f4f0;
-  --accent: #f5c800;
-  --selected: #f0d973;
-  --text-color: #000000;
-  --selected-text: #004325;
+  /* Brand */
+  --primary:            #1a5c39;
+  --primary-dark:       #154d30;
+  --accent:             #f5c800;
+  --selected:           #f0d973;
+  --primary-text:       #133f28;
 
-  --sidebar-width: 18rem;
+  /* Backgrounds */
+  --background:         #faf9f6;
+  --shaded-background:  #f4f4f0;
+  --card:               #ffffff;
 
-  --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --radius: 15px;
+  /* Borders */
+  --border:             #e2e1da;
+  --border-subtle:      #eeede6;
+  --border-panel:       #e8ece5;
+
+  /* Text */
+  --text-color:         #111111;
+  --text-sub:           #666666;
+  --text-muted:         #999999;
+  --text-sidebar-item:  rgba(255,255,255,0.75);
+  --text-hello:         #8a9e90;
+
+  /* Inputs */
+  --input-bg:           #faf9f6;
+
+  /* Status — success */
+  --success-text:       #1a5c39;
+  --success-bg:         #e6f4ed;
+  --success-border:     #c6e8d4;
+
+  /* Status — error */
+  --error-text:         #c0392b;
+  --error-bg:           #fff5f5;
+  --error-border:       #fecaca;
+
+  /* Status — warning */
+  --warning-text:       #8a6b00;
+  --warning-bg:         #fffbe6;
+  --warning-border:     #f5e090;
+
+  /* Action icon chips */
+  --icon-blue-bg:       #e8f0fe;
+  --icon-blue-text:     #1a56db;
+  --icon-amber-bg:      #fff7e0;
+  --icon-amber-text:    #b45309;
+  --icon-purple-bg:     #f3e8ff;
+  --icon-purple-text:   #7c3aed;
+
+  /* KYC card */
+  --kyc-bg:             #f0faf4;
+  --kyc-border:         #c6e8d4;
+  --kyc-icon:           #1a5c39;
+
+  /* Skeleton shimmer */
+  --skel-from:          #f0eeea;
+  --skel-to:            #e8e6e1;
+
+  /* Misc */
+  --shadow:             0 2px 8px rgba(0,0,0,0.1);
+  --shadow-card:        0 2px 12px rgba(0,0,0,0.07);
+  --radius:             15px;
+  --sidebar-width:      18rem;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Brand */
+  --primary:            #1a5c39;
+  --primary-dark:       #154d30;
+  --accent:             #f5c800;
+  --selected:           #d4b800;
+  --primary-text:       #133f28;
+
+  /* Backgrounds */
+  --background:         #0f1a14;
+  --shaded-background:  #162010;
+  --card:               #182517;
+
+  /* Borders */
+  --border:             #2a3d2f;
+  --border-subtle:      #2a3d2f;
+  --border-panel:       #2a3d2f;
+
+  /* Text */
+  --text-color:         #e4ede7;
+  --text-sub:           #8ba897;
+  --text-muted:         #5e7a68;
+  --text-sidebar-item:  rgba(255,255,255,0.75);
+  --text-hello:         #6b9e7a;
+
+  /* Inputs */
+  --input-bg:           #0d1a10;
+
+  /* Status — success */
+  --success-text:       #4ade80;
+  --success-bg:         #1a3325;
+  --success-border:     #2e5040;
+
+  /* Status — error */
+  --error-text:         #f87171;
+  --error-bg:           #2a1010;
+  --error-border:       #5a2020;
+
+  /* Status — warning */
+  --warning-text:       #fbbf24;
+  --warning-bg:         #2a2200;
+  --warning-border:     #4a3a00;
+
+  /* Action icon chips */
+  --icon-blue-bg:       #1e2f4d;
+  --icon-blue-text:     #60a5fa;
+  --icon-amber-bg:      #2a1f00;
+  --icon-amber-text:    #fbbf24;
+  --icon-purple-bg:     #2d1f4a;
+  --icon-purple-text:   #c084fc;
+
+  /* KYC card */
+  --kyc-bg:             #152014;
+  --kyc-border:         #2e4f35;
+  --kyc-icon:           #4ade80;
+
+  /* Skeleton shimmer */
+  --skel-from:          #1a2e20;
+  --skel-to:            #223528;
+
+  /* Misc */
+  --shadow:             0 2px 8px rgba(0,0,0,0.35);
+  --shadow-card:        0 2px 16px rgba(0,0,0,0.3);
+  --radius:             15px;
+  --sidebar-width:      18rem;
+}
+
+/* resets */
+[data-theme="dark"] body,
+[data-theme="dark"] .app-shell,
+[data-theme="dark"] .app-content {
+  background: var(--background);
+  color: var(--text-color);
 }
