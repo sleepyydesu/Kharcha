@@ -6,7 +6,7 @@
 .lm__back {
   display: inline-flex; align-items: center; gap: 6px;
   border: none; background: none;
-  color: #6b7f72; font-size: 14px; font-weight: 500;
+  color: var(--text-sub); font-size: 14px; font-weight: 500;
   cursor: pointer; padding: 0; margin-bottom: 32px;
   transition: color 0.15s;
 }
@@ -23,25 +23,23 @@
   border: 1.5px solid;
 }
 .lm__banner--success {
-  background: rgba(26,92,57,0.07);
-  border-color: rgba(26,92,57,0.25);
-  color: #1a5c39;
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
 }
 .lm__banner--info {
   background: rgba(37,99,235,0.07);
   border-color: rgba(37,99,235,0.25);
-  color: #1d4ed8;
+  color: var(--icon-blue-text);
 }
 .lm__banner--error {
-  background: rgba(192,57,43,0.07);
-  border-color: rgba(192,57,43,0.25);
-  color: #c0392b;
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
 }
 .lm__banner-icon {
-  font-size: 18px;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 1px;
+  font-size: 18px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
 }
 .lm__banner div { flex: 1; }
 .lm__banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
@@ -58,11 +56,11 @@
 /* ── Choose view ─────────────────────────────────────────── */
 .lm__heading {
   font-size: 30px; font-weight: 800;
-  color: #1a1f1c; letter-spacing: -0.5px;
+  color: var(--text-color); letter-spacing: -0.5px;
   margin: 0 0 8px;
 }
 .lm__sub {
-  font-size: 15px; color: #6b7f72;
+  font-size: 15px; color: var(--text-sub);
   margin: 0 0 32px;
 }
 
@@ -73,9 +71,9 @@
 .lm__method-card {
   display: flex; align-items: center; gap: 18px;
   padding: 22px 20px;
-  border: 1.5px solid #dde5da;
+  border: 1.5px solid var(--border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--card);
   cursor: pointer; text-align: left;
   transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
 }
@@ -92,7 +90,7 @@
   flex-shrink: 0;
 }
 .lm__method-icon--khalti { background: #f3eafa; }
-.lm__method-icon--gift   { background: #fffbe6; }
+.lm__method-icon--gift   { background: var(--warning-bg); }
 
 .lm__method-icon img,
 .lm__method-icon svg { width: 40px; height: 40px; }
@@ -103,21 +101,21 @@
 }
 .lm__method-name {
   font-size: 17px; font-weight: 700;
-  color: #1a1f1c;
+  color: var(--text-color);
 }
 .lm__method-desc {
-  font-size: 13px; color: #7a9080;
+  font-size: 13px; color: var(--text-sub);
   line-height: 1.4;
 }
 .lm__method-arrow {
-  font-size: 26px; color: #c4cfc0;
+  font-size: 26px; color: var(--border);
   line-height: 1;
 }
 
 /* ── Form wrap ───────────────────────────────────────────── */
 .lm__form-wrap {
-  background: #fff;
-  border: 1px solid #e0e8e0;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 22px;
   padding: 30px;
 }
@@ -126,7 +124,7 @@
   display: flex; align-items: center; gap: 16px;
   margin-bottom: 28px;
   padding-bottom: 22px;
-  border-bottom: 1px solid #edf2ec;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .lm__form-header-img {
   width: 48px; height: 48px;
@@ -136,16 +134,16 @@
 
 .lm__form-title {
   font-size: 20px; font-weight: 700;
-  color: #1a1f1c; margin: 0 0 3px;
+  color: var(--text-color); margin: 0 0 3px;
 }
 .lm__form-sub {
-  font-size: 13px; color: #7a9080; margin: 0;
+  font-size: 13px; color: var(--text-sub); margin: 0;
 }
 
 .lm__label {
   display: block;
   font-size: 12px; font-weight: 600;
-  color: #7a9080; letter-spacing: 0.4px;
+  color: var(--text-sub); letter-spacing: 0.4px;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
@@ -153,7 +151,7 @@
 /* Amount input */
 .lm__input-row {
   display: flex; align-items: center;
-  border: 1.5px solid #d0dcd2;
+  border: 1.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden; margin-bottom: 16px;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -164,27 +162,27 @@
 }
 .lm__prefix {
   padding: 0 16px;
-  font-size: 20px; color: #9aad9f;
-  border-right: 1.5px solid #e0e8e0;
+  font-size: 20px; color: var(--text-muted);
+  border-right: 1.5px solid var(--border);
   line-height: 1; user-select: none;
 }
 .lm__input {
   flex: 1; border: none; background: transparent;
   padding: 16px 14px;
   font-size: 22px; font-weight: 700;
-  color: #1a1f1c; outline: none;
+  color: var(--text-color); outline: none;
 }
 
 /* Code input */
 .lm__input--code {
   width: 100%;
-  border: 1.5px solid #d0dcd2;
+  border: 1.5px solid var(--border);
   border-radius: 12px;
-  padding: 16px 16px;
+  padding: 16px;
   font-size: 18px; font-weight: 600;
   letter-spacing: 3px;
-  color: #1a1f1c;
-  background: #fff; outline: none;
+  color: var(--text-color);
+  background: var(--card); outline: none;
   margin-bottom: 20px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -200,11 +198,11 @@
 }
 .lm__preset {
   padding: 8px 16px;
-  border: 1.5px solid #dde5da;
+  border: 1.5px solid var(--border);
   border-radius: 999px;
-  background: #f5f7f4;
+  background: var(--shaded-background);
   font-size: 13px; font-weight: 500;
-  color: #5a7060; cursor: pointer;
+  color: var(--text-sub); cursor: pointer;
   transition: all 0.15s;
 }
 .lm__preset:hover {
@@ -234,21 +232,20 @@
 .lm__pay-btn--khalti:hover:not(:disabled) { background: #4a2475; }
 
 .lm__pay-btn--gift   { background: var(--primary); color: #fff; }
-.lm__pay-btn--gift:hover:not(:disabled) { background: #133f28; }
+.lm__pay-btn--gift:hover:not(:disabled) { background: var(--primary-dark); }
 
-/* default (success done) */
 .lm__pay-btn:not(.lm__pay-btn--khalti):not(.lm__pay-btn--gift) {
   background: var(--primary); color: #fff;
 }
 
 .lm__note {
   text-align: center;
-  font-size: 12px; color: #aab8ae;
+  font-size: 12px; color: var(--text-muted);
   margin-top: 10px;
 }
 .lm__error {
-  font-size: 13px; color: #c0392b;
-  background: rgba(192,57,43,0.08);
+  font-size: 13px; color: var(--error-text);
+  background: var(--error-bg);
   border-radius: 8px;
   padding: 10px 14px;
   margin-bottom: 16px;
@@ -262,7 +259,7 @@
 .lm__success-ring {
   width: 72px; height: 72px;
   border-radius: 50%;
-  background: rgba(26,92,57,0.1);
+  background: var(--success-bg);
   color: var(--primary);
   font-size: 36px; font-weight: 700;
   display: grid; place-items: center;
@@ -270,10 +267,10 @@
 }
 .lm__success h2 {
   font-size: 24px; font-weight: 800;
-  color: #1a1f1c; margin: 0 0 8px;
+  color: var(--text-color); margin: 0 0 8px;
 }
 .lm__success p {
-  color: #6b7f72; font-size: 15px;
+  color: var(--text-sub); font-size: 15px;
   margin: 0 0 28px;
 }
 

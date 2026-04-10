@@ -4,6 +4,8 @@ import BalancePanel from "./components/BalancePanel";
 import Dashboard from "./pages/Dashboard";
 import LoadMoney from "./pages/LoadMoney";
 import Statements from "./pages/Statements";
+import StatementDetail from "./pages/StatementDetail";
+import Account from "./pages/Account";
 import "./styles/variables.css";
 import "./App.css";
 
@@ -15,9 +17,11 @@ function App() {
         <BalancePanel />
         <main className="app-content">
           <Routes>
-            <Route path="/"           element={<Dashboard />} />
-            <Route path="/load"       element={<LoadMoney />} />
-            <Route path="/statements" element={<Statements />} />
+            <Route path="/"                           element={<Dashboard />} />
+            <Route path="/load"                       element={<LoadMoney />} />
+            <Route path="/statements"                 element={<Statements />} />
+            <Route path="/statements/:transaction_id" element={<StatementDetail />} />
+            <Route path="/account"                    element={<Account />} />
           </Routes>
         </main>
       </div>

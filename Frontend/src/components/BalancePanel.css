@@ -4,14 +4,15 @@
   right: 0; top: 0;
   width: var(--sidebar-width);
   height: 100vh;
-  background: #fff;
-  border-left: 1px solid #e8ece5;
+  background: var(--card);
+  border-left: 1px solid var(--border-panel);
   padding: 36px 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 0;
   z-index: 100;
   overflow-y: auto;
+  transition: background 0.2s, border-color 0.2s;
 }
 
 .balance-panel__top {
@@ -28,7 +29,7 @@
 }
 .balance-panel__hello {
   font-size: 12px;
-  color: #8a9e90;
+  color: var(--text-hello);
   font-weight: 500;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -36,7 +37,7 @@
 .balance-panel__name {
   font-size: 17px;
   font-weight: 700;
-  color: #1a1f1c;
+  color: var(--text-color);
   line-height: 1.25;
   word-break: break-word;
 }
@@ -44,9 +45,9 @@
 /* Toggle button */
 .balance-panel__toggle {
   width: 36px; height: 36px;
-  border: 1.5px solid #e0e8e2;
+  border: 1.5px solid var(--border);
   border-radius: 50%;
-  background: #f5f7f4;
+  background: var(--shaded-background);
   cursor: pointer;
   display: grid; place-items: center;
   transition: background 0.15s, border-color 0.15s;
@@ -54,7 +55,7 @@
   padding: 0;
 }
 .balance-panel__toggle:hover {
-  background: #e8f0e9;
+  background: var(--border);
   border-color: var(--primary);
 }
 .balance-panel__toggle-icon {
@@ -108,13 +109,12 @@
     width: 100%;
     height: auto;
     border-left: none;
-    border-bottom: 1px solid #e8ece5;
+    border-bottom: 1px solid var(--border-panel);
     padding: 14px 16px 12px;
     align-items: center;
     gap: 12px;
     flex-wrap: nowrap;
     z-index: 150;
-    background: #fff;
   }
 
   .balance-panel__top {

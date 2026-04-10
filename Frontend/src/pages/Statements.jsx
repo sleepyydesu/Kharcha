@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getTransactions, getTransactionCategories } from "../services/api";
 import "./Statements.css";
 
@@ -42,7 +43,48 @@ function Avatar({ name, src, icon }) {
   return <span className="stmt-avatar stmt-avatar--initials">{initials}</span>;
 }
 
+// Load SheetJS from CDN and export xlsx
+function exportToXLSX(transactions, startDate, endDate) {
+  const doExport = () => {
+    const XLSX = window.XLSX;
+    const rows = [
+      ["Transaction ID", "Date", "Time", "Type", "Counterparty", "Category", "Remarks", "Amount (Rs.)", "Status", "Method"],
+      ...transactions.map(t => [
+        t.transaction_id,
+        fmtDate(t.created_at),
+        fmtTime(t.created_at),
+        t.type === "sent" ? "Sent" : "Received",
+        t.counterparty?.display_name || "Unknown",
+        t.category || "",
+        t.remarks || "",
+        Number(t.amount).toFixed(2),
+        t.status || "",
+        t.method || "",
+      ]),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 38 }, { wch: 14 }, { wch: 10 }, { wch: 10 },
+      { wch: 22 }, { wch: 16 }, { wch: 24 }, { wch: 14 },
+      { wch: 12 }, { wch: 12 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+    XLSX.writeFile(wb, `kharcha-statements-${startDate}-to-${endDate}.xlsx`);
+  };
+
+  if (window.XLSX) {
+    doExport();
+  } else {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = doExport;
+    document.head.appendChild(s);
+  }
+}
+
 export default function Statements() {
+  const navigate = useNavigate();
   const defaults = getDefaults();
 
   const [search,     setSearch]     = useState("");
@@ -55,6 +97,7 @@ export default function Statements() {
   const [pagination,  setPagination]  = useState(null);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [exporting,   setExporting]   = useState(false);
   const [error,       setError]       = useState(null);
   const [applied, setApplied] = useState({
     search: "", txType: "all", categoryId: "",
@@ -103,6 +146,34 @@ export default function Statements() {
     fetchStatements(next, 1, false);
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await getTransactions({
+        type:        applied.txType,
+        category_id: applied.categoryId || undefined,
+        start_date:  applied.startDate,
+        end_date:    applied.endDate,
+        page:  1,
+        limit: 1000,
+      });
+      const all = res.statements || [];
+      const q = applied.search.trim().toLowerCase();
+      const toExport = q
+        ? all.filter(t =>
+            (t.counterparty?.display_name || "").toLowerCase().includes(q) ||
+            (t.remarks || "").toLowerCase().includes(q) ||
+            (t.category || "").toLowerCase().includes(q)
+          )
+        : all;
+      exportToXLSX(toExport, applied.startDate, applied.endDate);
+    } catch (err) {
+      alert("Export failed: " + (err.message || "Unknown error"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = applied.search.trim().toLowerCase();
     if (!q) return statements;
@@ -125,13 +196,19 @@ export default function Statements() {
             <h1 className="stmt-title">Transaction History</h1>
             <p className="stmt-subtitle">{fmtDate(applied.startDate)} — {fmtDate(applied.endDate)}</p>
           </div>
-          <button className="stmt-export-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            EXPORT
+          <button className="stmt-export-btn" onClick={handleExport} disabled={exporting || loading}>
+            {exporting ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="stmt-spin">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            )}
+            {exporting ? "EXPORTING…" : "EXPORT"}
           </button>
         </div>
 
@@ -268,7 +345,13 @@ export default function Statements() {
                   return (
                     <div key={t.transaction_id}>
                       {thisDay !== prevDay && <div className="stmt-date-sep">{fmtDate(t.created_at)}</div>}
-                      <div className="stmt-row">
+                      <div
+                        className="stmt-row stmt-row--clickable"
+                        onClick={() => navigate(`/statements/${t.transaction_id}`)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => e.key === "Enter" && navigate(`/statements/${t.transaction_id}`)}
+                      >
                         <Avatar name={t.counterparty?.display_name} src={t.counterparty?.profile_picture} icon={t.category_icon} />
                         <div className="stmt-row__body">
                           <span className="stmt-row__name">{t.counterparty?.display_name || "Unknown"}</span>
@@ -286,6 +369,9 @@ export default function Statements() {
                             {t.status}
                           </span>
                         </div>
+                        <svg className="stmt-row__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="m9 18 6-6-6-6"/>
+                        </svg>
                       </div>
                     </div>
                   );
