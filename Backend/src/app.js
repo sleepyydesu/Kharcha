@@ -19,11 +19,6 @@ const {
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
-const categoryRoutes = require("./routes/catgoryRoutes");
-const expenseRoutes = require("./routes/expenseRoutes");
-const incomeRoutes = require("./routes/incomeRoutes");
-const budgetRoutes = require("./routes/budgetRoutes");
-const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
@@ -70,11 +65,6 @@ app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gift-cards", giftCardRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/expenses", expenseRoutes);
-app.use("/api/income", incomeRoutes);
-app.use("/api/budgets", budgetRoutes);
-app.use("/api/analytics", analyticsRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {

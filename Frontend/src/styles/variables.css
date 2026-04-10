@@ -1,0 +1,18 @@
+html {
+  font-size: 16px;
+}
+
+:root {
+  --primary: #1a5c39;
+  --background: #faf9f6;
+  --shaded-background: #f4f4f0;
+  --accent: #f5c800;
+  --selected: #f0d973;
+  --text-color: #000000;
+  --selected-text: #004325;
+
+  --sidebar-width: 18rem;
+
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --radius: 15px;
+}

@@ -1,5 +1,9 @@
 const { initiatePayment, verifyPayment } = require("../services/khaltiService");
 
+// Frontend base URL — where we redirect the user's browser after Khalti callback
+// Set FRONTEND_URL in .env  e.g.  FRONTEND_URL=http://localhost:5173
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 // ─────────────────────────────────────────────────────────────
 //  INITIATE KHALTI PAYMENT
 //  POST /api/khalti/initiate
@@ -16,24 +20,15 @@ const initiateKhaltiPayment = async (req, res, next) => {
         const { amount } = req.body;
 
         if (!amount) {
-            return res.status(400).json({
-                success: false,
-                message: "amount is required.",
-            });
+            return res.status(400).json({ success: false, message: "amount is required." });
         }
 
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount < 10) {
-            return res.status(400).json({
-                success: false,
-                message: "Minimum load amount is NPR 10.",
-            });
+            return res.status(400).json({ success: false, message: "Minimum load amount is NPR 10." });
         }
         if (parsedAmount > 100000) {
-            return res.status(400).json({
-                success: false,
-                message: "Maximum load amount is NPR 1,00,000.",
-            });
+            return res.status(400).json({ success: false, message: "Maximum load amount is NPR 1,00,000." });
         }
 
         const { pidx, payment_url } = await initiatePayment(parsedAmount, account_id);
@@ -51,47 +46,43 @@ const initiateKhaltiPayment = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-//  VERIFY KHALTI PAYMENT  (Khalti redirect / callback)
+//  VERIFY KHALTI PAYMENT  (Khalti browser redirect / callback)
 //  GET /api/khalti/verify?pidx=<token>
-//  No JWT — Khalti redirects the user here after payment.
 //
-//  Query: { pidx }
+//  Khalti redirects the user's BROWSER here after payment.
+//  We verify the payment, then redirect the browser back to
+//  the frontend with the result as query params — never JSON.
 //
-//  Returns: { success, transaction_id, amount, balance_after }
-//  The frontend can use this response to show a success screen.
+//  Frontend landing page: /load
+//    Success: /load?khalti=success&amount=500&pidx=xxx
+//    Already:  /load?khalti=already
+//    Failure:  /load?khalti=failed&message=...
 // ─────────────────────────────────────────────────────────────
 const verifyKhaltiPayment = async (req, res, next) => {
+    const { pidx } = req.query;
+    const frontendLoad = `${FRONTEND_URL}/load`;
+
+    if (!pidx) {
+        return res.redirect(`${frontendLoad}?khalti=failed&message=Missing+pidx`);
+    }
+
     try {
-        const { pidx } = req.query;
-
-        if (!pidx) {
-            return res.status(400).json({
-                success: false,
-                message: "pidx query parameter is required.",
-            });
-        }
-
         const result = await verifyPayment(pidx);
 
         if (result.already_processed) {
-            return res.status(200).json({
-                success: true,
-                message: "Payment was already processed.",
-                pidx,
-            });
+            return res.redirect(`${frontendLoad}?khalti=already&pidx=${encodeURIComponent(pidx)}`);
         }
 
-        return res.status(200).json({
-            success: true,
-            message: `NPR ${result.amount} loaded into your Kharcha wallet.`,
-            transaction_id: result.transaction_id,
-            amount: result.amount,
-            balance_after: result.balance_after,
-            pidx,
-        });
+        return res.redirect(
+            `${frontendLoad}?khalti=success` +
+            `&pidx=${encodeURIComponent(pidx)}` +
+            `&amount=${encodeURIComponent(result.amount)}` +
+            `&balance=${encodeURIComponent(result.balance_after)}`
+        );
     } catch (error) {
         console.error("[verifyKhaltiPayment]", error?.response?.data || error.message);
-        next(error);
+        const msg = encodeURIComponent(error.message || "Verification failed");
+        return res.redirect(`${frontendLoad}?khalti=failed&pidx=${encodeURIComponent(pidx)}&message=${msg}`);
     }
 };
 
