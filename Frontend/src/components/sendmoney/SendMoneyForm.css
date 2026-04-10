@@ -1,0 +1,86 @@
+:root {
+  --primary-green: #1e5c38;
+  --bg-light: #f3f4f1;
+  --input-bg: #f8fafc;
+  --text-main: #1e293b;
+}
+
+/* 1. Make the container larger and more prominent */
+.form-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px; /* Increased from your current small width */
+  padding: 56px; /* Massive internal padding for a premium feel */
+  border-radius: 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+  margin: 40px auto;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* 2. Larger, cleaner heading */
+.form-heading {
+  font-size: 32px; /* Large and bold */
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 40px;
+  letter-spacing: -1px;
+}
+
+.form-group {
+  margin-bottom: 28px;
+}
+
+/* 3. Refined, larger labels */
+.form-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* 4. Inputs that feel substantial to type in */
+.form-input {
+  width: 100%;
+  padding: 18px 24px; /* Spacious typing area */
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
+  background: var(--input-bg);
+  font-size: 17px;
+  color: var(--text-main);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  background: #ffffff;
+  box-shadow: 0 0 0 5px rgba(30, 92, 56, 0.1);
+}
+
+/* 5. The "Continue" button - big and clickable */
+.submit-btn {
+  width: 100%;
+  padding: 20px;
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 18px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 20px rgba(30, 92, 56, 0.2);
+}
+
+.submit-btn:hover {
+  background: #144026;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(30, 92, 56, 0.3);
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+}

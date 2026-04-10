@@ -1,0 +1,50 @@
+/* ============================================
+   recenttransactions.css — eSewa Minimal Clean Theme
+   ============================================ */
+
+.recent-box {
+  margin-top: 20px;
+}
+
+.txn-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 14px;
+  background: white;
+  border-radius: 14px;
+  margin-bottom: 8px;
+  border: 1px solid #e8f0ea;
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.txn-item:hover {
+  box-shadow: 0 4px 14px rgba(30, 92, 56, 0.08);
+  transform: translateY(-1px);
+}
+
+.txn-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1a1a1a;
+}
+
+.txn-time {
+  font-size: 11px;
+  color: #9aab9f;
+  margin-top: 2px;
+}
+
+.debit {
+  color: #d63031;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.credit {
+  color: #1e5c38;
+  font-weight: 700;
+  font-size: 13px;
+}

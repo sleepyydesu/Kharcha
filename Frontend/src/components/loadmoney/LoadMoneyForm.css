@@ -1,0 +1,22 @@
+.method-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.method-btn {
+  padding: 10px 20px;
+  border: 1.5px solid #e0e0d8;
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.method-active {
+  border-color: #1e5c38;
+  background: #1e5c38;
+  color: white;
+  font-weight: 600;
+}

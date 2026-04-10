@@ -1,0 +1,35 @@
+.page-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #edede8;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  background: #1e5c38;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.page-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.page-content {
+  flex: 1;
+  padding: 20px 16px;
+  width: 100%;
+}

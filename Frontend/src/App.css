@@ -1,18 +1,25 @@
+/* ============================================
+   app.css — eSewa Minimal Clean Theme
+   ============================================ */
+
 .counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
+  font-size: 15px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  color: #1e5c38;
+  background: #e8f5e9;
+  border: 1.5px solid transparent;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
   margin-bottom: 24px;
 
   &:hover {
-    border-color: var(--accent-border);
+    border-color: #a5d6a7;
+    background: #d4edda;
   }
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid #1e5c38;
     outline-offset: 2px;
   }
 }
@@ -72,7 +79,7 @@
 
 #next-steps {
   display: flex;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e6f0ea;
   text-align: left;
 
   & > div {
@@ -96,11 +103,11 @@
 }
 
 #docs {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid #e6f0ea;
 
   @media (max-width: 1024px) {
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #e6f0ea;
   }
 }
 
@@ -116,19 +123,23 @@
   }
 
   a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
+    color: #1e5c38;
+    font-size: 15px;
+    border-radius: 10px;
+    background: #f0faf4;
     display: flex;
-    padding: 6px 12px;
+    padding: 7px 14px;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    border: 1px solid #d4edda;
+    transition:
+      box-shadow 0.2s,
+      background 0.2s;
 
     &:hover {
-      box-shadow: var(--shadow);
+      background: #e8f5e9;
+      box-shadow: 0 4px 14px rgba(30, 92, 56, 0.12);
     }
     .button-icon {
       height: 18px;
@@ -155,7 +166,7 @@
 
 #spacer {
   height: 88px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e6f0ea;
   @media (max-width: 1024px) {
     height: 48px;
   }
@@ -167,7 +178,7 @@
 
   &::before,
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: -4.5px;
     border: 5px solid transparent;
@@ -175,10 +186,10 @@
 
   &::before {
     left: 0;
-    border-left-color: var(--border);
+    border-left-color: #a5d6a7;
   }
   &::after {
     right: 0;
-    border-right-color: var(--border);
+    border-right-color: #a5d6a7;
   }
 }

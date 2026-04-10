@@ -1,0 +1,54 @@
+:root {
+  --primary-green: #1e5c38;
+  --primary-light: rgba(30, 92, 56, 0.08);
+  --border-color: #e2e8f0;
+  --text-main: #1e293b;
+}
+
+.method-list {
+  display: flex;
+  gap: 16px; /* More breathing room */
+  flex-wrap: wrap;
+  margin-top: 12px;
+  margin-bottom: 24px;
+}
+
+.method-btn {
+  flex: 1; /* Makes buttons grow to fill space equally */
+  min-width: 120px;
+  padding: 18px 24px; /* Significantly larger hit area */
+  border: 2px solid var(--border-color);
+  border-radius: 16px; /* Matching the input radius */
+  background: #ffffff;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.method-btn:hover {
+  border-color: var(--primary-green);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.method-active {
+  border-color: var(--primary-green);
+  background: var(--primary-green) !important;
+  color: white !important;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(30, 92, 56, 0.2);
+  transform: scale(1.02); /* Slight pop when selected */
+}
+
+/* Optional: If you use icons inside the buttons */
+.method-btn i,
+.method-btn svg {
+  margin-right: 10px;
+  font-size: 18px;
+}

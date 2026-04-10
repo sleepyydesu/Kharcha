@@ -1,0 +1,98 @@
+/* ============================================
+   quickactions.css — eSewa Minimal Clean Theme
+   ============================================ */
+
+.quick-wrapper {
+  margin-top: 20px;
+}
+
+/* TOP ROW */
+.quick-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.quick-grid.expanded {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ITEM */
+.quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  padding: 14px 8px;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.quick-item:active {
+  transform: scale(0.96);
+}
+
+/* PRIMARY (TOP BUTTONS) */
+.quick-item.primary {
+  background: #1e5c38;
+  color: white;
+  flex: 1;
+  border: none;
+}
+
+.quick-item.primary:hover {
+  background: #174d2f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(30, 92, 56, 0.3);
+}
+
+/* SECONDARY */
+.quick-item.secondary {
+  background: white;
+  color: #222;
+  border: 1px solid #e6f0ea;
+}
+
+.quick-item.secondary:hover {
+  background: #f0faf4;
+  border-color: #b8d9c4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 92, 56, 0.1);
+}
+
+.quick-item.more {
+  background: #e8f5e9;
+  color: #1e5c38;
+  font-weight: 600;
+  border: 1px solid #c8e6c9;
+}
+
+.quick-item.more:hover {
+  background: #d4edda;
+}
+
+/* ICON */
+.quick-icon {
+  margin-bottom: 6px;
+}
+
+.quick-icon.small {
+  margin-bottom: 4px;
+}
+
+.quick-item p {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.3;
+}

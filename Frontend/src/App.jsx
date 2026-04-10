@@ -1,121 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+/* PAGES */
+import Home from "./pages/Home";
+import SendMoney from "./pages/SendMoney";
+import SendMoneyConfirm from "./pages/SendMoneyConfirm";
+import LoadMoney from "./pages/LoadMoney";
+import LoadMoneyConfirm from "./pages/LoadMoneyConfirm";
+import TopUp from "./pages/TopUp";
+import Statements from "./pages/Statements";
 
+/* ================= PLACEHOLDER ================= */
+const Placeholder = ({ name }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100vh",
+      fontSize: "20px",
+      fontWeight: "600",
+      color: "#1E5C38",
+    }}
+  >
+    {name} — Coming Soon
+  </div>
+);
+
+/* ================= APP ================= */
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <BrowserRouter>
+      <Routes>
+        {/* HOME */}
+        <Route path="/" element={<Home />} />
 
-      <div className="ticks"></div>
+        {/* SEND MONEY */}
+        <Route path="/send" element={<SendMoney />} />
+        <Route path="/send/confirm" element={<SendMoneyConfirm />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* LOAD MONEY */}
+        <Route path="/load" element={<LoadMoney />} />
+        <Route path="/load/confirm" element={<LoadMoneyConfirm />} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* TOPUP (if separate page exists) */}
+        <Route path="/topup" element={<TopUp />} />
+
+        {/* ✅ STATEMENTS (CONNECTED TO BACKEND) */}
+        <Route path="/statements" element={<Statements />} />
+
+        {/* OTHER */}
+        <Route path="/qr" element={<Placeholder name="QR Scanner" />} />
+        <Route path="/expenses" element={<Placeholder name="Expenses" />} />
+        <Route path="/account" element={<Placeholder name="Account" />} />
+        <Route
+          path="/bank-transfer"
+          element={<Placeholder name="Bank Transfer" />}
+        />
+
+        {/* BILL */}
+        <Route
+          path="/bills/water"
+          element={<Placeholder name="Water Bill" />}
+        />
+        <Route
+          path="/bills/education"
+          element={<Placeholder name="Education Fee" />}
+        />
+        <Route
+          path="/bills/electricity"
+          element={<Placeholder name="Electricity Bill" />}
+        />
+        <Route
+          path="/bills/internet-tv"
+          element={<Placeholder name="Internet / TV" />}
+        />
+
+        {/* TRANSACTION DETAIL */}
+        <Route
+          path="/transaction/:id"
+          element={<Placeholder name="Transaction Detail" />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
