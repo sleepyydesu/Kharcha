@@ -49,60 +49,62 @@ function QRIcon() {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRESETS = [100, 500, 1000, 2000, 5000];
-const STEP_ORDER = ["phone", "amount", "category", "confirm", "mpin"];
-const STEP_LABELS = ["Phone", "Amount", "Category", "Confirm", "MPIN"];
 
-// ─── Step Bar ─────────────────────────────────────────────────────────────────
+// ─── MPIN overlay ─────────────────────────────────────────────────────────────
 
-function StepBar({ current }) {
-    return (
-        <div className="sm__stepbar">
-            {STEP_LABELS.map((label, i) => (
-                <div key={label} className="sm__step-wrap">
-                    <div className={`sm__step-dot ${i < current ? "sm__step-dot--done" : i === current ? "sm__step-dot--active" : ""}`}>
-                        {i < current ? <CheckIcon /> : <span>{i + 1}</span>}
-                    </div>
-                    <span className={`sm__step-label ${i === current ? "sm__step-label--active" : ""}`}>{label}</span>
-                    {i < STEP_LABELS.length - 1 && (
-                        <div className={`sm__step-line ${i < current ? "sm__step-line--done" : ""}`} />
-                    )}
-                </div>
-            ))}
-        </div>
-    );
-}
-
-// ─── MPIN Pad ─────────────────────────────────────────────────────────────────
-
-function MpinPad({ value, onChange, disabled }) {
+function MpinOverlay({ amount, receiverName, onConfirm, onClose, submitting, error }) {
+    const [mpin, setMpin] = useState("");
     const DIGITS = 6;
-    const keys = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+    const keys   = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
 
     function handleKey(k) {
-        if (disabled) return;
-        if (k === "⌫") onChange(value.slice(0, -1));
-        else if (value.length < DIGITS) onChange(value + k);
+        if (submitting) return;
+        if (k === "⌫") setMpin(v => v.slice(0, -1));
+        else if (mpin.length < DIGITS) setMpin(v => v + k);
     }
 
     return (
-        <div className="sm__mpin-wrap">
-            <div className="sm__mpin-dots">
-                {Array.from({ length: DIGITS }).map((_, i) => (
-                    <div key={i} className={`sm__mpin-dot ${i < value.length ? "sm__mpin-dot--filled" : ""}`} />
-                ))}
-            </div>
-            <div className="sm__mpin-pad">
-                {keys.map((k, i) => (
-                    <button
-                        key={i}
-                        type="button"
-                        className={`sm__mpin-key${k === "" ? " sm__mpin-key--empty" : ""}${k === "⌫" ? " sm__mpin-key--del" : ""}`}
-                        onClick={() => k && handleKey(k)}
-                        disabled={disabled || k === ""}
-                    >
-                        {k}
-                    </button>
-                ))}
+        <div className="sm__overlay-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className="sm__overlay">
+                <div className="sm__overlay-handle" />
+
+                <div className="sm__overlay-header">
+                    <p className="sm__overlay-title">Enter MPIN</p>
+                    <p className="sm__overlay-sub">
+                        Confirm sending <strong>NPR {Number(amount).toLocaleString()}</strong>
+                        {receiverName ? ` to ${receiverName}` : ""}
+                    </p>
+                </div>
+
+                <div className="sm__mpin-dots">
+                    {Array.from({ length: DIGITS }).map((_, i) => (
+                        <div key={i} className={`sm__mpin-dot${i < mpin.length ? " sm__mpin-dot--filled" : ""}`} />
+                    ))}
+                </div>
+
+                {error && <p className="sm__overlay-err">{error}</p>}
+
+                <div className="sm__mpin-pad">
+                    {keys.map((k, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            className={`sm__mpin-key${k === "" ? " sm__mpin-key--empty" : ""}${k === "⌫" ? " sm__mpin-key--del" : ""}`}
+                            onClick={() => k && handleKey(k)}
+                            disabled={submitting || k === ""}
+                        >
+                            {k}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    className="sm__btn sm__btn--primary sm__btn--send"
+                    onClick={() => onConfirm(mpin)}
+                    disabled={submitting || mpin.length < 4}
+                >
+                    {submitting ? "Transferring…" : "Confirm Transfer"}
+                </button>
             </div>
         </div>
     );
@@ -119,49 +121,59 @@ export default function SendMoney() {
     const qrAmount = searchParams.get("amount") || "";
     const qrNote   = searchParams.get("note")   || "";
 
-    const [step,     setStep]     = useState(qrId ? "amount" : "phone");
-    const [phone,    setPhone]    = useState(qrId);
-    const [receiver, setReceiver] = useState(qrId && qrName ? { display_name: qrName, account_id: qrId } : null);
-    const [lookingUp,setLookingUp]= useState(false);
-    const [lookupErr,setLookupErr]= useState("");
+    // Views: "phone" | "amount" | "confirm" | "success"
+    const [view,       setView]       = useState(qrId ? "amount" : "phone");
+    const [phone,      setPhone]      = useState(qrId);
+    const [receiver,   setReceiver]   = useState(qrId && qrName ? { display_name: qrName, account_id: qrId } : null);
+    const [lookingUp,  setLookingUp]  = useState(false);
+    const [lookupErr,  setLookupErr]  = useState("");
 
-    const [amount,   setAmount]   = useState(qrAmount);
+    const [amount,     setAmount]     = useState(qrAmount);
 
+    // Category + remarks expand inline after "Proceed"
+    const [showExtra,   setShowExtra]   = useState(!!qrAmount); // if QR has amount, show right away
     const [categories,  setCategories]  = useState([]);
     const [catsLoading, setCatsLoading] = useState(false);
     const [selectedCat, setSelectedCat] = useState(null);
     const [remarks,     setRemarks]     = useState(qrNote);
 
-    const [mpin,       setMpin]       = useState("");
+    // MPIN overlay
+    const [showMpin,   setShowMpin]   = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitErr,  setSubmitErr]  = useState("");
-    const [txData,     setTxData]     = useState(null);
 
     // Auto-lookup if QR has id but no name
     useEffect(() => {
         if (qrId && !qrName) doLookup(qrId, true);
     }, []); // eslint-disable-line
 
-    // Fetch categories when step changes to category
+    // Load categories when extra panel first opens
     useEffect(() => {
-        if (step === "category" && categories.length === 0) {
+        if (showExtra && categories.length === 0) {
             setCatsLoading(true);
             getTransactionCategories()
                 .then(d => setCategories(d?.categories || []))
                 .catch(() => setCategories([]))
                 .finally(() => setCatsLoading(false));
         }
-    }, [step]); // eslint-disable-line
+    }, [showExtra]); // eslint-disable-line
+
+    function normalisePhone(raw) {
+        const val = (raw ?? "").trim();
+        if (!val || val.startsWith("+")) return val;
+        if (val.startsWith("977") && val.length > 10) return "+" + val;
+        return "+977" + val;
+    }
 
     async function doLookup(id, silent = false) {
-        const val = (id ?? phone).trim();
+        const val = normalisePhone(id ?? phone);
         if (!val) return;
         setLookingUp(true);
         setLookupErr("");
         try {
             const d = await lookupReceiver(val);
             setReceiver(d?.receiver || d);
-            if (!silent) setStep("amount");
+            if (!silent) setView("amount");
         } catch (e) {
             setLookupErr(e.message || "User not found.");
             setReceiver(null);
@@ -170,26 +182,25 @@ export default function SendMoney() {
         }
     }
 
-    function goBack() {
-        const i = STEP_ORDER.indexOf(step);
-        if (i > 0) setStep(STEP_ORDER[i - 1]);
-        else navigate(-1);
+    function handleAmountProceed() {
+        if (!parseFloat(amount) || parseFloat(amount) < 1) return;
+        setShowExtra(true);
     }
 
-    async function handleTransfer() {
+    async function handleTransfer(mpin) {
         if (mpin.length < 4) { setSubmitErr("Enter your MPIN (4–6 digits)."); return; }
         setSubmitting(true);
         setSubmitErr("");
         try {
-            const d = await transfer({
-                receiver_identifier: phone.trim() || receiver?.account_id,
+            await transfer({
+                receiver_identifier: normalisePhone(phone) || receiver?.account_id,
                 amount: parseFloat(amount),
                 ...(selectedCat ? { category_id: selectedCat.category_id } : {}),
                 ...(remarks.trim() ? { remarks: remarks.trim() } : {}),
                 mpin,
             });
-            setTxData(d);
-            setStep("success");
+            setShowMpin(false);
+            setView("success");
         } catch (e) {
             setSubmitErr(e.message || "Transfer failed.");
         } finally {
@@ -197,12 +208,17 @@ export default function SendMoney() {
         }
     }
 
-    const stepIndex = STEP_ORDER.indexOf(step);
+    function goBack() {
+        if (showMpin)             { setShowMpin(false); return; }
+        if (view === "confirm")   { setView("amount");  return; }
+        if (view === "amount")    { setView("phone");   return; }
+        navigate(-1);
+    }
 
     // ── Success ───────────────────────────────────────────────────────────────
-    if (step === "success") {
+    if (view === "success") {
         return (
-            <div className="sm">
+            <div className="sm sm--centered">
                 <div className="sm__success">
                     <div className="sm__success-ring">✓</div>
                     <h2 className="sm__success-title">Sent!</h2>
@@ -222,108 +238,173 @@ export default function SendMoney() {
         );
     }
 
-    return (
-        <div className="sm">
-            <button className="sm__back" onClick={goBack}>
-                <BackArrow /> Back
-            </button>
+    // ── Confirm view ──────────────────────────────────────────────────────────
+    if (view === "confirm") {
+        return (
+            <div className="sm">
+                <button className="sm__back" onClick={goBack}><BackArrow /> Back</button>
+                <h1 className="sm__heading">Review Transfer</h1>
 
-            <h1 className="sm__heading">Send Money</h1>
-            <StepBar current={stepIndex} />
-
-            {qrId && step !== "phone" && (
-                <div className="sm__qr-banner">
-                    <QRIcon /> Details filled from QR scan
+                <div className="sm__confirm-hero">
+                    <span className="sm__confirm-hero-currency">NPR</span>
+                    <span className="sm__confirm-hero-value">{Number(amount).toLocaleString()}</span>
                 </div>
-            )}
 
-            {/* ── PHONE ─────────────────────────────────────────────────── */}
-            {step === "phone" && (
-                <div className="sm__pane">
-                    <p className="sm__pane-title">Who are you sending to?</p>
-                    <div className="sm__field">
-                        <label className="sm__label">Mobile Number</label>
-                        <div className={`sm__input-row${lookupErr ? " sm__input-row--err" : ""}`}>
-                            <UserIcon />
-                            <input
-                                className="sm__input"
-                                type="tel"
-                                placeholder="98XXXXXXXX"
-                                value={phone}
-                                autoFocus
-                                onChange={e => { setPhone(e.target.value); setLookupErr(""); }}
-                                onKeyDown={e => e.key === "Enter" && !lookingUp && phone.trim() && doLookup()}
-                            />
-                        </div>
-                        {lookupErr && <p className="sm__field-err">{lookupErr}</p>}
+                <div className="sm__confirm-card">
+                    <div className="sm__confirm-row">
+                        <span className="sm__confirm-key">To</span>
+                        <span className="sm__confirm-val">
+                            {receiver?.display_name || "—"}
+                            {(receiver?.phone_number || phone) && (
+                                <small className="sm__confirm-phone"> · {receiver?.phone_number || phone}</small>
+                            )}
+                        </span>
                     </div>
-                    <button
-                        className="sm__btn sm__btn--primary"
-                        onClick={() => doLookup()}
-                        disabled={lookingUp || !phone.trim()}
-                    >
-                        {lookingUp ? "Looking up…" : "Proceed"}
-                    </button>
-                </div>
-            )}
-
-            {/* ── AMOUNT ────────────────────────────────────────────────── */}
-            {step === "amount" && (
-                <div className="sm__pane">
-                    {receiver && (
-                        <div className="sm__receiver-chip">
-                            <div className="sm__receiver-avatar">
-                                {receiver.profile_picture
-                                    ? <img src={receiver.profile_picture} alt="" />
-                                    : <UserIcon />}
-                            </div>
-                            <div className="sm__receiver-info">
-                                <div className="sm__receiver-name">{receiver.display_name || "Unknown"}</div>
-                                <div className="sm__receiver-phone">{receiver.phone_number || phone}</div>
-                            </div>
-                            <div className="sm__receiver-verified"><CheckIcon /></div>
+                    {selectedCat && (
+                        <div className="sm__confirm-row">
+                            <span className="sm__confirm-key">Category</span>
+                            <span className="sm__confirm-val">{selectedCat.name}</span>
                         </div>
                     )}
-                    <div className="sm__field">
-                        <label className="sm__label">Amount (NPR)</label>
-                        <div className="sm__amount-row">
-                            <span className="sm__prefix">रू</span>
-                            <input
-                                className="sm__input sm__input--amount"
-                                type="number"
-                                min="1"
-                                placeholder="0.00"
-                                value={amount}
-                                autoFocus
-                                onChange={e => setAmount(e.target.value)}
-                            />
+                    {remarks.trim() && (
+                        <div className="sm__confirm-row">
+                            <span className="sm__confirm-key">Remarks</span>
+                            <span className="sm__confirm-val sm__confirm-val--remark">"{remarks.trim()}"</span>
                         </div>
-                        <div className="sm__presets">
-                            {PRESETS.map(p => (
-                                <button
-                                    key={p}
-                                    className={`sm__preset${String(amount) === String(p) ? " sm__preset--active" : ""}`}
-                                    onClick={() => setAmount(String(p))}
-                                >
-                                    {p.toLocaleString()}
-                                </button>
-                            ))}
-                        </div>
+                    )}
+                    <div className="sm__confirm-row">
+                        <span className="sm__confirm-key">Method</span>
+                        <span className="sm__confirm-val">Kharcha Wallet</span>
                     </div>
-                    <button
-                        className="sm__btn sm__btn--primary"
-                        onClick={() => setStep("category")}
-                        disabled={!parseFloat(amount) || parseFloat(amount) < 1}
-                    >
-                        Proceed
-                    </button>
+                </div>
+
+                <button className="sm__btn sm__btn--primary sm__btn--send"
+                    onClick={() => { setSubmitErr(""); setShowMpin(true); }}>
+                    Confirm &amp; Enter MPIN
+                </button>
+
+                {showMpin && (
+                    <MpinOverlay
+                        amount={amount}
+                        receiverName={receiver?.display_name}
+                        onConfirm={handleTransfer}
+                        onClose={() => setShowMpin(false)}
+                        submitting={submitting}
+                        error={submitErr}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // ── Phone view ────────────────────────────────────────────────────────────
+    if (view === "phone") {
+        return (
+            <div className="sm">
+                <button className="sm__back" onClick={() => navigate(-1)}><BackArrow /> Back</button>
+                <h1 className="sm__heading">Send Money</h1>
+                <p className="sm__sub">Transfer funds to any Kharcha user</p>
+
+                <div className="sm__field">
+                    <label className="sm__label">Mobile Number</label>
+                    <div className={`sm__input-row${lookupErr ? " sm__input-row--err" : ""}`}>
+                        <UserIcon />
+                        <input
+                            className="sm__input"
+                            type="tel"
+                            placeholder="98XXXXXXXX — no need for +977"
+                            value={phone}
+                            autoFocus
+                            onChange={e => { setPhone(e.target.value); setLookupErr(""); }}
+                            onKeyDown={e => e.key === "Enter" && !lookingUp && phone.trim() && doLookup()}
+                        />
+                    </div>
+                    {lookupErr && <p className="sm__field-err">{lookupErr}</p>}
+                </div>
+
+                <button
+                    className="sm__btn sm__btn--primary"
+                    onClick={() => doLookup()}
+                    disabled={lookingUp || !phone.trim()}
+                >
+                    {lookingUp ? "Looking up…" : "Proceed"}
+                </button>
+            </div>
+        );
+    }
+
+    // ── Amount view (+ inline category/remarks) ───────────────────────────────
+    return (
+        <div className="sm">
+            <button className="sm__back" onClick={goBack}><BackArrow /> Back</button>
+            <h1 className="sm__heading">Send Money</h1>
+
+            {qrId && (
+                <div className="sm__qr-banner"><QRIcon /> Details filled from QR scan</div>
+            )}
+
+            {/* Receiver chip */}
+            {receiver && (
+                <div className="sm__receiver-chip">
+                    <div className="sm__receiver-avatar">
+                        {receiver.profile_picture
+                            ? <img src={receiver.profile_picture} alt="" />
+                            : <UserIcon />}
+                    </div>
+                    <div className="sm__receiver-info">
+                        <div className="sm__receiver-name">{receiver.display_name || "Unknown"}</div>
+                        <div className="sm__receiver-phone">{receiver.phone_number || phone}</div>
+                    </div>
+                    <div className="sm__receiver-verified"><CheckIcon /></div>
                 </div>
             )}
 
-            {/* ── CATEGORY ──────────────────────────────────────────────── */}
-            {step === "category" && (
-                <div className="sm__pane">
-                    <p className="sm__pane-title">Categorise this transfer</p>
+            {/* Amount */}
+            <div className="sm__field">
+                <label className="sm__label">Amount (NPR)</label>
+                <div className="sm__amount-row">
+                    <span className="sm__prefix">रू</span>
+                    <input
+                        className="sm__input sm__input--amount"
+                        type="number"
+                        min="1"
+                        placeholder="0.00"
+                        value={amount}
+                        autoFocus={!qrAmount}
+                        onChange={e => { setAmount(e.target.value); if (showExtra) setShowExtra(false); }}
+                    />
+                </div>
+                <div className="sm__presets">
+                    {PRESETS.map(p => (
+                        <button
+                            key={p}
+                            className="sm__preset"
+                            onClick={() => { setAmount(String((parseFloat(amount) || 0) + p)); setShowExtra(false); }}
+                        >
+                            {p.toLocaleString()}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Proceed button — only shown before extra panel opens */}
+            {!showExtra && (
+                <button
+                    className="sm__btn sm__btn--primary"
+                    onClick={handleAmountProceed}
+                    disabled={!parseFloat(amount) || parseFloat(amount) < 1}
+                >
+                    Proceed
+                </button>
+            )}
+
+            {/* Category + Remarks — expand inline after Proceed */}
+            {showExtra && (
+                <div className="sm__extra">
+                    <div className="sm__extra-divider">
+                        <span>Category & Remarks</span>
+                    </div>
+
                     {catsLoading ? (
                         <div className="sm__cats-loading">Loading categories…</div>
                     ) : (
@@ -351,8 +432,11 @@ export default function SendMoney() {
                             ))}
                         </div>
                     )}
-                    <div className="sm__field" style={{ marginTop: "1.2rem" }}>
-                        <label className="sm__label">Remarks <span className="sm__optional">(optional)</span></label>
+
+                    <div className="sm__field">
+                        <label className="sm__label">
+                            Remarks <span className="sm__optional">(optional)</span>
+                        </label>
                         <input
                             className="sm__input"
                             type="text"
@@ -362,70 +446,12 @@ export default function SendMoney() {
                             onChange={e => setRemarks(e.target.value)}
                         />
                     </div>
-                    <button className="sm__btn sm__btn--primary" onClick={() => setStep("confirm")}>
-                        Continue
-                    </button>
-                </div>
-            )}
 
-            {/* ── CONFIRM ───────────────────────────────────────────────── */}
-            {step === "confirm" && (
-                <div className="sm__pane">
-                    <p className="sm__pane-title">Review your transfer</p>
-                    <div className="sm__confirm-card">
-                        <div className="sm__confirm-amount">
-                            <span className="sm__confirm-currency">NPR</span>
-                            <span className="sm__confirm-value">{Number(amount).toLocaleString()}</span>
-                        </div>
-                        <div className="sm__confirm-divider" />
-                        <div className="sm__confirm-row">
-                            <span className="sm__confirm-key">To</span>
-                            <span className="sm__confirm-val">
-                                {receiver?.display_name || "—"}
-                                {(receiver?.phone_number || phone) && (
-                                    <small className="sm__confirm-phone"> · {receiver?.phone_number || phone}</small>
-                                )}
-                            </span>
-                        </div>
-                        {selectedCat && (
-                            <div className="sm__confirm-row">
-                                <span className="sm__confirm-key">Category</span>
-                                <span className="sm__confirm-val">{selectedCat.name}</span>
-                            </div>
-                        )}
-                        {remarks.trim() && (
-                            <div className="sm__confirm-row">
-                                <span className="sm__confirm-key">Remarks</span>
-                                <span className="sm__confirm-val sm__confirm-val--remark">"{remarks.trim()}"</span>
-                            </div>
-                        )}
-                        <div className="sm__confirm-row">
-                            <span className="sm__confirm-key">Method</span>
-                            <span className="sm__confirm-val">Kharcha Wallet</span>
-                        </div>
-                    </div>
-                    <button className="sm__btn sm__btn--primary" onClick={() => setStep("mpin")}>
-                        Confirm
-                    </button>
-                </div>
-            )}
-
-            {/* ── MPIN ──────────────────────────────────────────────────── */}
-            {step === "mpin" && (
-                <div className="sm__pane sm__pane--mpin">
-                    <p className="sm__pane-title">Enter your MPIN</p>
-                    <p className="sm__pane-sub">
-                        Authorise sending NPR <strong>{Number(amount).toLocaleString()}</strong>
-                        {receiver?.display_name ? ` to ${receiver.display_name}` : ""}
-                    </p>
-                    <MpinPad value={mpin} onChange={setMpin} disabled={submitting} />
-                    {submitErr && <p className="sm__error">{submitErr}</p>}
                     <button
-                        className="sm__btn sm__btn--primary sm__btn--send"
-                        onClick={handleTransfer}
-                        disabled={submitting || mpin.length < 4}
+                        className="sm__btn sm__btn--primary"
+                        onClick={() => setView("confirm")}
                     >
-                        {submitting ? "Transferring…" : "Confirm Transfer"}
+                        Continue
                     </button>
                 </div>
             )}

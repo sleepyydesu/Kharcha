@@ -8,6 +8,15 @@
     padding: 1.5rem 1.5rem 3rem;
 }
 
+.sm--centered {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 .sm__back {
     display: flex;
     align-items: center;
@@ -288,7 +297,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 3rem 1.5rem 2rem;
+    padding: 2rem 0;
     gap: 0.5rem;
     text-align: center;
 }
@@ -330,84 +339,6 @@
 }
 .sm__success .sm__btn {
     max-width: 320px;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Step Bar
-   ───────────────────────────────────────────────────────────── */
-
-.sm__stepbar {
-    display: flex;
-    align-items: flex-start;
-    gap: 0;
-    margin-bottom: 1.6rem;
-    overflow-x: auto;
-    padding-bottom: 0.2rem;
-}
-
-.sm__step-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    flex: 1;
-    min-width: 0;
-}
-
-.sm__step-dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--shaded-background);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    z-index: 1;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.sm__step-dot--active {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: #fff;
-}
-
-.sm__step-dot--done {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: #fff;
-}
-
-.sm__step-label {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    margin-top: 0.3rem;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.sm__step-label--active {
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.sm__step-line {
-    position: absolute;
-    top: 14px;
-    left: calc(50% + 14px);
-    right: calc(-50% + 14px);
-    height: 2px;
-    background: var(--border);
-    transition: background 0.2s;
-}
-
-.sm__step-line--done {
-    background: var(--primary);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -571,32 +502,6 @@
     margin-bottom: 1.4rem;
 }
 
-.sm__confirm-amount {
-    display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
-    padding: 1.4rem 1.2rem 1.2rem;
-    background: var(--shaded-background);
-}
-
-.sm__confirm-currency {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-sub);
-}
-
-.sm__confirm-value {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--text-color);
-    letter-spacing: -0.02em;
-}
-
-.sm__confirm-divider {
-    height: 1px;
-    background: var(--border);
-}
-
 .sm__confirm-row {
     display: flex;
     justify-content: space-between;
@@ -639,30 +544,155 @@
     font-weight: 400;
 }
 
+
 /* ─────────────────────────────────────────────────────────────
-   MPIN Pad
+   Confirm hero amount
    ───────────────────────────────────────────────────────────── */
 
-.sm__pane--mpin {
+.sm__confirm-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 1.6rem 0 1.2rem;
+}
+
+.sm__confirm-hero-currency {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+
+.sm__confirm-hero-value {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--text-color);
+    letter-spacing: -0.03em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Inline category + remarks expansion
+   ───────────────────────────────────────────────────────────── */
+
+.sm__extra {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: sm-fade-down 0.22s ease;
+}
+
+@keyframes sm-fade-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sm__extra-divider {
+    display: flex;
     align-items: center;
+    gap: 0.7rem;
+    margin: 0.6rem 0 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
 }
 
-.sm__pane--mpin .sm__pane-title {
-    text-align: center;
+.sm__extra-divider::before,
+.sm__extra-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
 }
 
-.sm__mpin-wrap {
+/* ─────────────────────────────────────────────────────────────
+   MPIN slide-up overlay
+   ───────────────────────────────────────────────────────────── */
+
+.sm__overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: sm-backdrop-in 0.2s ease;
+}
+
+@keyframes sm-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.sm__overlay {
     width: 100%;
+    max-width: 520px;
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 0 1.5rem 2.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.4rem;
-    margin-bottom: 1.2rem;
+    gap: 0;
+    animation: sm-slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+@keyframes sm-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+.sm__overlay-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--border);
+    margin: 0.75rem auto 1.4rem;
+    flex-shrink: 0;
+}
+
+.sm__overlay-header {
+    text-align: center;
+    margin-bottom: 1.6rem;
+    width: 100%;
+}
+
+.sm__overlay-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.3rem;
+}
+
+.sm__overlay-sub {
+    font-size: 0.87rem;
+    color: var(--text-sub);
+    margin: 0;
+}
+
+.sm__overlay-err {
+    color: var(--error-text);
+    font-size: 0.84rem;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.9rem;
+    margin: 0.4rem 0 0.8rem;
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MPIN dots + pad (shared by overlay)
+   ───────────────────────────────────────────────────────────── */
 
 .sm__mpin-dots {
     display: flex;
     gap: 0.75rem;
+    margin-bottom: 1.4rem;
 }
 
 .sm__mpin-dot {
@@ -684,6 +714,7 @@
     display: grid;
     grid-template-columns: repeat(3, 72px);
     gap: 0.6rem;
+    margin-bottom: 1.4rem;
 }
 
 .sm__mpin-key {
@@ -708,9 +739,7 @@
     color: var(--primary);
 }
 
-.sm__mpin-key:active:not(:disabled) {
-    transform: scale(0.94);
-}
+.sm__mpin-key:active:not(:disabled) { transform: scale(0.94); }
 
 .sm__mpin-key--empty {
     visibility: hidden;
@@ -722,12 +751,11 @@
     color: var(--text-sub);
 }
 
-.sm__mpin-key:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
+.sm__mpin-key:disabled { opacity: 0.4; cursor: default; }
 
-/* Success remark */
+.sm__overlay .sm__btn--send { width: 100%; }
+
+/* success remark */
 .sm__success-remark {
     color: var(--text-sub);
     font-style: italic;
