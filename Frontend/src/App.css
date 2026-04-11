@@ -1,3 +1,4 @@
+/* App.css */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -34,7 +35,6 @@ input  { font-family: inherit; }
 @media (min-width: 901px) and (max-width: 1056px) {
   :root,
   [data-theme="dark"] {
-    /* (viewport − minimum content width) ÷ 2 — one share per panel */
     --sidebar-width: calc((100vw - 480px) / 2);
   }
 }
@@ -43,7 +43,7 @@ input  { font-family: inherit; }
   flex: 1;
   margin-left: var(--sidebar-width);
   margin-right: var(--sidebar-width);
-  min-width: 480px; /* never compress the content itself */
+  min-width: 480px;
   min-height: 100vh;
   background: var(--background);
 }
@@ -52,12 +52,9 @@ input  { font-family: inherit; }
   .app-content {
     margin-left: 0;
     margin-right: 0;
-    padding-bottom: 68px; /* clears bottom nav */
+    padding-bottom: 68px;
   }
 
-  /* Only push content down when the balance panel is actually visible.
-     --balance-panel-height is set dynamically by BalancePanel via ResizeObserver
-     so it always matches the real rendered height. */
   .app-content--has-panel {
     padding-top: var(--balance-panel-height, 68px);
   }
