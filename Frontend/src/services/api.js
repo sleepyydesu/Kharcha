@@ -92,3 +92,18 @@ export const sendPasswordResetOTP = (body) =>
   request('/auth/password/forgot-send-otp', { method: 'POST', body: JSON.stringify(body) });
 export const resetPassword = (body) =>
   request('/auth/password/reset', { method: 'POST', body: JSON.stringify(body) });
+
+// ── API Keys (org) ─────────────────────────────────────────────
+export const listApiKeys    = ()           => request('/org/api-keys');
+export const createApiKey   = (body)       => request('/org/api-keys', { method: 'POST', body: JSON.stringify(body) });
+export const updateApiKey   = (id, body)   => request(`/org/api-keys/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const revokeApiKey   = (id)         => request(`/org/api-keys/${id}`, { method: 'DELETE' });
+
+// ── Dynamic QR Codes (org) ─────────────────────────────────────
+export const listOrgQRCodes   = ()          => request('/org/qr-codes');
+export const createOrgQRCode  = (body)      => request('/org/qr-codes', { method: 'POST', body: JSON.stringify(body) });
+export const updateOrgQRCode  = (id, body)  => request(`/org/qr-codes/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteOrgQRCode  = (id)        => request(`/org/qr-codes/${id}`, { method: 'DELETE' });
+
+// Public — no auth needed — resolves a dynamic QR to payment details
+export const resolveQRCode = (qr_id) => request(`/qr-codes/${qr_id}`);

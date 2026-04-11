@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import BalancePanel from "./components/BalancePanel";
@@ -10,12 +10,15 @@ import Statements from "./pages/Statements";
 import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
 import SetToken from "./pages/SetToken";
+import OrgQRCodes from "./pages/OrgQRCodes";
 import "./styles/variables.css";
 import "./App.css";
 
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
+    // Stable reference — prevents CameraScanner from restarting on every re-render
+    const handleQrClose = useCallback(() => setQrOpen(false), [setQrOpen]);
     return (
         <>
             <div className="app-shell">
@@ -33,12 +36,13 @@ function AppShell({ qrOpen, setQrOpen }) {
                         />
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
+                        <Route path="/org/qr-codes" element={<OrgQRCodes />} />
                     </Routes>
                 </main>
             </div>
 
             {/* QR Scanner — portal overlay, renders above everything */}
-            <QRScanner open={qrOpen} onClose={() => setQrOpen(false)} />
+            <QRScanner open={qrOpen} onClose={handleQrClose} />
         </>
     );
 }

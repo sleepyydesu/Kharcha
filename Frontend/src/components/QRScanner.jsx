@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
-import { getProfile, redeemGiftCard } from "../services/api";
+import { getProfile, redeemGiftCard, resolveQRCode } from "../services/api";
 import "./QRScanner.css";
 
 // ── Icons ─────────────────────────────────────────────────────
@@ -67,6 +67,8 @@ function parseQR(text) {
     try {
         const obj = JSON.parse(text);
         if (obj.giftcard_id) return { type: "giftcard", code: obj.giftcard_id };
+        // Dynamic org QR — must be resolved from server
+        if (obj.kharcha_qr_id) return { type: "dynamic_qr", qr_id: obj.kharcha_qr_id };
         if (obj.kharcha_id)
             return {
                 type: "payment",
@@ -90,6 +92,12 @@ function CameraScanner({ onDetect }) {
     const streamRef = useRef(null);
     const rafRef = useRef(null);
     const firedRef = useRef(false);
+    // Keep onDetect in a ref so the effect never needs to re-run when it changes.
+    // Without this, every re-render of the parent (e.g. App state update) would
+    // produce a new onDetect reference → useEffect would tear down and restart
+    // the camera, making scanning impossible.
+    const onDetectRef = useRef(onDetect);
+    useEffect(() => { onDetectRef.current = onDetect; }, [onDetect]);
 
     const [camStatus, setCamStatus] = useState("starting"); // starting | active | denied
 
@@ -148,7 +156,15 @@ function CameraScanner({ onDetect }) {
             });
             if (result && result.data && !firedRef.current) {
                 firedRef.current = true;
-                onDetect(result.data);
+                // Pass a `resume` callback so handleDetect can restart scanning
+                // if the QR was unrecognized — without it, firedRef stays true
+                // and the scanner silently deadlocks on any unrecognized QR.
+                onDetectRef.current(result.data, () => {
+                    if (!cancelled) {
+                        firedRef.current = false;
+                        rafRef.current = requestAnimationFrame(tick);
+                    }
+                });
                 return;
             }
             rafRef.current = requestAnimationFrame(tick);
@@ -160,7 +176,7 @@ function CameraScanner({ onDetect }) {
             if (rafRef.current) cancelAnimationFrame(rafRef.current);
             streamRef.current?.getTracks().forEach((t) => t.stop());
         };
-    }, [onDetect]);
+    }, []); // empty deps — camera starts once, stays alive for the modal's lifetime
 
     if (camStatus === "denied") {
         return (
@@ -251,8 +267,8 @@ function MyQRCode() {
     useEffect(() => {
         if (!profile || !canvasRef.current) return;
         const payload = JSON.stringify({
-            kharcha_id: profile.phone || profile.email || "",
-            name: profile.full_name || profile.name || "",
+            kharcha_id: profile.phone_number || profile.email || "",
+            name: profile.full_name || profile.organization_name || profile.name || "",
         });
         QRCode.toCanvas(canvasRef.current, payload, {
             width: 220,
@@ -316,9 +332,13 @@ export default function QRScanner({ open, onClose }) {
     }, [open, onClose]);
 
     const handleDetect = useCallback(
-        async (raw) => {
+        async (raw, resume) => {
             const parsed = parseQR(raw);
-            if (!parsed) return; // ignore unrecognised, keep scanning
+            if (!parsed) {
+                // Unrecognized QR — resume scanning instead of deadlocking
+                resume?.();
+                return;
+            }
 
             if (parsed.type === "giftcard") {
                 setProcessing({ label: "Redeeming gift card…" });
@@ -332,14 +352,45 @@ export default function QRScanner({ open, onClose }) {
                         `/load?giftcard=failed&message=${encodeURIComponent(e.message || "Redemption failed")}`,
                     );
                 }
+            } else if (parsed.kharcha_session_id) {
+                const res = await resolveQRCode(parsed.kharcha_session_id);
+
+                if (res.success) {
+                    navigate("/pay", {
+                        state: res.qr,
+                    });
+                }
+            } else if (parsed.type === "dynamic_qr") {
+                // Resolve the dynamic QR from the server to get merchant + payment details
+                setProcessing({ label: "Reading merchant QR…" });
+                try {
+                    const data = await resolveQRCode(parsed.qr_id);
+                    const qr = data.qr;
+                    const params = new URLSearchParams({
+                        id: qr.merchant.account_id,
+                        name: qr.merchant.name,
+                        qr_id: qr.qr_id,
+                    });
+                    if (qr.amount)            params.set("amount", String(qr.amount));
+                    if (qr.note)              params.set("note", qr.note);
+                    if (qr.default_category)  params.set("default_category_id", String(qr.default_category.category_id));
+                    if (qr.default_category)  params.set("default_category_name", qr.default_category.name);
+                    onClose();
+                    navigate(`/send?${params.toString()}`);
+                } catch (e) {
+                    setProcessing({ label: e.message || "QR not found." });
+                    await new Promise((r) => setTimeout(r, 2000));
+                    setProcessing(null);
+                    resume?.();
+                }
             } else {
                 setProcessing({ label: "Loading payment…" });
                 // Brief pause so the check animation is visible
                 await new Promise((r) => setTimeout(r, 420));
                 const params = new URLSearchParams({ id: parsed.id });
-                if (parsed.name) params.set("name", parsed.name);
+                if (parsed.name)   params.set("name", parsed.name);
                 if (parsed.amount) params.set("amount", String(parsed.amount));
-                if (parsed.note) params.set("note", parsed.note);
+                if (parsed.note)   params.set("note", parsed.note);
                 onClose();
                 navigate(`/send?${params.toString()}`);
             }

@@ -1,5 +1,6 @@
 const supabase = require("../services/supabaseClient");
 const bcrypt = require("bcrypt");
+const { dispatchQRWebhook } = require("./qrCodeController");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -75,7 +76,7 @@ const getWallet = async (req, res) => {
 const transfer = async (req, res) => {
     try {
         const { account_id: sender_account_id } = req.account;
-        const { receiver_identifier, amount, category_id, remarks, mpin } = req.body;
+        const { receiver_identifier, amount, category_id, remarks, mpin, qr_id } = req.body;
 
         // ── Verification gate ─────────────────────────────────
         // Only verified accounts (and organisations) may send money.
@@ -284,7 +285,7 @@ const transfer = async (req, res) => {
             .eq("account_id", receiverAccount.account_id)
             .maybeSingle();
 
-        return res.status(200).json({
+        const responsePayload = {
             success: true,
             message: "Transfer successful.",
             transaction: {
@@ -302,8 +303,24 @@ const transfer = async (req, res) => {
                 remarks: remarks || null,
                 method: "Kharcha Wallet",
                 status: "completed",
+                ...(qr_id ? { qr_id } : {}),
             },
-        });
+        };
+
+        // Fire webhook if this transfer came from a dynamic QR scan (non-blocking)
+        if (qr_id) {
+            dispatchQRWebhook(qr_id, {
+                event: "payment.success",
+                qr_id,
+                transaction_id: result.transaction_id,
+                amount: parsedAmount,
+                currency: "NPR",
+                remarks: remarks || null,
+                timestamp: new Date().toISOString(),
+            });
+        }
+
+        return res.status(200).json(responsePayload);
     } catch (err) {
         console.error("[transfer]", err);
         return res
