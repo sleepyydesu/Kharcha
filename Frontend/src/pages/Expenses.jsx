@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -11,9 +10,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
-  CartesianGrid,
 } from "recharts";
 import {
   Plus,
@@ -21,13 +17,21 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  ChevronDown,
+  Target,
 } from "lucide-react";
-
 import "./Expenses.css";
 
-// ─── CONSTANTS ────────────────────────────────────────────────
-const INCOME_CATEGORIES = [
+import {
+  getExpenseOverview,
+  createExpense,
+  getIncome,
+  createIncome,
+  getBudgets,
+  createBudget,
+  getCategories,
+} from "../services/api";
+
+const INCOME_SOURCES = [
   "Salary",
   "Freelance",
   "Business",
@@ -35,18 +39,6 @@ const INCOME_CATEGORIES = [
   "Gifts",
   "Others",
 ];
-const EXPENSE_CATEGORIES = [
-  "Food & Dining",
-  "Transport",
-  "Utilities",
-  "Shopping",
-  "Health",
-  "Education",
-  "Entertainment",
-  "Housing",
-  "Others",
-];
-const PAYMENT_METHODS = ["Kharcha Wallet", "Cash", "Bank Transfer", "Card"];
 const PIE_COLORS = [
   "#1e5c38",
   "#2e7d55",
@@ -59,200 +51,221 @@ const PIE_COLORS = [
   "#66bb6a",
 ];
 
-const today = () => new Date().toISOString().split("T")[0];
-const monthKey = (dateStr) =>
-  new Date(dateStr).toLocaleString("default", {
-    month: "short",
-    year: "2-digit",
-  });
+const todayStr = () => new Date().toISOString().split("T")[0];
+const fmt = (d) => d.toISOString().split("T")[0];
 
 function getDateRange(filter) {
   const now = new Date();
   if (filter === "today") {
-    const t = today();
+    const t = todayStr();
     return { start: t, end: t };
   }
   if (filter === "90days") {
-    const start = new Date(now);
-    start.setDate(start.getDate() - 90);
-    return { start: start.toISOString().split("T")[0], end: today() };
+    const s = new Date(now);
+    s.setDate(s.getDate() - 90);
+    return { start: fmt(s), end: todayStr() };
   }
   if (filter === "thismonth") {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { start: start.toISOString().split("T")[0], end: today() };
+    const s = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { start: fmt(s), end: todayStr() };
   }
-  return null; // custom
+  return null;
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────
 export default function Expenses() {
-  const [entries, setEntries] = useState(() => {
-    const saved = localStorage.getItem("kharcha_expenses");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("expense"); // "income" | "expense"
+  const [overview, setOverview] = useState([]);
+  const [incomeList, setIncomeList] = useState([]);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [budgets, setBudgets] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [dateFilter, setDateFilter] = useState("thismonth");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [filterCategory, setFilterCategory] = useState("All");
   const [filterType, setFilterType] = useState("All");
+  const [filterCat, setFilterCat] = useState("All");
 
-  // Form state
-  const [form, setForm] = useState({
+  const [modal, setModal] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [apiErr, setApiErr] = useState("");
+
+  const [expForm, setExpForm] = useState({
+    category_id: "",
     amount: "",
-    date: today(),
-    category: "",
-    paymentMethod: "Kharcha Wallet",
-    remarks: "",
+    note: "",
+    date: todayStr(),
+  });
+  const [incForm, setIncForm] = useState({
+    amount: "",
+    source: "Salary",
+    note: "",
+    date: todayStr(),
+  });
+  const [budForm, setBudForm] = useState({
+    category_id: "",
+    amount: "",
+    period_start: todayStr(),
+    period_end: todayStr(),
   });
 
-  // Save to localStorage whenever entries change
-  useEffect(() => {
-    localStorage.setItem("kharcha_expenses", JSON.stringify(entries));
-  }, [entries]);
+  const range =
+    dateFilter === "custom"
+      ? { start: customStart, end: customEnd }
+      : getDateRange(dateFilter);
 
-  // Auto-pull wallet transactions as [Auto] entries
-  useEffect(() => {
-    const autoSync = async () => {
-      try {
-        const txns = await getTransactions();
-        const autoEntries = txns.map((t) => ({
-          id: "auto_" + t.transaction_id,
-          type: t.type === "received" ? "income" : "expense",
-          amount: parseFloat(t.amount),
-          date: t.created_at.split("T")[0],
-          category: t.type === "received" ? "Others" : "Others",
-          paymentMethod: "Kharcha Wallet",
-          remarks: t.counterparty?.display_name || "",
-          auto: true,
-          excluded: false,
-        }));
-        setEntries((prev) => {
-          const manualIds = new Set(
-            prev.filter((e) => !e.auto).map((e) => e.id),
-          );
-          const existingAutoIds = new Set(
-            prev.filter((e) => e.auto).map((e) => e.id),
-          );
-          const newAuto = autoEntries.filter((e) => !existingAutoIds.has(e.id));
-          return [
-            ...prev.filter((e) => !e.auto || existingAutoIds.has(e.id)),
-            ...newAuto,
-          ];
-        });
-      } catch (_) {}
-    };
-    autoSync();
-  }, []);
+  const fetchAll = useCallback(async () => {
+    if (!range?.start || !range?.end) return;
+    setLoading(true);
+    try {
+      const [ov, inc, bud, cats] = await Promise.all([
+        getExpenseOverview(range.start, range.end),
+        getIncome(range.start, range.end),
+        getBudgets(range.start, range.end),
+        getCategories(),
+      ]);
+      setOverview(ov.data || ov || []);
 
-  // ── Filter entries ──────────────────────────────────────────
-  const filteredEntries = entries.filter((e) => {
-    if (e.excluded) return false;
-    let inRange = true;
-    const range =
-      dateFilter === "custom"
-        ? { start: customStart, end: customEnd }
-        : getDateRange(dateFilter);
-    if (range && range.start && range.end) {
-      inRange = e.date >= range.start && e.date <= range.end;
+      const incomeArr = inc.data || [];
+      setIncomeList(incomeArr);
+      // ✅ FIXED: calculate total from actual list instead of relying on field name
+      setTotalIncome(
+        incomeArr.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0),
+      );
+
+      setBudgets(bud.data || bud || []);
+      setCategories(cats.data || cats.categories || cats || []);
+    } catch (e) {
+      console.error(e);
     }
-    const inCat = filterCategory === "All" || e.category === filterCategory;
-    const inType = filterType === "All" || e.type === filterType;
-    return inRange && inCat && inType;
-  });
+    setLoading(false);
+  }, [range?.start, range?.end]);
 
-  // ── Summary ─────────────────────────────────────────────────
-  const totalIncome = filteredEntries
-    .filter((e) => e.type === "income")
-    .reduce((s, e) => s + e.amount, 0);
-  const totalExpense = filteredEntries
-    .filter((e) => e.type === "expense")
-    .reduce((s, e) => s + e.amount, 0);
-  const netSavings = totalIncome - totalExpense;
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
-  // ── Bar chart data (monthly) ─────────────────────────────────
-  const barMap = {};
-  filteredEntries.forEach((e) => {
-    const k = monthKey(e.date);
-    if (!barMap[k]) barMap[k] = { month: k, Income: 0, Expenses: 0 };
-    if (e.type === "income") barMap[k].Income += e.amount;
-    else barMap[k].Expenses += e.amount;
-  });
-  const barData = Object.values(barMap).slice(-6);
+  const totalExpenses = overview.reduce(
+    (s, c) => s + parseFloat(c.total_amount || 0),
+    0,
+  );
+  const netSavings = totalIncome - totalExpenses;
 
-  // ── Line chart data ──────────────────────────────────────────
-  const lineMap = {};
-  filteredEntries
-    .filter((e) => e.type === "expense")
-    .forEach((e) => {
-      const k = e.date;
-      lineMap[k] = (lineMap[k] || 0) + e.amount;
-    });
-  const lineData = Object.entries(lineMap)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-14)
-    .map(([date, amount]) => ({ date: date.slice(5), amount }));
+  const expEntries = overview.flatMap((cat) =>
+    Array(parseInt(cat.expense_count || 0))
+      .fill(null)
+      .map((_, i) => ({
+        id: `${cat.category_id}-${i}`,
+        type: "expense",
+        category: cat.category_name,
+        amount:
+          parseFloat(cat.total_amount || 0) / parseInt(cat.expense_count || 1),
+        time: range?.end || todayStr(),
+      })),
+  );
 
-  // ── Pie chart data ────────────────────────────────────────────
-  const pieMap = {};
-  filteredEntries
-    .filter((e) => e.type === "expense")
-    .forEach((e) => {
-      pieMap[e.category] = (pieMap[e.category] || 0) + e.amount;
-    });
-  const pieData = Object.entries(pieMap).map(([name, value]) => ({
-    name,
-    value,
+  const incEntries = incomeList.map((inc) => ({
+    id: inc.income_id,
+    type: "income",
+    category: inc.source || "Income",
+    amount: parseFloat(inc.amount),
+    time: inc.date,
+    note: inc.note,
   }));
 
-  // ── Add entry ────────────────────────────────────────────────
-  const handleAdd = () => {
-    if (!form.amount || !form.date || !form.category) {
-      alert("Please fill all required fields");
+  const allEntries = [...expEntries, ...incEntries]
+    .filter((e) => filterType === "All" || e.type === filterType)
+    .filter((e) => filterCat === "All" || e.category === filterCat);
+
+  const allCats = [
+    ...new Set([...expEntries, ...incEntries].map((e) => e.category)),
+  ];
+
+  const barData = [
+    { name: "Period", Income: totalIncome, Expenses: totalExpenses },
+  ];
+  const pieData = overview
+    .filter((c) => parseFloat(c.total_amount) > 0)
+    .map((c) => ({ name: c.category_name, value: parseFloat(c.total_amount) }));
+
+  const handleAddExpense = async () => {
+    setApiErr("");
+    if (!expForm.category_id || !expForm.amount) {
+      setApiErr("Category and amount are required.");
       return;
     }
-    const newEntry = {
-      id: Date.now().toString(),
-      type: modalType,
-      amount: parseFloat(form.amount),
-      date: form.date,
-      category: form.category,
-      paymentMethod: form.paymentMethod,
-      remarks: form.remarks,
-      auto: false,
-      excluded: false,
-    };
-    setEntries((prev) => [newEntry, ...prev]);
-    setForm({
-      amount: "",
-      date: today(),
-      category: "",
-      paymentMethod: "Kharcha Wallet",
-      remarks: "",
-    });
-    setShowModal(false);
+    setSaving(true);
+    try {
+      await createExpense({
+        category_id: expForm.category_id,
+        amount: parseFloat(expForm.amount),
+        note: expForm.note || null,
+        date: expForm.date,
+      });
+      setModal(null);
+      setExpForm({ category_id: "", amount: "", note: "", date: todayStr() });
+      fetchAll();
+    } catch (e) {
+      setApiErr(e.message || "Failed to add expense.");
+    }
+    setSaving(false);
   };
 
-  const toggleExclude = (id) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, excluded: !e.excluded } : e)),
-    );
+  const handleAddIncome = async () => {
+    setApiErr("");
+    if (!incForm.amount) {
+      setApiErr("Amount is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createIncome({
+        amount: parseFloat(incForm.amount),
+        source: incForm.source,
+        note: incForm.note || null,
+        date: incForm.date,
+      });
+      setModal(null);
+      setIncForm({ amount: "", source: "Salary", note: "", date: todayStr() });
+      fetchAll();
+    } catch (e) {
+      setApiErr(e.message || "Failed to add income.");
+    }
+    setSaving(false);
+  };
+
+  const handleSetBudget = async () => {
+    setApiErr("");
+    if (!budForm.amount || !budForm.period_start || !budForm.period_end) {
+      setApiErr("Amount and period dates are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createBudget({
+        category_id: budForm.category_id || null,
+        amount: parseFloat(budForm.amount),
+        period_start: budForm.period_start,
+        period_end: budForm.period_end,
+      });
+      setModal(null);
+      setBudForm({
+        category_id: "",
+        amount: "",
+        period_start: todayStr(),
+        period_end: todayStr(),
+      });
+      fetchAll();
+    } catch (e) {
+      setApiErr(e.message || "Failed to set budget.");
+    }
+    setSaving(false);
   };
 
   const openModal = (type) => {
-    setModalType(type);
-    setForm({
-      amount: "",
-      date: today(),
-      category: "",
-      paymentMethod: "Kharcha Wallet",
-      remarks: "",
-    });
-    setShowModal(true);
+    setApiErr("");
+    setModal(type);
   };
-
-  const allCategories = [...new Set(entries.map((e) => e.category))];
 
   return (
     <div className="expenses-page">
@@ -274,6 +287,12 @@ export default function Expenses() {
             onClick={() => openModal("expense")}
           >
             <Plus size={16} /> Expense
+          </button>
+          <button
+            className="exp-btn budget"
+            onClick={() => openModal("budget")}
+          >
+            <Target size={16} /> Budget
           </button>
         </div>
       </div>
@@ -335,7 +354,7 @@ export default function Expenses() {
           <div>
             <p className="exp-summary-label">Total Expenses</p>
             <p className="exp-summary-amount">
-              NPR {totalExpense.toLocaleString()}
+              NPR {totalExpenses.toLocaleString()}
             </p>
           </div>
         </div>
@@ -354,15 +373,55 @@ export default function Expenses() {
         </div>
       </div>
 
+      {/* ── BUDGETS ── */}
+      {budgets.length > 0 && (
+        <div className="exp-budget-section">
+          <h3 className="exp-section-heading">Budgets</h3>
+          {budgets.map((b) => (
+            <div key={b.budget_id} className="exp-budget-card">
+              <div className="exp-budget-top">
+                <div>
+                  <p className="exp-budget-name">
+                    {b.categories?.name || "Overall"}
+                  </p>
+                  <p className="exp-budget-meta">
+                    NPR {parseFloat(b.spent || 0).toLocaleString()} of NPR{" "}
+                    {parseFloat(b.amount).toLocaleString()}
+                  </p>
+                </div>
+                <span
+                  className={`exp-budget-pct ${b.utilization_pct >= 90 ? "danger" : b.utilization_pct >= 70 ? "warn" : ""}`}
+                >
+                  {b.utilization_pct}%
+                </span>
+              </div>
+              <div className="exp-budget-bar-bg">
+                <div
+                  className="exp-budget-bar-fill"
+                  style={{
+                    width: `${Math.min(b.utilization_pct, 100)}%`,
+                    background:
+                      b.utilization_pct >= 90
+                        ? "#ef4444"
+                        : b.utilization_pct >= 70
+                          ? "#f59e0b"
+                          : "#1e5c38",
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── CHARTS ── */}
-      {barData.length > 0 && (
+      {!loading && (totalIncome > 0 || totalExpenses > 0) && (
         <div className="exp-charts-grid">
-          {/* Bar Chart */}
           <div className="exp-chart-card">
             <h3 className="exp-chart-title">Income vs Expenses</h3>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={barData}>
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v) => `NPR ${v.toLocaleString()}`} />
                 <Legend />
@@ -372,7 +431,6 @@ export default function Expenses() {
             </ResponsiveContainer>
           </div>
 
-          {/* Pie Chart */}
           {pieData.length > 0 && (
             <div className="exp-chart-card">
               <h3 className="exp-chart-title">Spending by Category</h3>
@@ -403,30 +461,7 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* Line Chart */}
-      {lineData.length > 1 && (
-        <div className="exp-chart-card full-width">
-          <h3 className="exp-chart-title">Spending Trend</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={lineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => `NPR ${v.toLocaleString()}`} />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke="#1e5c38"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* ── TRANSACTION LIST ── */}
+      {/* ── ENTRIES LIST ── */}
       <div className="exp-list-section">
         <div className="exp-list-header">
           <h3>Entries</h3>
@@ -442,11 +477,11 @@ export default function Expenses() {
             </select>
             <select
               className="exp-select"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
             >
               <option value="All">All Categories</option>
-              {allCategories.map((c) => (
+              {allCats.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -455,26 +490,28 @@ export default function Expenses() {
           </div>
         </div>
 
-        {filteredEntries.length === 0 ? (
+        {loading ? (
+          <p
+            className="exp-empty"
+            style={{ textAlign: "center", padding: "20px" }}
+          >
+            Loading...
+          </p>
+        ) : allEntries.length === 0 ? (
           <div className="exp-empty">
             <p>No entries yet. Add income or expense to get started.</p>
           </div>
         ) : (
           <div className="exp-list">
-            {filteredEntries.map((entry) => (
+            {allEntries.map((entry) => (
               <div key={entry.id} className={`exp-item ${entry.type}`}>
                 <div className="exp-item-left">
                   <div className={`exp-item-dot ${entry.type}`} />
                   <div>
-                    <p className="exp-item-cat">
-                      {entry.category}
-                      {entry.auto && (
-                        <span className="exp-auto-tag">[Auto]</span>
-                      )}
-                    </p>
+                    <p className="exp-item-cat">{entry.category}</p>
                     <p className="exp-item-meta">
-                      {entry.date} · {entry.paymentMethod}
-                      {entry.remarks ? ` · ${entry.remarks}` : ""}
+                      {entry.time}
+                      {entry.note ? ` · ${entry.note}` : ""}
                     </p>
                   </div>
                 </div>
@@ -483,14 +520,6 @@ export default function Expenses() {
                     {entry.type === "income" ? "+" : "-"} NPR{" "}
                     {entry.amount.toLocaleString()}
                   </span>
-                  {entry.auto && (
-                    <button
-                      className="exp-exclude-btn"
-                      onClick={() => toggleExclude(entry.id)}
-                    >
-                      Exclude
-                    </button>
-                  )}
                 </div>
               </div>
             ))}
@@ -498,116 +527,237 @@ export default function Expenses() {
         )}
       </div>
 
-      {/* ── ADD MODAL ── */}
-      {showModal && (
-        <div className="exp-modal-overlay" onClick={() => setShowModal(false)}>
+      {/* ── MODALS ── */}
+      {modal && (
+        <div className="exp-modal-overlay" onClick={() => setModal(null)}>
           <div className="exp-modal" onClick={(e) => e.stopPropagation()}>
             <div className="exp-modal-header">
               <div className="exp-modal-tabs">
                 <button
-                  className={modalType === "income" ? "active" : ""}
-                  onClick={() => setModalType("income")}
+                  className={modal === "income" ? "active" : ""}
+                  onClick={() => openModal("income")}
                 >
                   Income
                 </button>
                 <button
-                  className={modalType === "expense" ? "active" : ""}
-                  onClick={() => setModalType("expense")}
+                  className={modal === "expense" ? "active" : ""}
+                  onClick={() => openModal("expense")}
                 >
                   Expense
+                </button>
+                <button
+                  className={modal === "budget" ? "active" : ""}
+                  onClick={() => openModal("budget")}
+                >
+                  Budget
                 </button>
               </div>
               <button
                 className="exp-modal-close"
-                onClick={() => setShowModal(false)}
+                onClick={() => setModal(null)}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="exp-modal-body">
-              <div className="exp-form-group">
-                <label>Amount (NPR) *</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="exp-input"
-                />
-              </div>
+            {apiErr && <p className="exp-modal-err">{apiErr}</p>}
 
-              <div className="exp-form-group">
-                <label>Date *</label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="exp-input"
-                />
-              </div>
-
-              <div className="exp-form-group">
-                <label>Category *</label>
-                <select
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm({ ...form, category: e.target.value })
-                  }
-                  className="exp-input"
-                >
-                  <option value="">Select category</option>
-                  {(modalType === "income"
-                    ? INCOME_CATEGORIES
-                    : EXPENSE_CATEGORIES
-                  ).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {modalType === "expense" && (
+            {/* EXPENSE FORM */}
+            {modal === "expense" && (
+              <div className="exp-modal-body">
                 <div className="exp-form-group">
-                  <label>Payment Method</label>
+                  <label>Category *</label>
                   <select
-                    value={form.paymentMethod}
+                    value={expForm.category_id}
                     onChange={(e) =>
-                      setForm({ ...form, paymentMethod: e.target.value })
+                      setExpForm({ ...expForm, category_id: e.target.value })
                     }
                     className="exp-input"
                   >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
+                    <option value="">Select category</option>
+                    {/* ✅ FIXED: only real categories, no hardcoded fallback */}
+                    {categories.map((c) => (
+                      <option key={c.category_id} value={c.category_id}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
                 </div>
-              )}
-
-              <div className="exp-form-group">
-                <label>Remarks (optional)</label>
-                <input
-                  type="text"
-                  placeholder="Add a note..."
-                  value={form.remarks}
-                  onChange={(e) =>
-                    setForm({ ...form, remarks: e.target.value })
-                  }
-                  className="exp-input"
-                  maxLength={100}
-                />
+                <div className="exp-form-group">
+                  <label>Amount (NPR) *</label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={expForm.amount}
+                    onChange={(e) =>
+                      setExpForm({ ...expForm, amount: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Date *</label>
+                  <input
+                    type="date"
+                    value={expForm.date}
+                    onChange={(e) =>
+                      setExpForm({ ...expForm, date: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Note (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Add a note..."
+                    value={expForm.note}
+                    onChange={(e) =>
+                      setExpForm({ ...expForm, note: e.target.value })
+                    }
+                    className="exp-input"
+                    maxLength={100}
+                  />
+                </div>
+                <button
+                  className="exp-submit-btn expense"
+                  onClick={handleAddExpense}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Add Expense"}
+                </button>
               </div>
+            )}
 
-              <button
-                className={`exp-submit-btn ${modalType}`}
-                onClick={handleAdd}
-              >
-                Add {modalType === "income" ? "Income" : "Expense"}
-              </button>
-            </div>
+            {/* INCOME FORM */}
+            {modal === "income" && (
+              <div className="exp-modal-body">
+                <div className="exp-form-group">
+                  <label>Source *</label>
+                  <select
+                    value={incForm.source}
+                    onChange={(e) =>
+                      setIncForm({ ...incForm, source: e.target.value })
+                    }
+                    className="exp-input"
+                  >
+                    {INCOME_SOURCES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="exp-form-group">
+                  <label>Amount (NPR) *</label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={incForm.amount}
+                    onChange={(e) =>
+                      setIncForm({ ...incForm, amount: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Date *</label>
+                  <input
+                    type="date"
+                    value={incForm.date}
+                    onChange={(e) =>
+                      setIncForm({ ...incForm, date: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Note (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Add a note..."
+                    value={incForm.note}
+                    onChange={(e) =>
+                      setIncForm({ ...incForm, note: e.target.value })
+                    }
+                    className="exp-input"
+                    maxLength={100}
+                  />
+                </div>
+                <button
+                  className="exp-submit-btn income"
+                  onClick={handleAddIncome}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Add Income"}
+                </button>
+              </div>
+            )}
+
+            {/* BUDGET FORM */}
+            {modal === "budget" && (
+              <div className="exp-modal-body">
+                <div className="exp-form-group">
+                  <label>Category (leave empty for overall budget)</label>
+                  <select
+                    value={budForm.category_id}
+                    onChange={(e) =>
+                      setBudForm({ ...budForm, category_id: e.target.value })
+                    }
+                    className="exp-input"
+                  >
+                    <option value="">Overall Budget</option>
+                    {/* ✅ FIXED: only real categories, no hardcoded fallback */}
+                    {categories.map((c) => (
+                      <option key={c.category_id} value={c.category_id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="exp-form-group">
+                  <label>Budget Amount (NPR) *</label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={budForm.amount}
+                    onChange={(e) =>
+                      setBudForm({ ...budForm, amount: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Period Start *</label>
+                  <input
+                    type="date"
+                    value={budForm.period_start}
+                    onChange={(e) =>
+                      setBudForm({ ...budForm, period_start: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <div className="exp-form-group">
+                  <label>Period End *</label>
+                  <input
+                    type="date"
+                    value={budForm.period_end}
+                    onChange={(e) =>
+                      setBudForm({ ...budForm, period_end: e.target.value })
+                    }
+                    className="exp-input"
+                  />
+                </div>
+                <button
+                  className="exp-submit-btn budget"
+                  onClick={handleSetBudget}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Set Budget"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
