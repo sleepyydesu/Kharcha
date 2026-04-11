@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTransactions, getTransactionCategories } from "../services/api";
+import giftcardIcon   from "../assets/giftcardIcon.png";
+import walletLoadIcon from "../assets/walletLoadIcon.svg";
+import walletSendIcon from "../assets/walletSendIcon.svg";
 import "./Statements.css";
 
 function toISO(date) {
@@ -36,11 +39,41 @@ function fmtAmt(amount, type) {
   return (type === "sent" ? "− " : "+ ") + "Rs. " + abs;
 }
 
-function Avatar({ name, src, icon }) {
-  if (src) return <img className="stmt-avatar stmt-avatar--img" src={src} alt={name} />;
-  if (icon) return <span className="stmt-avatar stmt-avatar--icon">{icon}</span>;
-  const initials = (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-  return <span className="stmt-avatar stmt-avatar--initials">{initials}</span>;
+// ── Transaction display helpers ──────────────────────────────
+function getTxLabel(t) {
+  const cp   = t.counterparty;
+  const name = cp?.display_name || "Unknown";
+  const isOrg    = cp?.account_type === "organization";
+  const isSystem = cp?.account_type === "system";
+  const isKhalti = t.method === "khalti";
+
+  if (isKhalti) return "Loaded funds through Khalti";
+  if (isSystem)  return "Loaded funds through Gift Card";
+  if (isOrg && t.type === "sent")     return `Paid to ${name}`;
+  if (isOrg && t.type === "received") return `Fund transferred by ${name}`;
+  if (t.type === "sent")              return `Fund transferred to ${name}`;
+  return `Fund transferred by ${name}`;
+}
+
+function getTxAvatar(t) {
+  const cp    = t.counterparty;
+  const isOrg = cp?.account_type === "organization";
+  const isSystem = cp?.account_type === "system";
+
+  // Gift card → gift card logo
+  if (isSystem) return { src: giftcardIcon, name: "Gift Card" };
+  // Org sending to user (user received from org) → org profile picture
+  if (isOrg && t.type === "received") return { src: cp.profile_picture || walletLoadIcon, name: cp.display_name };
+  // Org receiving from user (user sent to org) → load money icon
+  if (isOrg && t.type === "sent") return { src: cp.profile_picture || walletSendIcon, name: "Load" };
+  // User → user sent → send icon; received → load icon
+  if (t.type === "sent") return { src: walletSendIcon, name: "Send" };
+  return { src: walletLoadIcon, name: "Load" };
+}
+
+function Avatar({ t }) {
+  const { src, name } = getTxAvatar(t);
+  return <img className="stmt-avatar stmt-avatar--img" src={src} alt={name} />;
 }
 
 // Load SheetJS from CDN and export xlsx
@@ -352,9 +385,9 @@ export default function Statements() {
                         tabIndex={0}
                         onKeyDown={e => e.key === "Enter" && navigate(`/statements/${t.transaction_id}`)}
                       >
-                        <Avatar name={t.counterparty?.display_name} src={t.counterparty?.profile_picture} icon={t.category_icon} />
+                        <Avatar t={t} />
                         <div className="stmt-row__body">
-                          <span className="stmt-row__name">{t.counterparty?.display_name || "Unknown"}</span>
+                          <span className="stmt-row__name">{getTxLabel(t)}</span>
                           <span className="stmt-row__meta">
                             {t.category && <span className="stmt-row__tag">{t.category}</span>}
                             {t.remarks  && <span className="stmt-row__remarks">{t.remarks}</span>}

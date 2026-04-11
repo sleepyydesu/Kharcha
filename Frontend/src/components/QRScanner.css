@@ -1,0 +1,377 @@
+/* ─────────────────────────────────────────────────────────────
+   QR Scanner — full-screen portal overlay
+   ───────────────────────────────────────────────────────────── */
+
+.qrs__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #080e0b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    /* slide in from bottom */
+    animation: qrs-enter 0.22s ease;
+}
+@keyframes qrs-enter {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.qrs__close {
+    position: absolute;
+    top: 1rem;
+    right: 1.1rem;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: background 0.16s;
+    flex-shrink: 0;
+}
+.qrs__close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.qrs__titlebar {
+    padding-top: 1.1rem;
+    flex-shrink: 0;
+}
+.qrs__title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* ── Body ─────────────────────────────────────────────────────── */
+.qrs__body {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+}
+
+/* ── Camera ──────────────────────────────────────────────────── */
+.qrs__camera-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qrs__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Vignette + reticle on top of the video */
+.qrs__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* dark surround, clear window */
+    background:
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 20%),
+        linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 20%),
+        radial-gradient(
+            ellipse 260px 260px at 50% 48%,
+            transparent 46%,
+            rgba(0, 0, 0, 0.55) 48%
+        );
+    pointer-events: none;
+}
+
+/* ── Reticle ─────────────────────────────────────────────────── */
+.qrs__reticle {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    margin-bottom: 1.2rem;
+}
+
+.qrs__corner {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-color: #f5c800;
+    border-style: solid;
+    border-radius: 3px;
+}
+.qrs__corner--tl {
+    top: 0;
+    left: 0;
+    border-width: 3px 0 0 3px;
+}
+.qrs__corner--tr {
+    top: 0;
+    right: 0;
+    border-width: 3px 3px 0 0;
+}
+.qrs__corner--bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 3px 3px;
+}
+.qrs__corner--br {
+    bottom: 0;
+    right: 0;
+    border-width: 0 3px 3px 0;
+}
+
+.qrs__scanline {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 2px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        #f5c800 40%,
+        #f5c800 60%,
+        transparent
+    );
+    border-radius: 1px;
+    animation: scanline 2.2s ease-in-out infinite;
+}
+@keyframes scanline {
+    0% {
+        top: 6px;
+        opacity: 0.9;
+    }
+    50% {
+        top: 226px;
+        opacity: 0.9;
+    }
+    100% {
+        top: 6px;
+        opacity: 0.9;
+    }
+}
+
+.qrs__hint {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.82rem;
+    text-align: center;
+    letter-spacing: 0.02em;
+    margin: 0;
+    position: absolute;
+    bottom: -2.6rem;
+    width: 100%;
+}
+
+/* ── Error / unsupported screens ─────────────────────────────── */
+.qrs__cam-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 2rem 2.5rem;
+    max-width: 340px;
+}
+.qrs__cam-icon {
+    font-size: 2.5rem;
+}
+.qrs__cam-title {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.25rem 0 0;
+}
+.qrs__cam-sub {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.88rem;
+    line-height: 1.55;
+    margin: 0;
+}
+.qrs__retry-btn {
+    margin-top: 0.75rem;
+    padding: 0.55rem 1.6rem;
+    border-radius: 99px;
+    background: var(--primary, #1a5c39);
+    color: #fff;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ── Processing screen ───────────────────────────────────────── */
+.qrs__processing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+.qrs__processing-ring {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--primary, #1a5c39);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pop 0.28s ease;
+}
+@keyframes pop {
+    0% {
+        transform: scale(0.65);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+.qrs__processing-text {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.97rem;
+    font-weight: 500;
+}
+
+/* ── My QR Code ──────────────────────────────────────────────── */
+.qrs__myqr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 1.5rem 1rem;
+}
+
+.qrs__myqr-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 1.8rem 2.2rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+    min-width: 260px;
+    animation: pop 0.3s ease;
+}
+
+.qrs__myqr-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.qrs__myqr-canvas {
+    border-radius: 8px;
+    display: block;
+}
+
+.qrs__myqr-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0.2rem 0 0;
+    text-align: center;
+}
+
+.qrs__myqr-id {
+    font-size: 0.87rem;
+    color: #666;
+    margin: 0;
+    letter-spacing: 0.04em;
+}
+
+.qrs__myqr-note {
+    font-size: 0.74rem;
+    color: #bbb;
+    margin: 0.25rem 0 0;
+    text-align: center;
+}
+
+/* Skeleton */
+.qrs__skeleton {
+    border-radius: 8px;
+    background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+.qrs__skeleton--square {
+    width: 220px;
+    height: 220px;
+}
+.qrs__skeleton--line {
+    width: 120px;
+    height: 16px;
+    border-radius: 4px;
+}
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ── Footer toggle ───────────────────────────────────────────── */
+.qrs__footer {
+    flex-shrink: 0;
+    padding: 1rem 1rem 2.2rem;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.qrs__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.75rem 2rem;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.11);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background 0.16s,
+        transform 0.12s;
+    backdrop-filter: blur(8px);
+}
+.qrs__toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+.qrs__toggle:active {
+    transform: translateY(0);
+}
