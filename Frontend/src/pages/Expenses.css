@@ -1,0 +1,492 @@
+/* ─── PAGE ─────────────────────────────────────────────────── */
+.expenses-page {
+  padding: 20px 16px 100px;
+  background: #f6f8f6;
+  min-height: 100vh;
+}
+
+/* ─── HEADER ────────────────────────────────────────────────── */
+.exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.exp-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.exp-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.exp-header-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.exp-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exp-btn.income {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.exp-btn.expense {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.exp-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ─── DATE FILTERS ──────────────────────────────────────────── */
+.exp-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.exp-filter-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.exp-filter-btn.active {
+  background: #1e5c38;
+  color: white;
+  border-color: #1e5c38;
+}
+
+.exp-custom-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.exp-date-input {
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  background: white;
+  outline: none;
+}
+
+.exp-date-input:focus {
+  border-color: #1e5c38;
+}
+
+/* ─── SUMMARY CARDS ─────────────────────────────────────────── */
+.exp-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.exp-summary-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8f2ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.exp-summary-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.income-card .exp-summary-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.expense-card .exp-summary-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.savings-card .exp-summary-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.savings-card.negative .exp-summary-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.exp-summary-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0 0 3px;
+}
+
+.exp-summary-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* ─── CHARTS ────────────────────────────────────────────────── */
+.exp-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.exp-chart-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e8f2ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.exp-chart-card.full-width {
+  margin-bottom: 12px;
+}
+
+.exp-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 12px;
+}
+
+/* ─── LIST SECTION ──────────────────────────────────────────── */
+.exp-list-section {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e8f2ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.exp-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.exp-list-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.exp-list-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.exp-select {
+  padding: 6px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 12px;
+  background: white;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+}
+
+.exp-select:focus {
+  border-color: #1e5c38;
+}
+
+.exp-empty {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ─── LIST ITEMS ────────────────────────────────────────────── */
+.exp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exp-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f9fbf9;
+  border: 1px solid #eef2f7;
+  transition: all 0.2s ease;
+}
+
+.exp-item:hover {
+  transform: translateX(2px);
+}
+
+.exp-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exp-item-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.exp-item-dot.income {
+  background: #16a34a;
+}
+.exp-item-dot.expense {
+  background: #dc2626;
+}
+
+.exp-item-cat {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.exp-item-meta {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.exp-auto-tag {
+  font-size: 10px;
+  background: #e8f5e9;
+  color: #1e5c38;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.exp-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.exp-item-amount {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.exp-item-amount.income {
+  color: #16a34a;
+}
+.exp-item-amount.expense {
+  color: #dc2626;
+}
+
+.exp-exclude-btn {
+  font-size: 10px;
+  color: #64748b;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────── */
+.exp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.exp-modal {
+  background: white;
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.exp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.exp-modal-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.exp-modal-tabs button {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.exp-modal-tabs button.active {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exp-modal-close {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.exp-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.exp-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.exp-input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #f9fbf9;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.exp-input:focus {
+  border-color: #1e5c38;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(30, 92, 56, 0.1);
+}
+
+.exp-submit-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+}
+
+.exp-submit-btn.income {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
+}
+
+.exp-submit-btn.expense {
+  background: linear-gradient(135deg, #1e5c38, #2e7d55);
+  color: white;
+  box-shadow: 0 8px 20px rgba(30, 92, 56, 0.25);
+}
+
+.exp-submit-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ─── RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .exp-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exp-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exp-summary-card {
+    padding: 12px;
+  }
+}
