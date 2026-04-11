@@ -373,9 +373,15 @@ export default function LoadMoney() {
             </button>
 
             {view === "choose" && <ChooseView onSelect={setView} />}
-            {view === "khalti" && <KhaltiView />}
+            {view === "khalti" && (
+                <div className="lm__view-wrap">
+                    <KhaltiView />
+                </div>
+            )}
             {view === "giftcard" && (
-                <GiftView onSuccess={() => setView("choose")} />
+                <div className="lm__view-wrap">
+                    <GiftView onSuccess={() => setView("choose")} />
+                </div>
             )}
         </div>
     );

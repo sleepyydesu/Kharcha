@@ -19,6 +19,7 @@ const {
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
+const categoryRoutes = require("./routes/catgoryRoutes");
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gift-cards", giftCardRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getTransactionById } from "../services/api";
+import giftcardIcon   from "../assets/giftcardIcon.png";
+import walletLoadIcon from "../assets/walletLoadIcon.svg";
+import walletSendIcon from "../assets/walletSendIcon.svg";
 import "./StatementDetail.css";
 
 function fmtDate(iso) {
@@ -21,18 +24,22 @@ function fmtAmt(amount) {
   });
 }
 
-function Avatar({ name, src, size = 52 }) {
-  if (src) {
-    return (
-      <img
-        className="txd-avatar txd-avatar--img"
-        src={src}
-        alt={name}
-        style={{ width: size, height: size }}
-      />
-    );
+function Avatar({ party, role, size = 52 }) {
+  const { account_type, display_name, profile_picture } = party || {};
+
+  // Gift card / system account → gift card logo
+  if (account_type === "system") {
+    return <img className="txd-avatar txd-avatar--img" src={giftcardIcon} alt="Gift Card" style={{ width: size, height: size }} />;
   }
-  const initials = (name || "?")
+
+  // Organisation → their uploaded logo
+  if (account_type === "organization" && profile_picture) {
+    return <img className="txd-avatar txd-avatar--img" src={profile_picture} alt={display_name} style={{ width: size, height: size }} />;
+  }
+
+  // User (or org with no logo) → initials only, no profile picture
+  const fallbackIcon = role === "sender" ? walletLoadIcon : walletSendIcon;
+  const initials = (display_name || "?")
     .split(" ")
     .map((w) => w[0])
     .join("")
@@ -145,7 +152,7 @@ export default function StatementDetail() {
               <div className="txd-parties">
                 {/* Sender */}
                 <div className="txd-party">
-                  <Avatar name={tx.sender.display_name} src={tx.sender.profile_picture} />
+                  <Avatar party={tx.sender} role="sender" />
                   <div className="txd-party__info">
                     <span className="txd-party__role">From</span>
                     <span className="txd-party__name">{tx.sender.display_name || "Unknown"}</span>
@@ -164,7 +171,7 @@ export default function StatementDetail() {
 
                 {/* Receiver */}
                 <div className="txd-party">
-                  <Avatar name={tx.receiver.display_name} src={tx.receiver.profile_picture} />
+                  <Avatar party={tx.receiver} role="receiver" />
                   <div className="txd-party__info">
                     <span className="txd-party__role">To</span>
                     <span className="txd-party__name">{tx.receiver.display_name || "Unknown"}</span>

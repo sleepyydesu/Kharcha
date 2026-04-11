@@ -24,6 +24,7 @@ async function request(path, options = {}) {
 
 // ── Wallet ────────────────────────────────────────────────────
 export const getWallet      = ()       => request('/wallet');
+// body: { receiver_identifier, amount, category_id?, remarks?, mpin }
 export const transfer       = (body)   => request('/wallet/transfer', { method: 'POST', body: JSON.stringify(body) });
 export const lookupReceiver = (id)     => request(`/wallet/lookup?identifier=${encodeURIComponent(id)}`);
 
@@ -53,6 +54,30 @@ export const getTransactions = (params = {}) => {
 
 export const getTransactionCategories = () => request('/transactions/categories');
 export const getTransactionById       = (id) => request(`/transactions/${encodeURIComponent(id)}`);
+
+// ── Categories (Expense Tracker) ──────────────────────────────
+export const getCategories    = ()     => request('/categories');
+export const createCategory   = (body) => request('/categories', { method: 'POST', body: JSON.stringify(body) });
+export const updateCategory   = (id, body) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const deleteCategory   = (id)  => request(`/categories/${id}`, { method: 'DELETE' });
+
+/**
+ * Upload an image icon for a custom category.
+ *
+ * Usage:
+ *   const file = e.target.files[0];
+ *   const reader = new FileReader();
+ *   reader.onload = async (ev) => {
+ *     const base64 = ev.target.result.split(',')[1];
+ *     const { icon_url } = await uploadCategoryIcon(categoryId, { file_base64: base64, mime_type: file.type });
+ *   };
+ *   reader.readAsDataURL(file);
+ */
+export const uploadCategoryIcon = (id, body) =>
+  request(`/categories/${id}/icon`, { method: 'POST', body: JSON.stringify(body) });
+
+export const deleteCategoryIcon = (id) =>
+  request(`/categories/${id}/icon`, { method: 'DELETE' });
 
 // ── KYC Verification ──────────────────────────────────────────
 export const submitKYC = (body) =>

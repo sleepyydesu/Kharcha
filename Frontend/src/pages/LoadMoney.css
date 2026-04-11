@@ -1,6 +1,8 @@
 .lm {
   padding: 36px 40px;
-  max-width: 560px;
+  min-height: calc(100vh - 36px); /* fill content area */
+  display: flex;
+  flex-direction: column;
 }
 
 .lm__back {
@@ -11,6 +13,19 @@
   transition: color 0.15s;
 }
 .lm__back:hover { color: var(--primary); }
+
+/* ── Choose view ────────────────────────────────────────── */
+.lm__choose {
+  max-width: 560px;
+}
+
+/* Vertically centres the Khalti / Gift Card view inside .lm */
+.lm__view-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Khalti result banner ────────────────────────────────── */
 .lm__banner {
@@ -114,6 +129,9 @@
 
 /* ── Form wrap ───────────────────────────────────────────── */
 .lm__form-wrap {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 22px;
@@ -253,6 +271,9 @@
 
 /* Success */
 .lm__success {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
   text-align: center;
   padding: 48px 24px;
 }

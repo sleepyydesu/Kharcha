@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import BalancePanel from "./components/BalancePanel";
 import QRScanner from "./components/QRScanner";
@@ -13,15 +13,15 @@ import SetToken from "./pages/setToken";
 import "./styles/variables.css";
 import "./App.css";
 
-function App() {
-    const [qrOpen, setQrOpen] = useState(false);
-
+function AppShell({ qrOpen, setQrOpen }) {
+    const location = useLocation();
+    const isDashboard = location.pathname === "/";
     return (
-        <BrowserRouter>
+        <>
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
-                <BalancePanel />
-                <main className="app-content">
+                <BalancePanel dashboardOnly={!isDashboard} />
+                <main className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}>
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/load" element={<LoadMoney />} />
@@ -39,6 +39,15 @@ function App() {
 
             {/* QR Scanner — portal overlay, renders above everything */}
             <QRScanner open={qrOpen} onClose={() => setQrOpen(false)} />
+        </>
+    );
+}
+
+function App() {
+    const [qrOpen, setQrOpen] = useState(false);
+    return (
+        <BrowserRouter>
+            <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
         </BrowserRouter>
     );
 }

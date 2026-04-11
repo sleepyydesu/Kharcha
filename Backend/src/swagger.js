@@ -47,6 +47,28 @@ const swaggerSpec = {
                     error: { type: "string" },
                 },
             },
+            ExpenseCategoryObject: {
+                type: "object",
+                properties: {
+                    category_id: { type: "string", format: "uuid", example: "c1d2e3f4-0000-0000-0000-abcdef123456" },
+                    user_id: {
+                        type: "string",
+                        format: "uuid",
+                        nullable: true,
+                        description: "null for default (system) categories; UUID for user-created categories.",
+                        example: null,
+                    },
+                    name:       { type: "string", example: "Food & Dining" },
+                    icon: {
+                        type: "string",
+                        description: "Emoji/text token (e.g. '🍔') for system categories, or a Supabase Storage public URL for user-uploaded image icons.",
+                        example: "🍔",
+                    },
+                    color:      { type: "string", pattern: "^#[0-9A-Fa-f]{6}$", example: "#F97316" },
+                    is_default: { type: "boolean", description: "true for system categories; false for user-created ones.", example: true },
+                    created_at: { type: "string", format: "date-time", example: "2025-01-01T00:00:00.000Z" },
+                },
+            },
             AccountObject: {
                 type: "object",
                 properties: {
@@ -360,6 +382,11 @@ const swaggerSpec = {
             name: "Admin — Accounts",
             description:
                 "Admin account management. Supports bootstrap mode (first admin ever, using a server-side code) and normal mode (logged-in admin creates another admin).",
+        },
+        {
+            name: "Categories",
+            description:
+                "Expense tracker categories — list default + user-created categories, create/edit/delete custom ones, and upload/remove per-category icon images.",
         },
     ],
     paths: {
@@ -4075,6 +4102,238 @@ const swaggerSpec = {
                     200: { description: "Gift card deactivated", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
                     404: { description: "Gift card not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
                     409: { description: "Gift card already inactive", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ── Categories ───────────────────────────────────────────────────────
+        "/api/categories": {
+            get: {
+                tags: ["Categories"],
+                summary: "List categories",
+                description:
+                    "Returns all default (system-wide) categories plus any custom categories created by the authenticated user. Results are ordered: defaults first, then alphabetically by name.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Category list",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: {
+                                            type: "array",
+                                            items: { $ref: "#/components/schemas/ExpenseCategoryObject" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            post: {
+                tags: ["Categories"],
+                summary: "Create a custom category",
+                description:
+                    "Creates a new category owned by the authenticated user. `icon` can be any emoji or text token (e.g. `'🍔'`); use `POST /api/categories/{id}/icon` to upload an image instead. `color` must be a 6-digit hex string.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["name"],
+                                properties: {
+                                    name:  { type: "string", maxLength: 80, example: "Groceries" },
+                                    icon:  { type: "string", example: "🛒", description: "Emoji/text token or storage URL. Defaults to 'tag'." },
+                                    color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$", example: "#22C55E" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Category created",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: { $ref: "#/components/schemas/ExpenseCategoryObject" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Validation error (missing name, invalid color, name too long)", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    409: { description: "A category with this name already exists", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+        "/api/categories/{id}": {
+            put: {
+                tags: ["Categories"],
+                summary: "Update a custom category",
+                description:
+                    "Updates the name, icon, and/or color of a category owned by the authenticated user. Default (system) categories cannot be edited. All fields are optional — send only what you want to change.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the category to update",
+                    },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    name:  { type: "string", maxLength: 80, example: "Eating Out" },
+                                    icon:  { type: "string", example: "🍽️" },
+                                    color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$", example: "#F97316" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Category updated",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: { $ref: "#/components/schemas/ExpenseCategoryObject" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Category not found or not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            delete: {
+                tags: ["Categories"],
+                summary: "Delete a custom category",
+                description:
+                    "Permanently deletes a category owned by the authenticated user. If the category had an uploaded image icon, the file is also removed from storage. Default categories cannot be deleted.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the category to delete",
+                    },
+                ],
+                responses: {
+                    200: { description: "Category deleted", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Category not found or not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+        "/api/categories/{id}/icon": {
+            post: {
+                tags: ["Categories"],
+                summary: "Upload a category icon image",
+                description:
+                    "Uploads a custom image icon for a category owned by the authenticated user. The file must be sent as a base64-encoded string in the JSON body. Allowed types: JPEG, PNG, WebP, SVG. Max size: 2 MB. The uploaded image URL is persisted to `categories.icon` and returned in the response. Calling this again overwrites the previous icon.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the category to attach the icon to",
+                    },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["file_base64", "mime_type"],
+                                properties: {
+                                    file_base64: {
+                                        type: "string",
+                                        format: "byte",
+                                        description: "Base64-encoded image file contents (no data-URI prefix).",
+                                        example: "iVBORw0KGgoAAAANSUhEUgAA...",
+                                    },
+                                    mime_type: {
+                                        type: "string",
+                                        enum: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"],
+                                        example: "image/png",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Icon uploaded — returns the public URL saved to the category",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:  { type: "boolean", example: true },
+                                        icon_url: {
+                                            type: "string",
+                                            format: "uri",
+                                            example: "https://<project>.supabase.co/storage/v1/object/public/category-icons/<userId>/<categoryId>.png?v=1712750000000",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing fields, unsupported MIME type, or file exceeds 2 MB", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Category not found or not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            delete: {
+                tags: ["Categories"],
+                summary: "Remove a category icon image",
+                description:
+                    "Deletes the uploaded icon image from Supabase Storage and reverts the category's `icon` field back to the default text token `'tag'`. Safe to call even if no image was previously uploaded.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the category whose icon should be removed",
+                    },
+                ],
+                responses: {
+                    200: { description: "Icon removed, category reverted to default 'tag' icon", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Category not found or not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
                 },
             },
         },

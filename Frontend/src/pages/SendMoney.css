@@ -331,3 +331,406 @@
 .sm__success .sm__btn {
     max-width: 320px;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Step Bar
+   ───────────────────────────────────────────────────────────── */
+
+.sm__stepbar {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 1.6rem;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+}
+
+.sm__step-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.sm__step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--shaded-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    z-index: 1;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.sm__step-dot--active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+.sm__step-dot--done {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+.sm__step-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.sm__step-label--active {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.sm__step-line {
+    position: absolute;
+    top: 14px;
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+    height: 2px;
+    background: var(--border);
+    transition: background 0.2s;
+}
+
+.sm__step-line--done {
+    background: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Pane (shared step container)
+   ───────────────────────────────────────────────────────────── */
+
+.sm__pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.sm__pane-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 1.2rem;
+}
+
+.sm__pane-sub {
+    font-size: 0.9rem;
+    color: var(--text-sub);
+    margin: 0 0 1.4rem;
+    text-align: center;
+}
+
+.sm__input-row--err {
+    border-color: var(--error-text) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Receiver Chip
+   ───────────────────────────────────────────────────────────── */
+
+.sm__receiver-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: var(--success-bg);
+    border: 1.5px solid var(--success-border);
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.3rem;
+}
+
+.sm__receiver-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.sm__receiver-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sm__receiver-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sm__receiver-name {
+    font-weight: 700;
+    font-size: 0.97rem;
+    color: var(--text-color);
+}
+
+.sm__receiver-phone {
+    font-size: 0.82rem;
+    color: var(--text-sub);
+    margin-top: 0.1rem;
+}
+
+.sm__receiver-verified {
+    color: var(--success-text);
+    flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Category Grid
+   ───────────────────────────────────────────────────────────── */
+
+.sm__cats-loading {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    padding: 1rem 0;
+}
+
+.sm__cats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.55rem;
+}
+
+.sm__cat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--shaded-background);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sm__cat-item:hover {
+    border-color: var(--primary);
+}
+
+.sm__cat-item--active {
+    border-color: var(--primary);
+    background: var(--success-bg);
+}
+
+.sm__cat-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.6rem;
+}
+
+.sm__cat-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.sm__cat-name {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.sm__cat-item--active .sm__cat-name {
+    color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Confirm Card
+   ───────────────────────────────────────────────────────────── */
+
+.sm__confirm-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 1.4rem;
+}
+
+.sm__confirm-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 1.4rem 1.2rem 1.2rem;
+    background: var(--shaded-background);
+}
+
+.sm__confirm-currency {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+
+.sm__confirm-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+}
+
+.sm__confirm-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.sm__confirm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 1.2rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.sm__confirm-row:last-child {
+    border-bottom: none;
+}
+
+.sm__confirm-key {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    padding-top: 0.05rem;
+}
+
+.sm__confirm-val {
+    font-size: 0.93rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-align: right;
+}
+
+.sm__confirm-val--remark {
+    color: var(--text-sub);
+    font-style: italic;
+    font-weight: 400;
+}
+
+.sm__confirm-phone {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MPIN Pad
+   ───────────────────────────────────────────────────────────── */
+
+.sm__pane--mpin {
+    align-items: center;
+}
+
+.sm__pane--mpin .sm__pane-title {
+    text-align: center;
+}
+
+.sm__mpin-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.4rem;
+    margin-bottom: 1.2rem;
+}
+
+.sm__mpin-dots {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.sm__mpin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    transition: all 0.15s;
+}
+
+.sm__mpin-dot--filled {
+    border-color: var(--primary);
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+.sm__mpin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 72px);
+    gap: 0.6rem;
+}
+
+.sm__mpin-key {
+    width: 72px;
+    height: 56px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--shaded-background);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sm__mpin-key:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: var(--success-bg);
+    color: var(--primary);
+}
+
+.sm__mpin-key:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.sm__mpin-key--empty {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.sm__mpin-key--del {
+    font-size: 1rem;
+    color: var(--text-sub);
+}
+
+.sm__mpin-key:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Success remark */
+.sm__success-remark {
+    color: var(--text-sub);
+    font-style: italic;
+    font-size: 0.9rem;
+    margin: 0 0 1.2rem;
+}

@@ -105,31 +105,31 @@ export const theme = {
 
   dark: {
     // ── Brand ────────────────────────────────────────────────
-    primary:           "#1a5c39",
+    primary:           "#212328",
     primaryDark:       "#154d30",
     accent:            "#f5c800",
     accentSelected:    "#d4b800",
     primaryText:       "#133f28",
 
     // ── Page backgrounds ────────────────────────────────────
-    background:        "#0f1a14",
-    shadedBackground:  "#162010",
-    card:              "#182517",
+    background:        "#0c1014",
+    shadedBackground:  "#0c1014",
+    card:              "#212328",
 
     // ── Borders ─────────────────────────────────────────────
-    border:            "#2a3d2f",
-    borderSubtle:      "#2a3d2f",
-    borderPanel:       "#2a3d2f",
+    border:            "#4b4b4b",
+    borderSubtle:      "#4b4b4b",
+    borderPanel:       "#4b4b4b",
 
     // ── Text ────────────────────────────────────────────────
-    text:              "#e4ede7",
-    textSub:           "#8ba897",
-    textMuted:         "#5e7a68",
+    text:              "#ffffff",
+    textSub:           "#bebebe",
+    textMuted:         "#a8a8a8",
     textSidebarItem:   "rgba(255,255,255,0.75)",
-    textHello:         "#6b9e7a",
+    textHello:         "#adadad",
 
     // ── Inputs ──────────────────────────────────────────────
-    inputBg:           "#0d1a10",
+    inputBg:           "#292929",
 
     // ── Status colors ────────────────────────────────────────
     successText:       "#4ade80",

@@ -172,7 +172,7 @@
   border: none;
   font-size: .72rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--text-sub);
   cursor: pointer;
   padding: .1rem .3rem;
   border-radius: 4px;
@@ -246,7 +246,7 @@
 }
 .acct-wallet-strip svg { color: var(--primary); flex-shrink: 0; }
 .acct-wallet-label { font-size: .8rem; color: var(--text-sub); flex: 1; }
-.acct-wallet-val   { font-size: .9rem; font-weight: 700; color: var(--primary); }
+.acct-wallet-val   { font-size: .9rem; font-weight: 700; color: var(--text-color); }
 
 /* ── KYC card ──────────────────────────────────────────────── */
 .acct-card--kyc {
@@ -314,7 +314,7 @@
   font-weight: 800;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: var(--text-sub);
   padding: .5rem 0 .6rem;
 }
 .acct-section-cards {
@@ -480,7 +480,7 @@
   flex-shrink: 0;
   transition: background .2s;
 }
-[data-theme="dark"] .acct-theme-switch { background: var(--primary); }
+[data-theme="dark"] .acct-theme-switch { background: var(--background); }
 
 .acct-theme-switch__thumb {
   position: absolute;
