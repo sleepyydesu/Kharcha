@@ -1,27 +1,7 @@
-// SignupForm.jsx
-// Multi-step registration — field names match the backend exactly.
-//
-// What the backend actually requires (read from authController.js):
-//
-//  POST /api/auth/signup/check
-//    { email (required), phone_number (optional), account_type }
-//
-//  POST /api/auth/signup/send-otp
-//    { email }                          ← OTP goes to EMAIL, not phone
-//
-//  POST /api/auth/signup/verify-otp
-//    { email, otp }                     ← email + otp code
-//
-//  POST /api/auth/signup/complete
-//    { signup_token, account_type, password, phone_number (optional),
-//      full_name (required when account_type === "user"),
-//      organization_name (required when account_type === "organization") }
-
 import { useState, useRef } from "react";
-import api from "../api";
+import { signupCheck, signupSendOtp, signupVerifyOtp, signupComplete } from "../services/api";
 import InputField from "./InputField";
 
-// ── Progress Bar ──────────────────────────────────────────────
 function ProgressBar({ currentStep, totalSteps = 4 }) {
   return (
     <div className="progress-bar">
@@ -43,29 +23,34 @@ function ProgressBar({ currentStep, totalSteps = 4 }) {
   );
 }
 
-// ── Main SignupForm ───────────────────────────────────────────
-function SignupForm() {
+function SignupForm({ onLogin }) {
   const [step, setStep] = useState(1);
-  const [accountType, setAccountType] = useState(""); // 'user' | 'organization'
+  const [accountType, setAccountType] = useState("");
 
   const [form, setForm] = useState({
-    email: "", // REQUIRED by backend for check + OTP
-    phone_number: "", // optional
-    full_name: "", // required when accountType === 'user'
-    organization_name: "", // required when accountType === 'organization'
+    email: "",
+    phone_number: "",
+    full_name: "",
+    organization_name: "",
     password: "",
     confirmPassword: "",
   });
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [signupToken, setSignupToken] = useState("");
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
-  // ── Helpers ──────────────────────────────────────────────────
+  // Prepend +977 if the user typed a bare 10-digit Nepali number
+  function normalizePhone(raw) {
+    const val = raw.trim();
+    if (!val) return val;
+    if (val.startsWith("+977")) return val;
+    if (/^(97|98)\d{8}$/.test(val)) return "+977" + val;
+    return val;
+  }
 
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -87,8 +72,6 @@ function SignupForm() {
     }
   }
 
-  // ── Validation ───────────────────────────────────────────────
-
   function validateStep1() {
     if (!accountType) {
       setErrors({ userType: "Please select an account type to continue" });
@@ -100,14 +83,12 @@ function SignupForm() {
   function validateStep2() {
     const e = {};
 
-    // Email is REQUIRED (backend /check and /send-otp both need it)
     if (!form.email.trim()) {
       e.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       e.email = "Please enter a valid email address";
     }
 
-    // Name field — depends on account type
     if (accountType === "user" && !form.full_name.trim()) {
       e.full_name = "Full name is required";
     }
@@ -115,7 +96,6 @@ function SignupForm() {
       e.organization_name = "Organization name is required";
     }
 
-    // Phone is optional — validate format only if provided
     if (form.phone_number && !/^(97|98)\d{8}$/.test(form.phone_number)) {
       e.phone_number = "Enter a valid Nepali number (97XXXXXXXX or 98XXXXXXXX)";
     }
@@ -129,16 +109,13 @@ function SignupForm() {
     if (!form.confirmPassword) {
       e.confirmPassword = "Please confirm your password";
     } else if (form.password !== form.confirmPassword) {
-      e.confirmPassword = "Password invalid";
+      e.confirmPassword = "Passwords do not match";
     }
 
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  // ── API calls ─────────────────────────────────────────────────
-
-  // Step 2 → 3: check availability then send OTP to email
   async function checkAndSendOtp() {
     if (!validateStep2()) return;
 
@@ -146,64 +123,38 @@ function SignupForm() {
     setErrors({});
 
     try {
-      // /check requires: email (required), phone_number (optional), account_type
       const checkPayload = {
         email: form.email.trim().toLowerCase(),
         account_type: accountType,
       };
-      if (form.phone_number)
-        checkPayload.phone_number = form.phone_number.trim();
+      if (form.phone_number) checkPayload.phone_number = normalizePhone(form.phone_number);
 
-      const { data: checkData } = await api.post(
-        "/api/auth/signup/check",
-        checkPayload,
-      );
+      const checkData = await signupCheck(checkPayload);
 
       if (!checkData.success) {
         const field = checkData.field || "general";
-        setErrors({
-          [field]:
-            checkData.message || "This information is already registered.",
-        });
+        setErrors({ [field]: checkData.message || "This information is already registered." });
         setLoading(false);
         return;
       }
 
-      // /send-otp requires: email ONLY — OTP is sent to email, not phone
-      const { data: otpData } = await api.post("/api/auth/signup/send-otp", {
-        email: form.email.trim().toLowerCase(),
-      });
+      const otpData = await signupSendOtp({ email: form.email.trim().toLowerCase() });
 
       if (otpData.success) {
         setStep(3);
         setSuccessMsg("Verification code sent to " + form.email + " 📧");
         setTimeout(() => setSuccessMsg(""), 5000);
       } else {
-        setErrors({
-          general: otpData.message || "Failed to send code. Please try again.",
-        });
+        setErrors({ general: otpData.message || "Failed to send code. Please try again." });
       }
     } catch (err) {
-      const status = err.response?.status;
-      const data = err.response?.data;
-
-      if (status === 409) {
-        const field = data?.field || "general";
-        setErrors({
-          [field]:
-            data?.message || "An account with these details already exists.",
-        });
-      } else if (status === 400) {
-        const field = data?.field || "general";
-        setErrors({
-          [field]: data?.message || "Please check your input and try again.",
-        });
+      const msg = err.message || "";
+      if (msg.includes("409")) {
+        setErrors({ general: "An account with these details already exists." });
+      } else if (msg.includes("400")) {
+        setErrors({ general: "Please check your input and try again." });
       } else {
-        // No err.response = network error: proxy not set up or backend not running
-        const msg = !err.response
-          ? "Cannot reach the server. Is the backend running on port 5000?"
-          : "Something went wrong. Please try again later.";
-        setErrors({ general: msg });
+        setErrors({ general: msg || "Something went wrong. Please try again later." });
       }
     } finally {
       setLoading(false);
@@ -214,19 +165,16 @@ function SignupForm() {
     setLoading(true);
     setErrors({});
     try {
-      await api.post("/api/auth/signup/send-otp", {
-        email: form.email.trim().toLowerCase(),
-      });
+      await signupSendOtp({ email: form.email.trim().toLowerCase() });
       setSuccessMsg("Verification code resent to " + form.email);
       setTimeout(() => setSuccessMsg(""), 4000);
-    } catch {
-      setErrors({ general: "Failed to resend code. Please try again." });
+    } catch (err) {
+      setErrors({ general: err.message || "Failed to resend code. Please try again." });
     } finally {
       setLoading(false);
     }
   }
 
-  // Step 3 → 4: verify OTP then complete registration
   async function verifyOtpAndComplete() {
     if (otp.some((d) => d === "")) {
       setErrors({ otp: "Please enter the complete 6-digit code" });
@@ -239,35 +187,21 @@ function SignupForm() {
     const otpCode = otp.join("");
 
     try {
-      // /verify-otp requires: email + otp (NOT phone_number)
-      const { data: verifyData } = await api.post(
-        "/api/auth/signup/verify-otp",
-        {
-          email: form.email.trim().toLowerCase(),
-          otp: otpCode,
-        },
-      );
+      const verifyData = await signupVerifyOtp({
+        email: form.email.trim().toLowerCase(),
+        otp: otpCode,
+      });
 
       if (!verifyData.success) {
-        setErrors({
-          otp: verifyData.message || "Invalid code. Please try again.",
-        });
+        setErrors({ otp: verifyData.message || "Invalid code. Please try again." });
         setLoading(false);
         return;
       }
 
-      const token = verifyData.signup_token;
-      setSignupToken(token);
-
-      // /complete requires:
-      //   signup_token, account_type, password
-      //   full_name          — required for account_type === 'user'
-      //   organization_name  — required for account_type === 'organization'
-      //   phone_number       — optional
       const completePayload = {
-        signup_token: token,
+        signup_token: verifyData.signup_token,
         account_type: accountType,
-        password: form.password, // plain text — backend hashes it with bcrypt
+        password: form.password,
       };
 
       if (accountType === "user") {
@@ -277,44 +211,30 @@ function SignupForm() {
       }
 
       if (form.phone_number) {
-        completePayload.phone_number = form.phone_number.trim();
+        completePayload.phone_number = normalizePhone(form.phone_number);
       }
 
-      const { data: completeData } = await api.post(
-        "/api/auth/signup/complete",
-        completePayload,
-      );
+      const completeData = await signupComplete(completePayload);
 
       if (completeData.success) {
         if (completeData.token) {
-          localStorage.setItem("auth_token", completeData.token);
+          localStorage.setItem("token", completeData.token);
         }
         setStep(4);
       } else {
-        setErrors({
-          general: completeData.message || "Could not complete registration.",
-        });
+        setErrors({ general: completeData.message || "Could not complete registration." });
       }
     } catch (err) {
-      const status = err.response?.status;
-      const data = err.response?.data;
-
-      if (status === 400) {
-        setErrors({ otp: data?.message || "Invalid or expired code." });
-      } else if (status === 401) {
-        // signup_token expired — send user back to restart OTP flow
+      const msg = err.message || "";
+      if (msg.includes("400")) {
+        setErrors({ otp: "Invalid or expired code." });
+      } else if (msg.includes("401")) {
         setErrors({ general: "Your session expired. Please start over." });
-        setTimeout(() => {
-          setStep(2);
-          setOtp(["", "", "", "", "", ""]);
-        }, 2000);
-      } else if (status === 409) {
-        setErrors({
-          general:
-            data?.message || "An account with these details already exists.",
-        });
+        setTimeout(() => { setStep(2); setOtp(["", "", "", "", "", ""]); }, 2000);
+      } else if (msg.includes("409")) {
+        setErrors({ general: "An account with these details already exists." });
       } else {
-        setErrors({ general: "Something went wrong. Please try again." });
+        setErrors({ general: msg || "Something went wrong. Please try again." });
       }
     } finally {
       setLoading(false);
@@ -326,8 +246,6 @@ function SignupForm() {
     setSuccessMsg("");
     setStep((s) => s - 1);
   }
-
-  // ── Derived flags ─────────────────────────────────────────────
 
   const passwordMatch =
     form.password.length >= 8 &&
@@ -347,36 +265,21 @@ function SignupForm() {
 
   const step3Ready = otp.every((d) => d !== "");
 
-  // ── Render ────────────────────────────────────────────────────
-
   return (
     <div className="form-body slide-in">
       <ProgressBar currentStep={step} />
 
       {errors.general && (
-        <p
-          style={{
-            color: "var(--error, #e53e3e)",
-            fontSize: "13px",
-            marginBottom: "12px",
-          }}
-        >
+        <p style={{ color: "var(--error, #e53e3e)", fontSize: "13px", marginBottom: "12px" }}>
           {errors.general}
         </p>
       )}
       {successMsg && (
-        <p
-          style={{
-            color: "var(--success, #38a169)",
-            fontSize: "13px",
-            marginBottom: "12px",
-          }}
-        >
+        <p style={{ color: "var(--success, #38a169)", fontSize: "13px", marginBottom: "12px" }}>
           {successMsg}
         </p>
       )}
 
-      {/* ── STEP 1: Account type ──────────────────────────────── */}
       {step === 1 && (
         <div className="slide-in">
           <h2 className="step-title">Create Account</h2>
@@ -385,10 +288,7 @@ function SignupForm() {
           <div className="type-cards">
             <button
               className={`type-card ${accountType === "user" ? "selected" : ""}`}
-              onClick={() => {
-                setAccountType("user");
-                setErrors({});
-              }}
+              onClick={() => { setAccountType("user"); setErrors({}); }}
             >
               <div className="type-card-icon">👤</div>
               <div className="type-card-text">
@@ -398,10 +298,7 @@ function SignupForm() {
             </button>
             <button
               className={`type-card ${accountType === "organization" ? "selected" : ""}`}
-              onClick={() => {
-                setAccountType("organization");
-                setErrors({});
-              }}
+              onClick={() => { setAccountType("organization"); setErrors({}); }}
             >
               <div className="type-card-icon">🏢</div>
               <div className="type-card-text">
@@ -411,15 +308,11 @@ function SignupForm() {
             </button>
           </div>
 
-          {errors.userType && (
-            <span className="error-msg">⚠ {errors.userType}</span>
-          )}
+          {errors.userType && <span className="error-msg">⚠ {errors.userType}</span>}
 
           <button
             className="btn-primary"
-            onClick={() => {
-              if (validateStep1()) setStep(2);
-            }}
+            onClick={() => { if (validateStep1()) setStep(2); }}
             disabled={!accountType}
           >
             Continue →
@@ -427,17 +320,13 @@ function SignupForm() {
         </div>
       )}
 
-      {/* ── STEP 2: Details ───────────────────────────────────── */}
       {step === 2 && (
         <div className="slide-in">
           <h2 className="step-title">
             {accountType === "user" ? "Your Details" : "Organization Details"}
           </h2>
-          <p className="step-subtitle">
-            Fill in your information to set up the account.
-          </p>
+          <p className="step-subtitle">Fill in your information to set up the account.</p>
 
-          {/* Email — REQUIRED (OTP is sent here, not to phone) */}
           <InputField
             label="Email *"
             type="email"
@@ -448,7 +337,6 @@ function SignupForm() {
             error={errors.email}
           />
 
-          {/* Name — changes based on account type */}
           {accountType === "user" ? (
             <InputField
               label="Full Name *"
@@ -471,7 +359,6 @@ function SignupForm() {
             />
           )}
 
-          {/* Phone — optional */}
           <InputField
             label="Phone Number (optional)"
             type="tel"
@@ -500,14 +387,8 @@ function SignupForm() {
             value={form.confirmPassword}
             onChange={(e) => updateForm("confirmPassword", e.target.value)}
             onBlur={() => {
-              if (
-                form.confirmPassword &&
-                form.password !== form.confirmPassword
-              ) {
-                setErrors((prev) => ({
-                  ...prev,
-                  confirmPassword: "Password invalid",
-                }));
+              if (form.confirmPassword && form.password !== form.confirmPassword) {
+                setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
               }
             }}
             icon="check"
@@ -522,13 +403,10 @@ function SignupForm() {
           >
             {loading ? "Checking…" : "Send Verification Code →"}
           </button>
-          <button className="btn-secondary" onClick={goBack}>
-            ← Back
-          </button>
+          <button className="btn-secondary" onClick={goBack}>← Back</button>
         </div>
       )}
 
-      {/* ── STEP 3: Email OTP ─────────────────────────────────── */}
       {step === 3 && (
         <div className="slide-in">
           <h2 className="step-title">Verify Email</h2>
@@ -557,32 +435,14 @@ function SignupForm() {
           </div>
 
           {errors.otp && (
-            <span
-              className="error-msg"
-              style={{
-                display: "block",
-                textAlign: "center",
-                marginBottom: "8px",
-              }}
-            >
+            <span className="error-msg" style={{ display: "block", textAlign: "center", marginBottom: "8px" }}>
               ⚠ {errors.otp}
             </span>
           )}
 
-          <p
-            style={{
-              textAlign: "center",
-              marginBottom: "8px",
-              fontSize: "13px",
-              color: "var(--text-muted)",
-            }}
-          >
+          <p style={{ textAlign: "center", marginBottom: "8px", fontSize: "13px", color: "var(--text-muted)" }}>
             Didn't receive it?{" "}
-            <button
-              className="resend-link"
-              onClick={resendOtp}
-              disabled={loading}
-            >
+            <button className="resend-link" onClick={resendOtp} disabled={loading}>
               Resend code
             </button>
           </p>
@@ -594,25 +454,21 @@ function SignupForm() {
           >
             {loading ? "Verifying…" : "Verify & Create Account"}
           </button>
-          <button className="btn-secondary" onClick={goBack}>
-            ← Change Email
-          </button>
+          <button className="btn-secondary" onClick={goBack}>← Change Email</button>
         </div>
       )}
 
-      {/* ── STEP 4: Success ───────────────────────────────────── */}
       {step === 4 && (
-        <div
-          className="slide-in"
-          style={{ textAlign: "center", padding: "24px 0" }}
-        >
+        <div className="slide-in" style={{ textAlign: "center", padding: "24px 0" }}>
           <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎉</div>
           <h2 className="step-title">Account Created!</h2>
           <p className="step-subtitle">
             Welcome to Kharcha! You can now log in with your email
-            {form.phone_number ? " or phone number" : ""} and the password you
-            set.
+            {form.phone_number ? " or phone number" : ""} and the password you set.
           </p>
+          <button className="btn-primary" onClick={onLogin} style={{ marginTop: "16px" }}>
+            Go to Dashboard
+          </button>
         </div>
       )}
     </div>

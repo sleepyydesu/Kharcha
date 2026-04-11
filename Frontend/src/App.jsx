@@ -1,15 +1,10 @@
-// App.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
-
-// Auth screens
 import KharchaLogo from "./components/KharchaLogo";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ResetForm from "./components/ResetForm";
-
-// Main app
 import Sidebar from "./components/Sidebar";
 import BalancePanel from "./components/BalancePanel";
 import QRScanner from "./components/QRScanner";
@@ -21,10 +16,35 @@ import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
 import SetToken from "./pages/SetToken";
 
-import "./styles/variables.css";
-import "./App.css";
+// ─── CSS strategy ────────────────────────────────────────────────────────────
+// index.css        → auth pages only  (loaded globally in main.jsx)
+// variables.css    → app shell only   (injected dynamically when authenticated)
+// App.css          → app shell only   (injected dynamically when authenticated)
+// ─────────────────────────────────────────────────────────────────────────────
+function injectSheet(id, href) {
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.id = id;
+    document.head.appendChild(link);
+}
+function removeSheet(id) {
+    document.getElementById(id)?.remove();
+}
 
-// ── Bubble portal (auth background) ──────────────────────────
+function useAppStyles(enabled) {
+    useEffect(() => {
+        if (!enabled) return;
+        injectSheet("kharcha-vars", "/src/styles/variables.css");
+        injectSheet("kharcha-app",  "/src/App.css");
+        return () => {
+            removeSheet("kharcha-vars");
+            removeSheet("kharcha-app");
+        };
+    }, [enabled]);
+}
+
 function BubblePortal() {
     return createPortal(
         <div className="bubble-layer" aria-hidden="true">
@@ -36,7 +56,6 @@ function BubblePortal() {
     );
 }
 
-// ── Auth screens ──────────────────────────────────────────────
 function AuthApp({ onLogin }) {
     const [activeTab, setActiveTab] = useState("login");
     const [showReset, setShowReset] = useState(false);
@@ -93,14 +112,14 @@ function AuthApp({ onLogin }) {
                             {!showReset && activeTab === "login" && (
                                 <LoginForm
                                     key="login"
-                                    onLogin={onLogin}  // ← triggers switch to main app
+                                    onLogin={onLogin}
                                     onShowReset={() => setShowReset(true)}
                                 />
                             )}
                             {!showReset && activeTab === "register" && (
                                 <SignupForm
                                     key="signup"
-                                    onLogin={onLogin}  // ← auto-login after signup
+                                    onLogin={onLogin}
                                 />
                             )}
                         </div>
@@ -111,7 +130,6 @@ function AuthApp({ onLogin }) {
     );
 }
 
-// ── Main app shell ────────────────────────────────────────────
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
@@ -137,10 +155,21 @@ function AppShell({ qrOpen, setQrOpen }) {
     );
 }
 
-// ── Root ──────────────────────────────────────────────────────
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(
+        () => !!localStorage.getItem("token")
+    );
     const [qrOpen, setQrOpen] = useState(false);
+
+    // Inject app stylesheets only when the user is logged in.
+    // When logged out, index.css (loaded in main.jsx) takes sole control.
+    useAppStyles(isAuthenticated);
+
+    // Keep body class in sync so index.css auth background and
+    // variables.css app background never fight each other.
+    useEffect(() => {
+        document.body.classList.toggle("app-authenticated", isAuthenticated);
+    }, [isAuthenticated]);
 
     if (!isAuthenticated) {
         return <AuthApp onLogin={() => setIsAuthenticated(true)} />;

@@ -1,37 +1,23 @@
-/* App.css */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; }
-body {
+
+/* When authenticated, override the green auth background set by index.css */
+body.app-authenticated {
   margin: 0;
   background: var(--background);
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--text-color);
 }
+
 button { font-family: inherit; }
 input  { font-family: inherit; }
 
-/* ── Shell ─────────────────────────────────────────────── */
 .app-shell {
   display: flex;
   min-height: 100vh;
 }
 
-/*
-  Desktop layout:
-    left  = sidebar          (--sidebar-width, default 18rem / 288px)
-    right = balance panel    (--sidebar-width)
-    center gets everything in between
-
-  Squeeze zone (901px – 1056px):
-    --sidebar-width becomes fluid so the center never drops below
-    --content-min (480px). Both panels shrink together; the content
-    stays locked. Below 900px the mobile layout takes over entirely.
-
-  The crossover point = 2 × 18rem + 480px = 1056px.
-*/
-
-/* Fluid sidebar width in the squeeze zone */
 @media (min-width: 901px) and (max-width: 1056px) {
   :root,
   [data-theme="dark"] {

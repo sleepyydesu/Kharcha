@@ -58,11 +58,14 @@ html,
 body {
   height: 100%;
   font-family: var(--font-main);
-  /* Dark green page background – matches brand panel colour */
-  background: #1a5c39;
-  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark green auth background — only when NOT logged in */
+body:not(.app-authenticated) {
+  background: #1a5c39;
+  color: var(--text-main);
 }
 
 /* ============================================================
@@ -204,7 +207,8 @@ body {
 /* ============================================================
    PAGE WRAPPER  –  full viewport, centres the card
    ============================================================ */
-#root {
+/* Auth layout for #root — disabled once logged in via body.app-authenticated */
+body:not(.app-authenticated) #root {
   min-height: 100vh;
   display: -webkit-flex;
   display: flex;
