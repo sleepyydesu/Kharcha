@@ -24,7 +24,10 @@ function KharchaLogo({ size = 40 }) {
       */}
       <g transform="translate(22, 18) scale(0.075)">
         {/* Bottom-right arm — dark green */}
-        <path d="M546.5 840L301.5 580.5L449.5 442L821.5 840H546.5Z" fill="#2B724F" />
+        <path
+          d="M546.5 840L301.5 580.5L449.5 442L821.5 840H546.5Z"
+          fill="#2B724F"
+        />
         {/* Left vertical bar — medium green */}
         <path d="M0.5 840V1H224.5V840H0.5Z" fill="#4B9C6E" />
         {/* Top-right arm — golden yellow */}

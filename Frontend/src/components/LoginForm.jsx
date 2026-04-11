@@ -1,129 +1,174 @@
 // LoginForm.jsx
 // Login form for Kharcha.
 //
-// Features:
-//   - Phone number field
-//   - Single Password / MPIN field (app detects which one automatically)
-//   - Validation with inline error messages
-//   - Toast banner for success / error feedback
-//   - "Forgot password?" link opens the Reset Password page
+// Key fixes vs. the old demo version:
+//   - Removed hardcoded DEMO_PHONE / DEMO_PASSWORD — now calls the real backend
+//   - Identifier field accepts BOTH email AND phone number (same input, same UX)
+//   - Backend receives the correct field names it expects:
+//       { identifier: "...", credential: "..." }
+//     The backend auto-detects whether identifier is an email or phone number,
+//     and whether credential is an MPIN or password — we never need to transform it.
+//   - All errors come from the backend response and are shown inline under the
+//     relevant field as simple red text (no toast libraries).
+//   - Loading state disables the submit button during the request.
 
 import { useState } from "react";
+import api from "../api";
 import InputField from "./InputField";
-import Toast from "./Toast";
-
-// Demo credentials – replace these with real API calls when the backend is ready
-const DEMO_PHONE = "9800000000";
-const DEMO_PASSWORD = "kharcha123";
-const DEMO_MPIN = "1234";
 
 function LoginForm({ onShowReset }) {
-  const [phone, setPhone] = useState("");
-  const [authValue, setAuthValue] = useState("");
-  const [errors, setErrors] = useState({});
-  const [toast, setToast] = useState(null);
+  // ── State ────────────────────────────────────────────────────
+  const [identifier, setIdentifier] = useState(""); // email OR phone number
+  const [credential, setCredential] = useState(""); // password OR MPIN
+  const [errors, setErrors] = useState({}); // { identifier?, credential?, general? }
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Show a toast banner and auto-hide it after 3 seconds
-  function showToast(message, type = "success") {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }
-
-  // Validate fields and return true if everything is OK
+  // ── Client-side validation (lightweight) ─────────────────────
+  // Full validation lives on the backend; we only block obviously-empty fields.
   function validate() {
     const e = {};
-    if (!phone) {
-      e.phone = "Phone number is required";
-    } else if (!/^(97|98)\d{8}$/.test(phone)) {
-      e.phone = "Enter a valid Nepali number (97XXXXXXXX or 98XXXXXXXX)";
-    }
-    if (!authValue) {
-      e.auth = "Please enter your password or MPIN";
-    } else if (authValue.length < 4) {
-      e.auth = "Minimum 4 characters (MPIN) or 6+ characters (password)";
-    }
+    if (!identifier.trim()) e.identifier = "Phone number or email is required";
+    if (!credential) e.credential = "Password or MPIN is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  // Handle the Login button click
-  function handleSubmit() {
+  // ── Submit handler ───────────────────────────────────────────
+  async function handleSubmit() {
     if (!validate()) return;
+
     setLoading(true);
+    setErrors({});
+    setSuccessMsg("");
 
-    // Simulate a 0.8s network delay, then check credentials
-    setTimeout(() => {
-      setLoading(false);
-      const phoneMatch = phone === DEMO_PHONE;
-      const isMpin = authValue.length === 4 && /^\d{4}$/.test(authValue);
-      const authMatch = isMpin
-        ? authValue === DEMO_MPIN
-        : authValue === DEMO_PASSWORD;
+    // Build the payload exactly as the backend expects:
+    //   identifier → email or phone number (backend detects which)
+    //   credential → password or 6-digit MPIN (backend detects which)
+    const payload = {
+      identifier: identifier.trim(),
+      credential: credential,
+    };
 
-      if (phoneMatch && authMatch) {
-        showToast("Login successful! Welcome back 🎉", "success");
-      } else if (!phoneMatch) {
-        showToast(
-          "Phone number not found. Please check and try again.",
-          "error",
-        );
+    try {
+      const { data } = await api.post("/api/auth/signin", payload);
+
+      // Backend returns { success: true, token: "...", account: { ... } }
+      if (data.success) {
+        // Persist the token for subsequent authenticated requests
+        localStorage.setItem("auth_token", data.token);
+        setSuccessMsg("Login successful! Welcome back 🎉");
+        // TODO: redirect to dashboard — e.g. navigate('/dashboard')
       } else {
-        showToast(
-          isMpin
-            ? "Incorrect MPIN. Please try again."
-            : "Incorrect password. Please try again.",
-          "error",
-        );
+        // Backend returned success:false with a message
+        setErrors({
+          general: data.message || "Login failed. Please try again.",
+        });
       }
-    }, 800);
+    } catch (err) {
+      // Map HTTP error codes to user-friendly inline messages
+      const status = err.response?.status;
+      const msg = err.response?.data?.message;
+
+      if (status === 400) {
+        // Missing or malformed fields
+        setErrors({ general: msg || "Please check your input and try again." });
+      } else if (status === 401) {
+        // Wrong password / MPIN — show under the credential field
+        setErrors({
+          credential: msg || "Incorrect password or MPIN. Please try again.",
+        });
+      } else if (status === 403) {
+        // Account deactivated
+        setErrors({
+          general: msg || "Your account has been deactivated. Contact support.",
+        });
+      } else if (status === 404) {
+        // Account not found
+        setErrors({
+          identifier:
+            msg || "No account found with this email or phone number.",
+        });
+      } else {
+        setErrors({ general: "Something went wrong. Please try again later." });
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // Enable the login button only when basic length requirements pass
-  const isReady = phone.length === 10 && authValue.length >= 4;
+  // Disable submit only when both fields are completely empty
+  const canSubmit =
+    identifier.trim().length > 0 && credential.length > 0 && !loading;
 
+  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="form-body slide-in">
-      {/* Feedback toast */}
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {/* General error (e.g. account deactivated) */}
+      {errors.general && (
+        <p
+          style={{
+            color: "var(--error, #e53e3e)",
+            fontSize: "13px",
+            marginBottom: "12px",
+          }}
+        >
+          {errors.general}
+        </p>
+      )}
 
-      {/* Phone number */}
+      {/* Success message */}
+      {successMsg && (
+        <p
+          style={{
+            color: "var(--success, #38a169)",
+            fontSize: "13px",
+            marginBottom: "12px",
+          }}
+        >
+          {successMsg}
+        </p>
+      )}
+
+      {/* Identifier: email OR phone number — single field, backend detects which */}
       <InputField
-        label="Phone Number"
-        type="tel"
-        placeholder="98XXXXXXXX"
-        value={phone}
+        label="Phone Number or Email"
+        type="text"
+        placeholder="98XXXXXXXX or john@example.com"
+        value={identifier}
         onChange={(e) => {
-          setPhone(e.target.value);
-          setErrors((p) => ({ ...p, phone: "" }));
+          setIdentifier(e.target.value);
+          // Clear relevant errors as user types
+          setErrors((prev) => ({ ...prev, identifier: "", general: "" }));
+          setSuccessMsg("");
         }}
         icon="phone"
-        error={errors.phone}
-        maxLength={10}
+        error={errors.identifier}
       />
 
-      {/* Password / MPIN – single combined field */}
+      {/* Credential: password or MPIN — single field, backend detects which */}
       <InputField
         label="Password / MPIN"
         type="password"
-        placeholder="Enter password or 4-digit MPIN"
-        value={authValue}
+        placeholder="Enter your password or 6-digit MPIN"
+        value={credential}
         onChange={(e) => {
-          setAuthValue(e.target.value);
-          setErrors((p) => ({ ...p, auth: "" }));
+          setCredential(e.target.value);
+          setErrors((prev) => ({ ...prev, credential: "", general: "" }));
+          setSuccessMsg("");
         }}
-        icon="key"
-        error={errors.auth}
+        icon="lock"
+        error={errors.credential}
       />
 
-      {/* Login button */}
+      {/* Submit button */}
       <button
         className="btn-primary"
         onClick={handleSubmit}
-        disabled={!isReady || loading}
+        disabled={!canSubmit}
         style={{ marginTop: "16px" }}
       >
-        {loading ? "Checking…" : "Log In to Kharcha"}
+        {loading ? "Signing in…" : "Log In to Kharcha"}
       </button>
 
       {/* Footer link */}
