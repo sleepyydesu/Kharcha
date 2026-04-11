@@ -9,7 +9,7 @@ import SendMoney from "./pages/SendMoney";
 import Statements from "./pages/Statements";
 import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
-import SetToken from "./pages/setToken";
+import SetToken from "./pages/SetToken";
 import "./styles/variables.css";
 import "./App.css";
 
