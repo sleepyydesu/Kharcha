@@ -5,6 +5,7 @@ import {
     transfer,
     getTransactionCategories,
 } from "../services/api";
+import CategoryIcon from "../components/CategoryIcon";
 import "./PaymentGateway.css";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -532,11 +533,12 @@ export default function PaymentGateway() {
                                                         setSelectedCat(cat)
                                                     }
                                                 >
-                                                    {cat.icon ? (
-                                                        <img
-                                                            src={cat.icon}
-                                                            alt=""
-                                                            className="pgw__cat-icon"
+                                                    {cat.icon_url ? (
+                                                        <CategoryIcon
+                                                            iconUrl={cat.icon_url}
+                                                            iconType={cat.icon_type || "svg"}
+                                                            name={cat.name}
+                                                            size={20}
                                                         />
                                                     ) : null}
                                                     {cat.name}

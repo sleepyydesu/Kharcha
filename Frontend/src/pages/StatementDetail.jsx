@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getTransactionById } from "../services/api";
+import CategoryIcon from "../components/CategoryIcon";
 import giftcardIcon   from "../assets/giftcardIcon.png";
 import walletLoadIcon from "../assets/walletLoadIcon.svg";
 import walletSendIcon from "../assets/walletSendIcon.svg";
 import "./StatementDetail.css";
+
+function detectIconType(url) {
+    if (!url) return "png";
+    return /\.svg(\?|$)/i.test(url) ? "svg" : "png";
+}
 
 function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("en-NP", {
@@ -197,14 +203,20 @@ export default function StatementDetail() {
               <div className="txd-details">
                 <DetailRow label="Transaction ID" value={tx.transaction_id} mono />
                 <DetailRow label="Method" value={tx.method} />
-                <DetailRow
-                  label="Category"
-                  value={
-                    tx.category?.name
-                      ? `${tx.category.icon ? tx.category.icon + " " : ""}${tx.category.name}`
-                      : null
-                  }
-                />
+                {tx.category?.name && (
+                  <div className="txd-detail-row">
+                    <span className="txd-detail-label">Category</span>
+                    <span className="txd-detail-value txd-detail-value--category">
+                      <CategoryIcon
+                        iconUrl={tx.category.icon}
+                        iconType={detectIconType(tx.category.icon)}
+                        name={tx.category.name}
+                        size={18}
+                      />
+                      {tx.category.name}
+                    </span>
+                  </div>
+                )}
                 <DetailRow label="Remarks" value={tx.remarks} />
                 <DetailRow label="Date" value={fmtDate(tx.created_at)} />
                 <DetailRow label="Time" value={fmtTime(tx.created_at)} />

@@ -68,6 +68,8 @@ html {
   --shadow-card:        0 2px 12px rgba(0,0,0,0.07);
   --radius:             15px;
   --sidebar-width:      18rem;
+
+  --category-icon-color: var(--primary);
 }
 
 /* Dark mode */
@@ -138,6 +140,8 @@ html {
   --shadow-card:        0 2px 16px rgba(0,0,0,0.3);
   --radius:             15px;
   --sidebar-width:      18rem;
+  
+  --category-icon-color: #e5e7eb;
 }
 
 /* resets */

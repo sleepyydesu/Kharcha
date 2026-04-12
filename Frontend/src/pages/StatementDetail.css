@@ -270,6 +270,13 @@
   color: var(--text-sub);
 }
 
+/* Category row: icon + name side by side */
+.txd-detail-value--category {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 500px) {
   .txd-page { padding: 1.5rem 1rem; }

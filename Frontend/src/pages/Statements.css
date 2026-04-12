@@ -350,6 +350,9 @@
 }
 
 .stmt-row__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
   font-size: .72rem;
   font-weight: 600;
   padding: .15rem .55rem;

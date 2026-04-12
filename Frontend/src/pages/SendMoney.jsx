@@ -5,7 +5,15 @@ import {
     lookupReceiver,
     getTransactionCategories,
 } from "../services/api";
+import CategoryIcon from "../components/CategoryIcon";
 import "./SendMoney.css";
+
+// Infer icon_type from URL extension so CategoryIcon knows which render mode to use.
+// transaction_categories may not carry icon_type yet, so we detect it here.
+function detectIconType(url) {
+    if (!url) return "png";
+    return /\.svg(\?|$)/i.test(url) ? "svg" : "png";
+}
 
 function BackArrow() {
     return (
@@ -461,7 +469,7 @@ export default function SendMoney() {
                         <input
                             className="sm__input"
                             type="tel"
-                            placeholder="98XXXXXXXX — no need for +977"
+                            placeholder="98XXXXXXXX"
                             value={phone}
                             autoFocus
                             onChange={(e) => {
@@ -609,15 +617,12 @@ export default function SendMoney() {
                                     onClick={() => setSelectedCat(cat)}
                                 >
                                     <span className="sm__cat-icon">
-                                        {cat.icon ? (
-                                            <img
-                                                src={cat.icon}
-                                                alt={cat.name}
-                                                className="sm__cat-img"
-                                            />
-                                        ) : (
-                                            "💳"
-                                        )}
+                                        <CategoryIcon
+                                            iconUrl={cat.icon_url}
+                                            iconType={cat.icon_type || detectIconType(cat.icon_url)}
+                                            name={cat.name}
+                                            size={24}
+                                        />
                                     </span>
                                     <span className="sm__cat-name">
                                         {cat.name}
@@ -652,12 +657,7 @@ export default function SendMoney() {
                         />
                         {remarksErr ? (
                             <p className="sm__field-err">{remarksErr}</p>
-                        ) : (
-                            <p className="sm__field-hint">
-                                Required — briefly describe what this payment is
-                                for.
-                            </p>
-                        )}
+                        ) : ("")}
                     </div>
 
                     <button

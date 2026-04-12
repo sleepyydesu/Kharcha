@@ -5,13 +5,22 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
     if (!process.env.SMTP_HOST) return null;
 
+    const port = parseInt(process.env.SMTP_PORT) || 587;
+    const secure = process.env.SMTP_SECURE === "true" || port === 465;
+
     return nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === "true",
+        port,
+        secure,
         auth: {
             user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            // Strip spaces from app passwords (Gmail displays them spaced for readability)
+            pass: (process.env.SMTP_PASS || "").replace(/\s/g, ""),
+        },
+        // Required for Railway and other cloud hosts where TLS cert chain
+        // may not verify cleanly against Gmail's STARTTLS certificate.
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 };
@@ -63,7 +72,8 @@ const sendOTPEmail = async (email, otp, otpType = "signup") => {
 
     const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
 
-    await transporter.sendMail({
+    try {
+        await transporter.sendMail({
         from: `"${appName}" <${fromEmail}>`,
         to: email,
         subject,
@@ -82,7 +92,12 @@ const sendOTPEmail = async (email, otp, otpType = "signup") => {
                 </p>
             </div>
         `,
-    });
+        });
+        console.log(`📧  OTP email sent to ${email} (type: ${otpType})`);
+    } catch (err) {
+        console.error(`❌  Failed to send OTP email to ${email}:`, err.message);
+        throw err;
+    }
 };
 
 module.exports = { sendOTPEmail };

@@ -317,7 +317,7 @@ const resolveQRCode = async (req, res) => {
             if (dynQR.default_category_id) {
                 const { data: cat } = await supabase
                     .from("transaction_categories")
-                    .select("category_id, name, icon")
+                    .select("category_id, name, icon_url, icon_type, color")
                     .eq("category_id", dynQR.default_category_id)
                     .maybeSingle();
                 default_category = cat || null;
@@ -386,6 +386,57 @@ const resolveQRCode = async (req, res) => {
             });
         }
 
+        // ── 3. Try pos_checkout_sessions (created by POS via /api/pos/checkout) ──
+        const { data: posSession } = await supabase
+            .from("pos_checkout_sessions")
+            .select("session_id, account_id, amount, note, reference_id, status, expires_at")
+            .eq("session_id", qr_id)
+            .maybeSingle();
+
+        if (posSession) {
+            if (new Date(posSession.expires_at) < new Date()) {
+                return res.status(410).json({
+                    success: false,
+                    message: "Checkout session has expired.",
+                });
+            }
+            if (posSession.status === "paid") {
+                return res.status(410).json({
+                    success: false,
+                    message: "This session has already been paid.",
+                });
+            }
+            if (posSession.status !== "pending") {
+                return res.status(410).json({
+                    success: false,
+                    message: `Session is ${posSession.status}.`,
+                });
+            }
+
+            const { data: org } = await supabase
+                .from("organizations")
+                .select("organization_name, phone_number")
+                .eq("account_id", posSession.account_id)
+                .maybeSingle();
+
+            return res.status(200).json({
+                success: true,
+                qr: {
+                    qr_id: posSession.session_id,
+                    type: "pos_checkout",
+                    merchant: {
+                        account_id: posSession.account_id,
+                        name: org?.organization_name || "Merchant",
+                        phone_number: org?.phone_number || null,
+                    },
+                    amount: posSession.amount,
+                    note: posSession.note,
+                    reference_id: posSession.reference_id,
+                    expires_at: posSession.expires_at,
+                },
+            });
+        }
+
         // ── Fall through: try api_keys (QR generated from an API key) ──
         const { data: key, error: keyErr } = await supabase
             .from("api_keys")
@@ -416,7 +467,7 @@ const resolveQRCode = async (req, res) => {
         if (key.default_category_id) {
             const { data: cat } = await supabase
                 .from("transaction_categories")
-                .select("category_id, name, icon")
+                .select("category_id, name, icon_url, icon_type, color")
                 .eq("category_id", key.default_category_id)
                 .maybeSingle();
             default_category = cat || null;

@@ -2,7 +2,8 @@ const supabase = require("../services/supabaseClient");
 
 const CATEGORY_ICON_BUCKET = "category-icons";
 const MAX_ICON_SIZE_BYTES  = 2 * 1024 * 1024; // 2 MB
-const ALLOWED_ICON_TYPES   = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
+// Custom user icons are PNG/JPEG/WEBP only — SVG is reserved for admin-managed defaults
+const ALLOWED_ICON_TYPES   = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 // ─────────────────────────────────────────────────────────────
 //  GET /api/categories
@@ -14,7 +15,7 @@ const getCategories = async (req, res) => {
 
         const { data, error } = await supabase
             .from("categories")
-            .select("*")
+            .select("category_id, user_id, name, icon_url, icon_type, color, is_default, created_at, updated_at")
             .or(`user_id.is.null,user_id.eq.${userId}`)
             .order("is_default", { ascending: false })
             .order("name");
@@ -30,12 +31,14 @@ const getCategories = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/categories
-//  Create a custom category for the logged-in user
+//  Create a custom category for the logged-in user.
+//  Icon is optional at creation — they can upload one separately
+//  via POST /api/categories/:id/icon
 // ─────────────────────────────────────────────────────────────
 const createCategory = async (req, res) => {
     try {
         const userId = req.account.account_id;
-        const { name, icon, color } = req.body;
+        const { name, color } = req.body;
 
         if (!name || typeof name !== "string" || name.trim().length === 0) {
             return res.status(400).json({ success: false, message: "Category name is required." });
@@ -52,7 +55,8 @@ const createCategory = async (req, res) => {
             .insert({
                 user_id:    userId,
                 name:       name.trim(),
-                icon:       icon || "tag",   // can be emoji name OR a storage URL
+                icon_url:   null,       // set later via POST /categories/:id/icon
+                icon_type:  "png",      // user-uploaded icons are always PNG
                 color:      color || "#6366F1",
                 is_default: false,
             })
@@ -75,13 +79,14 @@ const createCategory = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 //  PUT /api/categories/:id
-//  Update a custom category (must be owned by user)
+//  Update a custom category (must be owned by user).
+//  name and color only — icon is managed via /icon endpoints.
 // ─────────────────────────────────────────────────────────────
 const updateCategory = async (req, res) => {
     try {
         const userId     = req.account.account_id;
         const categoryId = req.params.id;
-        const { name, icon, color } = req.body;
+        const { name, color } = req.body;
 
         // Confirm ownership — default categories cannot be edited
         const { data: existing, error: fetchError } = await supabase
@@ -104,7 +109,6 @@ const updateCategory = async (req, res) => {
                 return res.status(400).json({ success: false, message: "Category name must be 80 characters or fewer." });
             updates.name = name.trim();
         }
-        if (icon  !== undefined) updates.icon  = icon;
         if (color !== undefined) {
             if (!/^#[0-9A-Fa-f]{6}$/.test(color))
                 return res.status(400).json({ success: false, message: "Color must be a valid hex color." });
@@ -138,7 +142,7 @@ const deleteCategory = async (req, res) => {
 
         const { data: existing } = await supabase
             .from("categories")
-            .select("category_id, icon")
+            .select("category_id, icon_url, icon_type")
             .eq("category_id", categoryId)
             .eq("user_id", userId)
             .maybeSingle();
@@ -147,9 +151,9 @@ const deleteCategory = async (req, res) => {
             return res.status(404).json({ success: false, message: "Category not found or not owned by you." });
         }
 
-        // If the icon is a Storage URL, delete the file too
-        if (existing.icon && existing.icon.includes(CATEGORY_ICON_BUCKET)) {
-            const storagePath = _extractStoragePath(existing.icon, CATEGORY_ICON_BUCKET);
+        // Clean up storage file if one was uploaded
+        if (existing.icon_url && existing.icon_type === "png") {
+            const storagePath = _extractStoragePath(existing.icon_url, CATEGORY_ICON_BUCKET);
             if (storagePath) {
                 await supabase.storage.from(CATEGORY_ICON_BUCKET).remove([storagePath]);
             }
@@ -171,13 +175,14 @@ const deleteCategory = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/categories/:id/icon
-//  Upload an image icon for a custom category.
+//  Upload a PNG/JPEG icon for a custom (user-owned) category.
 //
 //  Body (JSON): { file_base64: "<base64>", mime_type: "image/png" }
 //
-//  - Validates ownership (default categories cannot be changed).
-//  - Stores file at: category-icons/<userId>/<categoryId>.<ext>
-//  - Updates categories.icon with the public URL.
+//  - Only custom categories can have uploaded icons.
+//  - Default categories use admin-managed SVGs — cannot be overridden.
+//  - Stores file at: category-icons/<userId>/<categoryId>.png
+//  - Updates icon_url and confirms icon_type = 'png'.
 //  - Returns { success, icon_url }
 // ─────────────────────────────────────────────────────────────
 const uploadCategoryIcon = async (req, res) => {
@@ -193,14 +198,14 @@ const uploadCategoryIcon = async (req, res) => {
         if (!ALLOWED_ICON_TYPES.includes(mime_type)) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid file type. Allowed: ${ALLOWED_ICON_TYPES.join(", ")}.`,
+                message: `Invalid file type. Allowed: ${ALLOWED_ICON_TYPES.join(", ")}. Custom icons must be PNG, JPEG, or WEBP.`,
             });
         }
 
-        // Verify ownership — only custom (user-owned) categories can have uploaded icons
+        // Verify ownership — only user-owned (non-default) categories can have uploaded icons
         const { data: existing, error: fetchError } = await supabase
             .from("categories")
-            .select("category_id")
+            .select("category_id, is_default")
             .eq("category_id", categoryId)
             .eq("user_id", userId)
             .maybeSingle();
@@ -209,6 +214,9 @@ const uploadCategoryIcon = async (req, res) => {
         if (!existing) {
             return res.status(404).json({ success: false, message: "Category not found or not owned by you." });
         }
+        if (existing.is_default) {
+            return res.status(403).json({ success: false, message: "Default categories cannot have custom icons." });
+        }
 
         // Decode and size-check
         const fileBuffer = Buffer.from(file_base64, "base64");
@@ -216,11 +224,10 @@ const uploadCategoryIcon = async (req, res) => {
             return res.status(400).json({ success: false, message: "File too large. Maximum size is 2 MB." });
         }
 
-        // Storage path: <userId>/<categoryId>.<ext>
+        // Always store as the same extension so upsert overwrites cleanly
         const ext         = _mimeToExt(mime_type);
         const storagePath = `${userId}/${categoryId}.${ext}`;
 
-        // Upload (upsert — overwrites previous icon for this category)
         const { error: uploadError } = await supabase.storage
             .from(CATEGORY_ICON_BUCKET)
             .upload(storagePath, fileBuffer, {
@@ -230,17 +237,16 @@ const uploadCategoryIcon = async (req, res) => {
 
         if (uploadError) throw uploadError;
 
-        // Build public URL with cache-bust
         const { data: { publicUrl } } = supabase.storage
             .from(CATEGORY_ICON_BUCKET)
             .getPublicUrl(storagePath);
 
+        // Cache-bust so the browser picks up the new image
         const iconUrl = `${publicUrl}?v=${Date.now()}`;
 
-        // Persist URL back to the categories row
         const { error: updateError } = await supabase
             .from("categories")
-            .update({ icon: iconUrl })
+            .update({ icon_url: iconUrl, icon_type: "png" })
             .eq("category_id", categoryId)
             .eq("user_id", userId);
 
@@ -255,7 +261,7 @@ const uploadCategoryIcon = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 //  DELETE /api/categories/:id/icon
-//  Remove the uploaded icon and revert to the default "tag" icon.
+//  Remove the uploaded icon — category reverts to no icon (null).
 // ─────────────────────────────────────────────────────────────
 const deleteCategoryIcon = async (req, res) => {
     try {
@@ -264,7 +270,7 @@ const deleteCategoryIcon = async (req, res) => {
 
         const { data: existing, error: fetchError } = await supabase
             .from("categories")
-            .select("category_id, icon")
+            .select("category_id, icon_url, icon_type")
             .eq("category_id", categoryId)
             .eq("user_id", userId)
             .maybeSingle();
@@ -274,15 +280,15 @@ const deleteCategoryIcon = async (req, res) => {
             return res.status(404).json({ success: false, message: "Category not found or not owned by you." });
         }
 
-        // Delete all known extensions from storage (upsert may have changed ext)
-        const exts = ["jpg", "png", "webp", "svg"];
+        // Delete all possible extension variants from storage
+        const exts  = ["jpg", "png", "webp"];
         const paths = exts.map(e => `${userId}/${categoryId}.${e}`);
         await supabase.storage.from(CATEGORY_ICON_BUCKET).remove(paths);
 
-        // Revert icon field to the default text token
+        // Clear icon_url — frontend will show the default placeholder
         await supabase
             .from("categories")
-            .update({ icon: "tag" })
+            .update({ icon_url: null, icon_type: "png" })
             .eq("category_id", categoryId)
             .eq("user_id", userId);
 
@@ -298,20 +304,14 @@ const deleteCategoryIcon = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 function _mimeToExt(mime) {
     const map = {
-        "image/jpeg":     "jpg",
-        "image/jpg":      "jpg",
-        "image/png":      "png",
-        "image/webp":     "webp",
-        "image/svg+xml":  "svg",
+        "image/jpeg": "jpg",
+        "image/jpg":  "jpg",
+        "image/png":  "png",
+        "image/webp": "webp",
     };
-    return map[mime] || "jpg";
+    return map[mime] || "png";
 }
 
-/**
- * Extracts the storage path from a full public URL.
- * e.g. "https://<project>.supabase.co/storage/v1/object/public/category-icons/abc/123.png?v=..."
- * → "abc/123.png"
- */
 function _extractStoragePath(url, bucketId) {
     try {
         const marker = `/object/public/${bucketId}/`;

@@ -77,6 +77,10 @@
     margin-bottom: 0.5rem;
 }
 
+.sm__extra .sm__field .sm__label {
+    margin-top: 1rem;
+}
+
 .sm__optional {
     font-weight: 400;
     text-transform: none;

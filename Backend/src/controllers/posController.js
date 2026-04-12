@@ -168,7 +168,7 @@ const createCheckout = async (req, res) => {
                 expires_at:   session.expires_at,
                 merchant:     org?.organization_name || "Merchant",
             },
-            qr_payload: JSON.stringify({ kharcha_checkout: session.session_id }),
+            qr_payload: JSON.stringify({ kharcha_qr_id: session.session_id }),
         });
     } catch (err) {
         console.error("[createCheckout]", err);
