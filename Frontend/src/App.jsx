@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import KharchaLogo from "./components/KharchaLogo";
@@ -15,6 +15,9 @@ import Statements from "./pages/Statements";
 import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
 import SetToken from "./pages/SetToken";
+import OrgQRCodes from "./pages/OrgQRCodes";
+import PaymentGateway from "./pages/PaymentGateway";
+import ApiDocs from "./pages/ApiDocs";
 
 // ─── CSS strategy ────────────────────────────────────────────────────────────
 // index.css        → auth pages only  (loaded globally in main.jsx)
@@ -133,12 +136,16 @@ function AuthApp({ onLogin }) {
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
+    // Stable reference — prevents CameraScanner from restarting on every re-render
+    const handleQrClose = useCallback(() => setQrOpen(false), [setQrOpen]);
     return (
         <>
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
                 <BalancePanel dashboardOnly={!isDashboard} />
-                <main className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}>
+                <main
+                    className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
+                >
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/load" element={<LoadMoney />} />
@@ -147,10 +154,18 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/statements/:transaction_id" element={<StatementDetail />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
+                        <Route path="/org/qr-codes" element={<OrgQRCodes />} />
+                        {/* Hosted payment page — linked externally by merchants */}
+                        <Route
+                            path="/pay/:session_id"
+                            element={<PaymentGateway />}
+                        />
+                        {/* Developer API docs */}
+                        <Route path="/developers" element={<ApiDocs />} />
                     </Routes>
                 </main>
             </div>
-            <QRScanner open={qrOpen} onClose={() => setQrOpen(false)} />
+            <QRScanner open={qrOpen} onClose={handleQrClose} />
         </>
     );
 }

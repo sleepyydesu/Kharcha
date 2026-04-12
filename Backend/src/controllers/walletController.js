@@ -1,5 +1,6 @@
 const supabase = require("../services/supabaseClient");
 const bcrypt = require("bcrypt");
+const { dispatchQRWebhook } = require("./qrCodeController");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -27,13 +28,11 @@ const getWallet = async (req, res) => {
         }
 
         if (!wallet.is_active) {
-            return res
-                .status(403)
-                .json({
-                    success: false,
-                    message:
-                        "Your wallet has been suspended. Please contact support.",
-                });
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Your wallet has been suspended. Please contact support.",
+            });
         }
 
         return res.status(200).json({
@@ -49,13 +48,11 @@ const getWallet = async (req, res) => {
         });
     } catch (err) {
         console.error("[getWallet]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -75,7 +72,14 @@ const getWallet = async (req, res) => {
 const transfer = async (req, res) => {
     try {
         const { account_id: sender_account_id } = req.account;
-        const { receiver_identifier, amount, category_id, remarks, mpin } = req.body;
+        const {
+            receiver_identifier,
+            amount,
+            category_id,
+            remarks,
+            mpin,
+            qr_id,
+        } = req.body;
 
         // ── Verification gate ─────────────────────────────────
         // Only verified accounts (and organisations) may send money.
@@ -87,7 +91,10 @@ const transfer = async (req, res) => {
 
         if (senderErr) throw senderErr;
 
-        if (senderAccount.account_type === "user" && !senderAccount.is_verified) {
+        if (
+            senderAccount.account_type === "user" &&
+            !senderAccount.is_verified
+        ) {
             return res.status(403).json({
                 success: false,
                 message:
@@ -106,11 +113,15 @@ const transfer = async (req, res) => {
         if (!senderAccount.mpin_hash) {
             return res.status(403).json({
                 success: false,
-                message: "You have not set up an MPIN yet. Please set one via /api/auth/mpin/setup before making transfers.",
+                message:
+                    "You have not set up an MPIN yet. Please set one via /api/auth/mpin/setup before making transfers.",
             });
         }
 
-        const mpinValid = await bcrypt.compare(mpin.toString(), senderAccount.mpin_hash);
+        const mpinValid = await bcrypt.compare(
+            mpin.toString(),
+            senderAccount.mpin_hash,
+        );
         if (!mpinValid) {
             return res.status(401).json({
                 success: false,
@@ -120,32 +131,26 @@ const transfer = async (req, res) => {
 
         // ── Validation ────────────────────────────────────────
         if (!receiver_identifier) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message:
-                        "receiver_identifier is required (phone number or account ID).",
-                });
+            return res.status(400).json({
+                success: false,
+                message:
+                    "receiver_identifier is required (phone number or account ID).",
+            });
         }
 
         const parsedAmount = parseFloat(amount);
         if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "amount must be a positive number.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "amount must be a positive number.",
+            });
         }
 
         if (parsedAmount < 1) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Minimum transfer amount is NPR 1.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Minimum transfer amount is NPR 1.",
+            });
         }
 
         // ── Resolve receiver account ──────────────────────────
@@ -183,31 +188,25 @@ const transfer = async (req, res) => {
         if (receiverError) throw receiverError;
 
         if (!receiverAccount) {
-            return res
-                .status(404)
-                .json({
-                    success: false,
-                    message:
-                        "Receiver not found. Please check the phone number or ID.",
-                });
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Receiver not found. Please check the phone number or ID.",
+            });
         }
 
         if (!receiverAccount.is_active) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Receiver account is inactive.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Receiver account is inactive.",
+            });
         }
 
         if (receiverAccount.account_id === sender_account_id) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "You cannot transfer to your own wallet.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "You cannot transfer to your own wallet.",
+            });
         }
 
         // ── Execute atomic transfer via Supabase RPC ──────────
@@ -228,36 +227,28 @@ const transfer = async (req, res) => {
             // Parse known error codes from the PostgreSQL function
             const msg = transferError.message || "";
             if (msg.includes("INSUFFICIENT_BALANCE")) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "Insufficient wallet balance.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "Insufficient wallet balance.",
+                });
             }
             if (msg.includes("WALLET_NOT_FOUND")) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "Wallet not found for sender or receiver.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "Wallet not found for sender or receiver.",
+                });
             }
             if (msg.includes("WALLET_INACTIVE")) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "One of the wallets is inactive.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "One of the wallets is inactive.",
+                });
             }
             if (msg.includes("SELF_TRANSFER")) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: "You cannot transfer to your own wallet.",
-                    });
+                return res.status(400).json({
+                    success: false,
+                    message: "You cannot transfer to your own wallet.",
+                });
             }
             throw transferError;
         }
@@ -284,7 +275,7 @@ const transfer = async (req, res) => {
             .eq("account_id", receiverAccount.account_id)
             .maybeSingle();
 
-        return res.status(200).json({
+        const responsePayload = {
             success: true,
             message: "Transfer successful.",
             transaction: {
@@ -302,17 +293,41 @@ const transfer = async (req, res) => {
                 remarks: remarks || null,
                 method: "Kharcha Wallet",
                 status: "completed",
+                ...(qr_id ? { qr_id } : {}),
             },
-        });
+        };
+
+        // Fire webhook + mark session complete if this came from a dynamic QR scan
+        if (qr_id) {
+            // If qr_id matches a payment_sessions record, mark it as paid.
+            // This is what allows the merchant's screen to auto-detect payment.
+            // We guard with .eq("status", "pending") so a double-tap is a no-op.
+            await supabase
+                .from("payment_sessions")
+                .update({ status: "success" })
+                .eq("session_id", qr_id)
+                .eq("status", "pending");
+
+            // Dispatch webhook (non-blocking — external URL can be slow)
+            dispatchQRWebhook(qr_id, {
+                event: "payment.success",
+                qr_id,
+                transaction_id: result.transaction_id,
+                amount: parsedAmount,
+                currency: "NPR",
+                remarks: remarks || null,
+                timestamp: new Date().toISOString(),
+            });
+        }
+
+        return res.status(200).json(responsePayload);
     } catch (err) {
         console.error("[transfer]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Transfer failed.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Transfer failed.",
+            error: err.message,
+        });
     }
 };
 
@@ -327,12 +342,10 @@ const lookupReceiver = async (req, res) => {
         const { account_id: sender_account_id } = req.account;
 
         if (!identifier) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "identifier query param is required.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "identifier query param is required.",
+            });
         }
 
         const isUUID =
@@ -355,21 +368,17 @@ const lookupReceiver = async (req, res) => {
         if (error) throw error;
 
         if (!account) {
-            return res
-                .status(404)
-                .json({
-                    success: false,
-                    message: "No account found with this phone number or ID.",
-                });
+            return res.status(404).json({
+                success: false,
+                message: "No account found with this phone number or ID.",
+            });
         }
 
         if (account.account_id === sender_account_id) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Cannot transfer to your own account.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Cannot transfer to your own account.",
+            });
         }
 
         if (!account.is_active) {
@@ -410,13 +419,11 @@ const lookupReceiver = async (req, res) => {
         });
     } catch (err) {
         console.error("[lookupReceiver]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
