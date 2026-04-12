@@ -6,26 +6,40 @@ const {
     deleteQRCode,
     resolveQRCode,
     createPaymentSession,
-    completePayment
+    completePayment,
+    getPaymentSessionStatus,
 } = require("../controllers/qrCodeController");
 const { authenticate } = require("../middleware/authmiddleware");
 
-const router = express.Router();
+// ── Public router (/api/qr-codes) ───────────────────────────
+// IMPORTANT: this must be a SEPARATE router from orgRouter below.
+// Mounting the same router at two different paths in app.js causes
+// the public GET /:qr_id route (no auth) to shadow the authenticated
+// org management routes when both share one router instance.
+const publicRouter = express.Router();
 
-// ── Public — no auth ────────────────────────────────────────
-// GET /api/qr-codes/:qr_id  — resolve a dynamic QR (called by scanner)
-router.get("/:qr_id", resolveQRCode);
+// GET /api/qr-codes/:qr_id  — scanner resolves any QR type (no auth)
+publicRouter.get("/:qr_id", resolveQRCode);
 
-// ── Org-authenticated — requires JWT ─────────────────────────
-// POST   /api/org/qr-codes        — create
-// GET    /api/org/qr-codes        — list
-// PATCH  /api/org/qr-codes/:qr_id — update (name, amount, note, callback_url, etc.)
-// DELETE /api/org/qr-codes/:qr_id — delete
-router.post(  "/",         authenticate, createQRCode);
-router.get(   "/",         authenticate, listQRCodes);
-router.patch( "/:qr_id",  authenticate, updateQRCode);
-router.delete("/:qr_id",  authenticate, deleteQRCode);
-router.post("/payments/create", createPaymentSession);
-router.post("/payments/complete", completePayment);
+// ── Org-authenticated router (/api/org/qr-codes) ─────────────
+const orgRouter = express.Router();
 
-module.exports = router;
+// All org routes require a valid JWT
+orgRouter.use(authenticate);
+
+// POST   /api/org/qr-codes           — create a named dynamic QR
+// GET    /api/org/qr-codes           — list all org QR codes
+// PATCH  /api/org/qr-codes/:qr_id   — update name/amount/note/callback
+// DELETE /api/org/qr-codes/:qr_id   — delete
+orgRouter.post("/", createQRCode);
+orgRouter.get("/", listQRCodes);
+orgRouter.patch("/:qr_id", updateQRCode);
+orgRouter.delete("/:qr_id", deleteQRCode);
+
+// Payment session endpoints (POS creates a per-transaction QR)
+orgRouter.post("/payments/create", createPaymentSession);
+orgRouter.post("/payments/complete", completePayment);
+// GET /api/org/qr-codes/payments/status/:session_id — merchant polls after showing QR
+orgRouter.get("/payments/status/:session_id", getPaymentSessionStatus);
+
+module.exports = { publicRouter, orgRouter };

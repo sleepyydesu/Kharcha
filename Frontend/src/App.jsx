@@ -11,6 +11,8 @@ import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
 import SetToken from "./pages/SetToken";
 import OrgQRCodes from "./pages/OrgQRCodes";
+import PaymentGateway from "./pages/PaymentGateway";
+import ApiDocs from "./pages/ApiDocs";
 import "./styles/variables.css";
 import "./App.css";
 
@@ -24,7 +26,9 @@ function AppShell({ qrOpen, setQrOpen }) {
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
                 <BalancePanel dashboardOnly={!isDashboard} />
-                <main className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}>
+                <main
+                    className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
+                >
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/load" element={<LoadMoney />} />
@@ -37,6 +41,13 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
                         <Route path="/org/qr-codes" element={<OrgQRCodes />} />
+                        {/* Hosted payment page — linked externally by merchants */}
+                        <Route
+                            path="/pay/:session_id"
+                            element={<PaymentGateway />}
+                        />
+                        {/* Developer API docs */}
+                        <Route path="/developers" element={<ApiDocs />} />
                     </Routes>
                 </main>
             </div>

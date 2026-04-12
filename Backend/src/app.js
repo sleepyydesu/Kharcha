@@ -20,7 +20,10 @@ const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/catgoryRoutes");
-const qrCodeRoutes = require("./routes/qrCodeRoutes");
+const {
+    publicRouter: qrPublicRoutes,
+    orgRouter: qrOrgRoutes,
+} = require("./routes/qrCodeRoutes");
 
 const app = express();
 
@@ -68,8 +71,8 @@ app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gift-cards", giftCardRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/org/qr-codes", qrCodeRoutes);  // org CRUD (POST/GET/PATCH/DELETE)
-app.use("/api/qr-codes",     qrCodeRoutes);  // public resolve (GET /:qr_id)
+app.use("/api/org/qr-codes", qrOrgRoutes); // org CRUD — authenticated
+app.use("/api/qr-codes", qrPublicRoutes); // public resolve — no auth
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
