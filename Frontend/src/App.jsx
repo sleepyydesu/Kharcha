@@ -21,6 +21,7 @@ import StatementDetail from "./pages/StatementDetail";
 import Account from "./pages/Account";
 import SetToken from "./pages/SetToken";
 import OrgQRCodes from "./pages/OrgQRCodes";
+import DynamicQRPayment from "./pages/DynamicQRPayment";
 import PaymentGateway from "./pages/PaymentGateway";
 import ApiDocs from "./pages/ApiDocs";
 
@@ -160,6 +161,7 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
                         <Route path="/org/qr-codes" element={<OrgQRCodes />} />
+                        <Route path="/org/dynamic-qr" element={<DynamicQRPayment />} />
                         <Route path="/pay/:session_id" element={<PaymentGateway />} />
                         <Route path="/developers" element={<ApiDocs />} />
                     </Routes>
