@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const testRoutes = require("./routes/testRoutes");
+const organizationRoutes = require("./routes/organizationRoutes");
 const authRoutes = require("./routes/authRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
@@ -11,9 +12,9 @@ const cardRoutes = require("./routes/cardRoutes");
 const apiKeyRoutes = require("./routes/apiKeyRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
-    securityHeaders,
-    apiRateLimiter,
-    authRateLimiter,
+  securityHeaders,
+  apiRateLimiter,
+  authRateLimiter,
 } = require("./middleware/securityMiddleware");
 
 const khaltiRoutes = require("./routes/khaltiRoutes");
@@ -21,8 +22,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/catgoryRoutes");
 const {
-    publicRouter: qrPublicRoutes,
-    orgRouter: qrOrgRoutes,
+  publicRouter: qrPublicRoutes,
+  orgRouter: qrOrgRoutes,
 } = require("./routes/qrCodeRoutes");
 
 const app = express();
@@ -32,16 +33,16 @@ app.use(securityHeaders);
 
 // ── CORS ─────────────────────────────────────────────────────
 app.use(
-    cors({
-        origin: process.env.CORS_ORIGIN || "*",
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
-        exposedHeaders: [
-            "X-RateLimit-Limit",
-            "X-RateLimit-Remaining",
-            "X-RateLimit-Reset",
-        ],
-    }),
+  cors({
+    origin: process.env.CORS_ORIGIN || "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+    exposedHeaders: [
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+  }),
 );
 
 // ── Body Parsing ─────────────────────────────────────────────
@@ -53,13 +54,14 @@ app.use("/api", apiRateLimiter);
 
 // ── API Docs (Swagger UI) ────────────────────────────────────
 app.use(
-    "/api/docs",
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, swaggerOptions),
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, swaggerOptions),
 );
 
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/test", testRoutes);
+app.use("/api/organizations", organizationRoutes);
 app.use("/api/khalti", khaltiRoutes);
 app.use("/api/auth", authRateLimiter, authRoutes);
 app.use("/api/wallet", walletRoutes);
@@ -76,19 +78,19 @@ app.use("/api/qr-codes", qrPublicRoutes); // public resolve — no auth
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
-    res.redirect("/api/docs");
+  res.redirect("/api/docs");
 });
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((req, res) => {
-    res.status(404).json({ success: false, message: "Route not found." });
+  res.status(404).json({ success: false, message: "Route not found." });
 });
 
 // ── Global Error Handler ──────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-    console.error("[GlobalError]", err);
-    res.status(500).json({ success: false, message: "Internal server error." });
+  console.error("[GlobalError]", err);
+  res.status(500).json({ success: false, message: "Internal server error." });
 });
 
 module.exports = app;
