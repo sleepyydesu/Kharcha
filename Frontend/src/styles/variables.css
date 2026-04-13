@@ -1,153 +1,153 @@
 html {
-  font-size: 16px;
+    font-size: 16px;
 }
 
 /* Light mode */
 :root {
-  /* Brand */
-  --primary:            #1a5c39;
-  --primary-dark:       #154d30;
-  --accent:             #f5c800;
-  --selected:           #f0d973;
-  --primary-text:       #133f28;
+    /* Brand */
+    --primary: #1a5c39;
+    --primary-dark: #154d30;
+    --accent: #f5c800;
+    --selected: #f0d973;
+    --primary-text: #133f28;
 
-  /* Backgrounds */
-  --background:         #faf9f6;
-  --shaded-background:  #f4f4f0;
-  --card:               #ffffff;
+    /* Backgrounds */
+    --background: #faf9f6;
+    --shaded-background: #f4f4f0;
+    --card: #ffffff;
 
-  /* Borders */
-  --border:             #e2e1da;
-  --border-subtle:      #eeede6;
-  --border-panel:       #e8ece5;
+    /* Borders */
+    --border: #e2e1da;
+    --border-subtle: #eeede6;
+    --border-panel: #e8ece5;
 
-  /* Text */
-  --text-color:         #111111;
-  --text-sub:           #666666;
-  --text-muted:         #999999;
-  --text-sidebar-item:  rgba(255,255,255,0.75);
-  --text-hello:         #8a9e90;
+    /* Text */
+    --text-color: #111111;
+    --text-sub: #666666;
+    --text-muted: #999999;
+    --text-sidebar-item: rgba(255, 255, 255, 0.75);
+    --text-hello: #8a9e90;
 
-  /* Inputs */
-  --input-bg:           #faf9f6;
+    /* Inputs */
+    --input-bg: #faf9f6;
 
-  /* Status — success */
-  --success-text:       #1a5c39;
-  --success-bg:         #e6f4ed;
-  --success-border:     #c6e8d4;
+    /* Status — success */
+    --success-text: #1a5c39;
+    --success-bg: #e6f4ed;
+    --success-border: #c6e8d4;
 
-  /* Status — error */
-  --error-text:         #c0392b;
-  --error-bg:           #fff5f5;
-  --error-border:       #fecaca;
+    /* Status — error */
+    --error-text: #c0392b;
+    --error-bg: #fff5f5;
+    --error-border: #fecaca;
 
-  /* Status — warning */
-  --warning-text:       #8a6b00;
-  --warning-bg:         #fffbe6;
-  --warning-border:     #f5e090;
+    /* Status — warning */
+    --warning-text: #8a6b00;
+    --warning-bg: #fffbe6;
+    --warning-border: #f5e090;
 
-  /* Action icon chips */
-  --icon-blue-bg:       #e8f0fe;
-  --icon-blue-text:     #1a56db;
-  --icon-amber-bg:      #fff7e0;
-  --icon-amber-text:    #b45309;
-  --icon-purple-bg:     #f3e8ff;
-  --icon-purple-text:   #7c3aed;
+    /* Action icon chips */
+    --icon-blue-bg: #e8f0fe;
+    --icon-blue-text: #1a56db;
+    --icon-amber-bg: #fff7e0;
+    --icon-amber-text: #b45309;
+    --icon-purple-bg: #f3e8ff;
+    --icon-purple-text: #7c3aed;
 
-  /* KYC card */
-  --kyc-bg:             #f0faf4;
-  --kyc-border:         #c6e8d4;
-  --kyc-icon:           #1a5c39;
+    /* KYC card */
+    --kyc-bg: #f0faf4;
+    --kyc-border: #c6e8d4;
+    --kyc-icon: #1a5c39;
 
-  /* Skeleton shimmer */
-  --skel-from:          #f0eeea;
-  --skel-to:            #e8e6e1;
+    /* Skeleton shimmer */
+    --skel-from: #f0eeea;
+    --skel-to: #e8e6e1;
 
-  /* Misc */
-  --shadow:             0 2px 8px rgba(0,0,0,0.1);
-  --shadow-card:        0 2px 12px rgba(0,0,0,0.07);
-  --radius:             15px;
-  --sidebar-width:      18rem;
+    /* Misc */
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.07);
+    --radius: 15px;
+    --sidebar-width: 18rem;
 
-  --category-icon-color: var(--primary);
+    --category-icon-color: var(--text-color);
 }
 
 /* Dark mode */
 [data-theme="dark"] {
-  color-scheme: dark;
+    color-scheme: dark;
 
-  /* Brand */
-  --primary:            #212328;
-  --primary-dark:       #154d30;
-  --accent:             #f5c800;
-  --selected:           #d4b800;
-  --primary-text:       #133f28;
+    /* Brand */
+    --primary: #212328;
+    --primary-dark: #154d30;
+    --accent: #f5c800;
+    --selected: #d4b800;
+    --primary-text: #133f28;
 
-  /* Backgrounds */
-  --background:         #0c1014;
-  --shaded-background:  #0c1014;
-  --card:               #212328;
+    /* Backgrounds */
+    --background: #0c1014;
+    --shaded-background: #0c1014;
+    --card: #212328;
 
-  /* Borders */
-  --border:             #4b4b4b;
-  --border-subtle:      #4b4b4b;
-  --border-panel:       #4b4b4b;
+    /* Borders */
+    --border: #4b4b4b;
+    --border-subtle: #4b4b4b;
+    --border-panel: #4b4b4b;
 
-  /* Text */
-  --text-color:         #ffffff;
-  --text-sub:           #bebebe;
-  --text-muted:         #a8a8a8;
-  --text-sidebar-item:  rgba(255,255,255,0.75);
-  --text-hello:         #adadad;
+    /* Text */
+    --text-color: #ffffff;
+    --text-sub: #bebebe;
+    --text-muted: #a8a8a8;
+    --text-sidebar-item: rgba(255, 255, 255, 0.75);
+    --text-hello: #adadad;
 
-  /* Inputs */
-  --input-bg:           #292929;
+    /* Inputs */
+    --input-bg: #292929;
 
-  /* Status — success */
-  --success-text:       #4ade80;
-  --success-bg:         #1a3325;
-  --success-border:     #2e5040;
+    /* Status — success */
+    --success-text: #4ade80;
+    --success-bg: #1a3325;
+    --success-border: #2e5040;
 
-  /* Status — error */
-  --error-text:         #f87171;
-  --error-bg:           #2a1010;
-  --error-border:       #5a2020;
+    /* Status — error */
+    --error-text: #f87171;
+    --error-bg: #2a1010;
+    --error-border: #5a2020;
 
-  /* Status — warning */
-  --warning-text:       #fbbf24;
-  --warning-bg:         #2a2200;
-  --warning-border:     #4a3a00;
+    /* Status — warning */
+    --warning-text: #fbbf24;
+    --warning-bg: #2a2200;
+    --warning-border: #4a3a00;
 
-  /* Action icon chips */
-  --icon-blue-bg:       #1e2f4d;
-  --icon-blue-text:     #60a5fa;
-  --icon-amber-bg:      #2a1f00;
-  --icon-amber-text:    #fbbf24;
-  --icon-purple-bg:     #2d1f4a;
-  --icon-purple-text:   #c084fc;
+    /* Action icon chips */
+    --icon-blue-bg: #1e2f4d;
+    --icon-blue-text: #60a5fa;
+    --icon-amber-bg: #2a1f00;
+    --icon-amber-text: #fbbf24;
+    --icon-purple-bg: #2d1f4a;
+    --icon-purple-text: #c084fc;
 
-  /* KYC card */
-  --kyc-bg:             #152014;
-  --kyc-border:         #2e4f35;
-  --kyc-icon:           #4ade80;
+    /* KYC card */
+    --kyc-bg: #152014;
+    --kyc-border: #2e4f35;
+    --kyc-icon: #4ade80;
 
-  /* Skeleton shimmer */
-  --skel-from:          #1a2e20;
-  --skel-to:            #223528;
+    /* Skeleton shimmer */
+    --skel-from: #1a2e20;
+    --skel-to: #223528;
 
-  /* Misc */
-  --shadow:             0 2px 8px rgba(0,0,0,0.35);
-  --shadow-card:        0 2px 16px rgba(0,0,0,0.3);
-  --radius:             15px;
-  --sidebar-width:      18rem;
-  
-  --category-icon-color: #e5e7eb;
+    /* Misc */
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.3);
+    --radius: 15px;
+    --sidebar-width: 18rem;
+
+    --category-icon-color: #e5e7eb;
 }
 
 /* resets */
 [data-theme="dark"] body,
 [data-theme="dark"] .app-shell,
 [data-theme="dark"] .app-content {
-  background: var(--background);
-  color: var(--text-color);
+    background: var(--background);
+    color: var(--text-color);
 }

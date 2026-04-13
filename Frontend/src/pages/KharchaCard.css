@@ -1,0 +1,687 @@
+/* ─────────────────────────────────────────────────────────────
+   Kharcha Card Page
+   ───────────────────────────────────────────────────────────── */
+
+.kc-page {
+    position: relative;
+    min-height: 100vh;
+}
+
+.kc-body {
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    max-width: 480px;
+    margin: 0 auto; /* centre in the content area */
+}
+
+.kc-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.kc-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-color);
+    letter-spacing: -0.4px;
+}
+.kc-sub {
+    font-size: 15px;
+    color: var(--text-sub);
+    margin: 0;
+}
+
+/* ── The card visual ─────────────────────────────────────────── */
+
+.kc-card-visual {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1.586 / 1;
+    border-radius: 18px;
+    overflow: hidden;
+
+    background: linear-gradient(
+        140deg,
+        var(--primary) 0%,
+        color-mix(in srgb, var(--primary) 50%, black) 100%
+    );
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    transition: filter 0.25s;
+}
+
+.kc-card-visual--blocked {
+    filter: grayscale(0.65) brightness(0.72);
+}
+
+/* Logo */
+.kc-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 1;
+}
+.kc-card-brand {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+}
+
+/* Chip bottom-left */
+.kc-chip-icon {
+    position: absolute;
+    bottom: 18px;
+    left: 20px;
+    color: rgba(255, 255, 255, 0.55);
+    z-index: 1;
+}
+
+/* NFC icon top-right */
+.kc-nfc-icon {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    color: rgba(255, 255, 255, 0.45);
+    z-index: 1;
+}
+
+/* Blocked overlay */
+.kc-blocked-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.38);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    z-index: 5;
+}
+
+/* ── Card action buttons — centred below card ────────────────── */
+
+.kc-card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* ── Blocked notice ───────────────────────────────────────────── */
+.kc-blocked-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    font-size: 0.84rem;
+    color: var(--error-text);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: 10px;
+    padding: 10px 16px;
+}
+
+/* ── Details grid ────────────────────────────────────────────── */
+
+.kc-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 18px 20px;
+}
+
+.kc-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kc-detail-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.kc-detail-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* ── Status badge ────────────────────────────────────────────── */
+
+.kc-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 99px;
+    padding: 3px 10px;
+    width: fit-content;
+}
+.badge--success {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+}
+.badge--error {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-border);
+}
+.badge--warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+
+.kc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition:
+        opacity 0.15s,
+        transform 0.1s;
+    white-space: nowrap;
+}
+.kc-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.kc-btn:not(:disabled):active {
+    transform: scale(0.97);
+}
+
+.kc-btn--primary {
+    background: var(--primary);
+    color: #fff;
+}
+[data-theme="dark"] .kc-btn--primary {
+    background: #2b7a4b;
+}
+.kc-btn--primary:not(:disabled):hover {
+    opacity: 0.87;
+}
+
+.kc-btn--outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-color);
+}
+.kc-btn--outline:not(:disabled):hover {
+    background: var(--shaded-background);
+}
+
+.kc-btn--ghost {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-sub);
+}
+.kc-btn--ghost:not(:disabled):hover {
+    background: var(--shaded-background);
+}
+
+.kc-btn--danger {
+    background: var(--error-text);
+    color: #fff;
+}
+.kc-btn--danger:not(:disabled):hover {
+    opacity: 0.85;
+}
+
+.kc-btn--danger-outline {
+    background: transparent;
+    border: 1.5px solid var(--error-border);
+    color: var(--error-text);
+}
+.kc-btn--danger-outline:not(:disabled):hover {
+    background: var(--error-bg);
+}
+
+.kc-btn--full {
+    width: 100%;
+    justify-content: center;
+}
+
+/* ── Modals ──────────────────────────────────────────────────── */
+
+.kc-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+}
+
+.kc-modal {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: var(--shadow);
+}
+
+.kc-modal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.kc-modal-icon--warn {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+.kc-modal-icon--primary {
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+.kc-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+.kc-modal-desc {
+    font-size: 0.87rem;
+    color: var(--text-sub);
+    margin: 0;
+    line-height: 1.55;
+}
+
+.kc-modal-btns {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.kc-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 0.88rem;
+    resize: vertical;
+    box-sizing: border-box;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+.kc-textarea:focus {
+    border-color: var(--primary);
+}
+
+/* ── Limit input ─────────────────────────────────────────────── */
+
+.kc-limit-input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--input-bg);
+    transition: border-color 0.15s;
+}
+.kc-limit-input-wrap:focus-within {
+    border-color: var(--primary);
+}
+
+.kc-limit-prefix {
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--shaded-background);
+    border-right: 1.5px solid var(--border);
+    white-space: nowrap;
+}
+
+.kc-limit-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    outline: none;
+    font-family: inherit;
+}
+
+.kc-limit-err {
+    font-size: 0.82rem;
+    color: var(--error-text);
+    margin: -8px 0 0;
+}
+
+/* ── Request card section ────────────────────────────────────── */
+
+.kc-request-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.kc-request-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.kc-request-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-color);
+}
+.kc-request-desc {
+    font-size: 0.88rem;
+    color: var(--text-sub);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.kc-perks {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kc-perks li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.86rem;
+    color: var(--text-sub);
+    font-weight: 500;
+}
+
+.kc-perk-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    flex-shrink: 0;
+}
+[data-theme="dark"] .kc-perk-dot {
+    background: #4ade80;
+}
+
+.kc-address-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.kc-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.kc-label-opt {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.kc-input {
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+.kc-input:focus {
+    border-color: var(--primary);
+}
+
+.kc-error {
+    font-size: 0.84rem;
+    color: var(--error-text);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 0;
+}
+.kc-success {
+    font-size: 0.84rem;
+    color: var(--success-text);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 0;
+}
+
+/* ── Pending section ─────────────────────────────────────────── */
+
+.kc-pending-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.kc-pending-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kc-pending-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+.kc-pending-desc {
+    font-size: 0.87rem;
+    color: var(--text-sub);
+    margin: 0;
+    line-height: 1.55;
+}
+
+/* Steps */
+.kc-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 14px 16px;
+    background: var(--shaded-background);
+    border-radius: 12px;
+}
+
+.kc-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 4px 0;
+}
+.kc-step--done {
+    color: var(--success-text);
+    font-weight: 600;
+}
+
+.kc-step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    background: var(--card);
+}
+.kc-step--done .kc-step-dot {
+    background: var(--success-text);
+    border-color: var(--success-text);
+}
+
+.kc-step-line {
+    width: 2px;
+    height: 16px;
+    background: var(--border);
+    margin-left: 4px;
+}
+
+/* ── Active card section wrapper ─────────────────────────────── */
+.kc-active-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+
+.kc-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 0.87rem;
+    font-weight: 600;
+    z-index: 200;
+    animation: kc-fadein 0.22s ease;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.kc-toast--success {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+}
+.kc-toast--error {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-border);
+}
+
+@keyframes kc-fadein {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* ── Skeletons ───────────────────────────────────────────────── */
+
+.kc-skeleton-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.kc-skeleton {
+    border-radius: 14px;
+    background: linear-gradient(
+        90deg,
+        var(--skel-from) 25%,
+        var(--skel-to) 50%,
+        var(--skel-from) 75%
+    );
+    background-size: 200% 100%;
+    animation: kc-shimmer 1.4s infinite;
+}
+.kc-skeleton--card {
+    aspect-ratio: 1.586 / 1;
+    border-radius: 18px;
+}
+.kc-skeleton--text {
+    height: 16px;
+    max-width: 280px;
+    border-radius: 8px;
+}
+.kc-skeleton--short {
+    max-width: 180px;
+}
+
+@keyframes kc-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ── Error box ───────────────────────────────────────────────── */
+
+.kc-error-box {
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    font-size: 0.88rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .kc-body {
+        padding: 20px 16px;
+        gap: 20px;
+        margin: 0;
+    }
+    .kc-modal {
+        padding: 20px 18px;
+    }
+    .kc-card-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .kc-card-actions .kc-btn {
+        justify-content: center;
+    }
+}

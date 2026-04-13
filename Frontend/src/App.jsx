@@ -25,6 +25,8 @@ import OrgQRCodes from "./pages/OrgQRCodes";
 import DynamicQRPayment from "./pages/DynamicQRPayment";
 import PaymentGateway from "./pages/PaymentGateway";
 import ApiDocs from "./pages/ApiDocs";
+import Services from "./pages/Services";
+import KharchaCard from "./pages/KharchaCard";
 
 // ── Bubble Background (Auth only) ─────────────────────────────
 function BubblePortal() {
@@ -34,7 +36,7 @@ function BubblePortal() {
                 <div key={i} className={`bubble bubble-${i + 1}`} />
             ))}
         </div>,
-        document.body
+        document.body,
     );
 }
 
@@ -64,10 +66,22 @@ function AuthApp({ onLogin }) {
                         </p>
 
                         <ul className="brand-features">
-                            <li><span className="feat-icon">⚡</span> Instant transfers</li>
-                            <li><span className="feat-icon">🔒</span> Bank-grade security</li>
-                            <li><span className="feat-icon">📱</span> Works everywhere</li>
-                            <li><span className="feat-icon">🇳🇵</span> Made for Nepal</li>
+                            <li>
+                                <span className="feat-icon">⚡</span> Instant
+                                transfers
+                            </li>
+                            <li>
+                                <span className="feat-icon">🔒</span> Bank-grade
+                                security
+                            </li>
+                            <li>
+                                <span className="feat-icon">📱</span> Works
+                                everywhere
+                            </li>
+                            <li>
+                                <span className="feat-icon">🇳🇵</span> Made for
+                                Nepal
+                            </li>
                         </ul>
 
                         <div className="brand-deco-circle brand-deco-1" />
@@ -122,10 +136,7 @@ function AuthApp({ onLogin }) {
                             )}
 
                             {!showReset && activeTab === "register" && (
-                                <SignupForm
-                                    key="signup"
-                                    onLogin={onLogin}
-                                />
+                                <SignupForm key="signup" onLogin={onLogin} />
                             )}
                         </div>
                     </div>
@@ -158,14 +169,25 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/load" element={<LoadMoney />} />
                         <Route path="/send" element={<SendMoney />} />
                         <Route path="/statements" element={<Statements />} />
-                        <Route path="/statements/:transaction_id" element={<StatementDetail />} />
+                        <Route
+                            path="/statements/:transaction_id"
+                            element={<StatementDetail />}
+                        />
                         <Route path="/expenses" element={<Expenses />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
                         <Route path="/org/qr-codes" element={<OrgQRCodes />} />
-                        <Route path="/org/dynamic-qr" element={<DynamicQRPayment />} />
-                        <Route path="/pay/:session_id" element={<PaymentGateway />} />
+                        <Route
+                            path="/org/dynamic-qr"
+                            element={<DynamicQRPayment />}
+                        />
+                        <Route
+                            path="/pay/:session_id"
+                            element={<PaymentGateway />}
+                        />
                         <Route path="/developers" element={<ApiDocs />} />
+                        <Route path="/services" element={<Services />} />
+                        <Route path="/card" element={<KharchaCard />} />
                     </Routes>
                 </main>
             </div>
@@ -178,7 +200,7 @@ function AppShell({ qrOpen, setQrOpen }) {
 // ── Root App ─────────────────────────────────────────────────
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(
-        () => !!localStorage.getItem("token")
+        () => !!localStorage.getItem("token"),
     );
     const [qrOpen, setQrOpen] = useState(false);
 

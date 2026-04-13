@@ -29,16 +29,28 @@ export const signIn = (body) =>
     request("/auth/signin", { method: "POST", body: JSON.stringify(body) });
 
 export const signupCheck = (body) =>
-    request("/auth/signup/check", { method: "POST", body: JSON.stringify(body) });
+    request("/auth/signup/check", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 export const signupSendOtp = (body) =>
-    request("/auth/signup/send-otp", { method: "POST", body: JSON.stringify(body) });
+    request("/auth/signup/send-otp", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 export const signupVerifyOtp = (body) =>
-    request("/auth/signup/verify-otp", { method: "POST", body: JSON.stringify(body) });
+    request("/auth/signup/verify-otp", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 export const signupComplete = (body) =>
-    request("/auth/signup/complete", { method: "POST", body: JSON.stringify(body) });
+    request("/auth/signup/complete", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 // ── Wallet ────────────────────────────────────────────────────
 export const getWallet = () => request("/wallet");
@@ -135,19 +147,16 @@ export const changeMpin = (body) =>
 
 // ── Auth — Password reset ─────────────────────────────────────
 export const sendPasswordResetOTP = (body) =>
-request("/auth/password/forgot-send-otp", {
-    method: "POST",
-    body: JSON.stringify(body),
-});
+    request("/auth/password/forgot-send-otp", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 export const resetPassword = (body) =>
     request("/auth/password/reset", {
         method: "POST",
         body: JSON.stringify(body),
     });
-
-// ── Categories ────────────────────────────────────────────────
-export const getCategories = () => request("/categories");
 
 // ── Expenses ──────────────────────────────────────────────────
 export const getExpenseOverview = (start_date, end_date) =>
@@ -157,10 +166,10 @@ export const getExpensesByCategory = (
     categoryId,
     start_date,
     end_date,
-    page = 1
+    page = 1,
 ) =>
     request(
-        `/expenses/category/${categoryId}?start_date=${start_date}&end_date=${end_date}&page=${page}&limit=50`
+        `/expenses/category/${categoryId}?start_date=${start_date}&end_date=${end_date}&page=${page}&limit=50`,
     );
 
 export const createExpense = (payload) =>
@@ -229,8 +238,7 @@ export const deleteOrgQRCode = (id) =>
     request(`/org/qr-codes/${id}`, { method: "DELETE" });
 
 // Public — resolve QR → payment details
-export const resolveQRCode = (qr_id) =>
-    request(`/qr-codes/${qr_id}`);
+export const resolveQRCode = (qr_id) => request(`/qr-codes/${qr_id}`);
 
 // ── Payment Sessions (Dynamic QR payments) ────────────────────
 export const createPaymentSession = (body) =>
@@ -249,5 +257,23 @@ export const resolveCheckout = (session_id) =>
 export const payCheckout = (session_id, body = {}) =>
     request(`/pos/checkout/${session_id}/pay`, {
         method: "POST",
+        body: JSON.stringify(body),
+    });
+
+// ── Kharcha Card ──────────────────────────────────────────────
+export const getMyCard = () => request("/cards/my-card");
+
+export const requestCard = (body = {}) =>
+    request("/cards/request", { method: "POST", body: JSON.stringify(body) });
+
+export const blockMyCard = (body = {}) =>
+    request("/cards/my-card/block", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+
+export const updateCardLimits = (body) =>
+    request("/cards/my-card/limits", {
+        method: "PATCH",
         body: JSON.stringify(body),
     });
