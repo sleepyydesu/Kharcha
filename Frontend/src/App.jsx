@@ -159,6 +159,7 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/send" element={<SendMoney />} />
                         <Route path="/statements" element={<Statements />} />
                         <Route path="/statements/:transaction_id" element={<StatementDetail />} />
+                        <Route path="/expenses" element={<Expenses />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
                         <Route path="/org/qr-codes" element={<OrgQRCodes />} />
