@@ -534,6 +534,33 @@ export default function Account() {
               </div>
             </div>
 
+            {/* ── Organisation tools (org accounts only) ── */}
+            {profile.account_type === "organization" && (
+              <div>
+                <SectionTitle icon={
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="17" y="17" width="3" height="3"/></svg>
+                }>
+                  Organisation
+                </SectionTitle>
+                <div className="acct-section-cards">
+                  <div className="acct-card acct-card--action">
+                    <div className="acct-action-header acct-action-header--static">
+                      <div className="acct-action-icon acct-action-icon--purple">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="17" y="17" width="3" height="3"/></svg>
+                      </div>
+                      <div className="acct-action-info">
+                        <span className="acct-action-title">POS &amp; API Keys</span>
+                        <span className="acct-action-sub">Connect your store software or POS terminal to accept payments</span>
+                      </div>
+                      <button className="acct-btn acct-btn--primary acct-btn--sm" onClick={() => navigate("/org/qr-codes")}>
+                        Manage →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── Settings section ── */}
             <div>
               <SectionTitle icon={

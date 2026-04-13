@@ -19,6 +19,11 @@ const {
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
+const categoryRoutes = require("./routes/catgoryRoutes");
+const {
+    publicRouter: qrPublicRoutes,
+    orgRouter: qrOrgRoutes,
+} = require("./routes/qrCodeRoutes");
 
 // ✅ NEW ROUTES — note: categoryRoutes file is named catgoryRoutes (typo in filename)
 const expenseRoutes = require("./routes/expenseRoutes");
@@ -71,6 +76,9 @@ app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gift-cards", giftCardRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/org/qr-codes", qrOrgRoutes); // org CRUD — authenticated
+app.use("/api/qr-codes", qrPublicRoutes); // public resolve — no auth
 
 // ✅ NEW
 app.use("/api/expenses", expenseRoutes);

@@ -1,12 +1,313 @@
+/* ─────────────────────────────────────────────────────────────
+   Dashboard
+   ───────────────────────────────────────────────────────────── */
+
 .dashboard { position: relative; min-height: 100vh; }
-.dashboard__balance-mobile  { display: none; }
-.dashboard__balance-desktop { display: block; }
-.dashboard__body { padding: 40px 36px; }
-.dashboard__title { font-size: 26px; font-weight: 800; margin: 0 0 8px; color: var(--text-color); letter-spacing: -0.4px; }
+.dashboard__body { padding: 40px 36px; display: flex; flex-direction: column; gap: 1.4rem; }
+.dashboard__title { font-size: 26px; font-weight: 800; margin: 0 0 6px; color: var(--text-color); letter-spacing: -0.4px; }
 .dashboard__sub   { font-size: 15px; color: var(--text-sub); margin: 0; }
 
+/* ── Icon wrapper ───────────────────────────────────────────── */
+/* Sets the color that SVG strokes inherit via currentColor.    */
+
+.db-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--category-icon-color);
+}
+
+.db-icon-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ── Main Services ──────────────────────────────────────────── */
+
+.db-main {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    background: var(--card);
+}
+
+.db-main__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.85rem 0.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.db-main__btn:hover {
+    background: var(--shaded-background);
+}
+
+.db-main__icon {
+    width: 40px;
+    height: 40px;
+}
+
+.db-main__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.3;
+}
+
+/* ── All Services ───────────────────────────────────────────── */
+
+.db-services {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1rem 1.4rem;
+    background: var(--card);
+}
+
+.db-services__heading {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 1rem;
+    letter-spacing: -0.01em;
+}
+
+.db-services__grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    row-gap: 0.8rem;
+}
+
+.db-services__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.45rem;
+    padding: 0.7rem 0.3rem 0.6rem;
+    border: none;
+    background: transparent;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.db-services__item:hover {
+    background: var(--shaded-background);
+}
+
+.db-services__icon {
+    width: 40px;
+    height: 40px;
+}
+
+.db-services__label {
+    font-size: 0.73rem;
+    font-weight: 500;
+    color: var(--text-sub);
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
 @media (max-width: 900px) {
-  .dashboard__balance-mobile  { display: block; }
-  .dashboard__balance-desktop { display: none; }
-  .dashboard__body { padding: 20px 16px; }
+    .dashboard__body { padding: 20px 16px; gap: 1rem; }
+
+    .db-main {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.15rem;
+        padding: 0.3rem;
+    }
+
+    .db-main__btn { padding: 0.6rem 0.2rem; gap: 0.3rem; }
+    .db-main__icon { width: 28px; height: 28px; }
+    .db-main__label { font-size: 0.66rem; }
+
+    .db-services__grid { grid-template-columns: repeat(3, 1fr); }
+    .db-services__icon { width: 36px; height: 36px; }
+}
+
+/* ── Recent Transactions ──────────────────────────────────────── */
+
+.db-recent {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    overflow: hidden;
+}
+
+.db-recent__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.db-recent__heading {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.db-recent__see-all {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    background: none;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 6px;
+    transition: opacity 0.15s;
+}
+
+.db-recent__see-all:hover { opacity: 0.7; }
+
+/* List */
+
+.db-recent__list { padding: 0.3rem 0; }
+
+.db-recent__row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    transition: background 0.13s;
+    outline: none;
+}
+
+.db-recent__row:hover,
+.db-recent__row:focus-visible {
+    background: var(--shaded-background);
+}
+
+.db-recent__row:not(:last-child) {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.db-recent__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: var(--shaded-background);
+    padding: 4px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+/* SVG avatars are spans, not imgs — same size/padding but flex for centering */
+.db-recent__avatar--svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.db-recent__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.db-recent__label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.db-recent__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.db-recent__tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--shaded-background);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    border-radius: 99px;
+    padding: 0.05rem 0.45rem;
+    white-space: nowrap;
+}
+
+.db-recent__time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.db-recent__amount {
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.db-recent__amount.in  { color: var(--success-text); }
+.db-recent__amount.out { color: var(--text-color);   }
+
+/* Skeletons */
+
+.db-recent__skeletons { padding: 0.5rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+.db-recent__skeleton {
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--skel-from) 25%, var(--skel-to) 50%, var(--skel-from) 75%);
+    background-size: 200% 100%;
+    animation: db-shimmer 1.4s infinite;
+}
+
+@keyframes db-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Empty & error */
+
+.db-recent__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+}
+
+.db-recent__empty p { font-size: 0.87rem; margin: 0; }
+
+.db-recent__error {
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: var(--error-text);
+    background: var(--error-bg);
+    border-top: 1px solid var(--error-border);
 }

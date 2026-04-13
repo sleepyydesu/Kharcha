@@ -68,6 +68,8 @@ html {
   --shadow-card:        0 2px 12px rgba(0,0,0,0.07);
   --radius:             15px;
   --sidebar-width:      18rem;
+
+  --category-icon-color: var(--primary);
 }
 
 /* Dark mode */
@@ -75,31 +77,31 @@ html {
   color-scheme: dark;
 
   /* Brand */
-  --primary:            #1a5c39;
+  --primary:            #212328;
   --primary-dark:       #154d30;
   --accent:             #f5c800;
   --selected:           #d4b800;
   --primary-text:       #133f28;
 
   /* Backgrounds */
-  --background:         #0f1a14;
-  --shaded-background:  #162010;
-  --card:               #182517;
+  --background:         #0c1014;
+  --shaded-background:  #0c1014;
+  --card:               #212328;
 
   /* Borders */
-  --border:             #2a3d2f;
-  --border-subtle:      #2a3d2f;
-  --border-panel:       #2a3d2f;
+  --border:             #4b4b4b;
+  --border-subtle:      #4b4b4b;
+  --border-panel:       #4b4b4b;
 
   /* Text */
-  --text-color:         #e4ede7;
-  --text-sub:           #8ba897;
-  --text-muted:         #5e7a68;
+  --text-color:         #ffffff;
+  --text-sub:           #bebebe;
+  --text-muted:         #a8a8a8;
   --text-sidebar-item:  rgba(255,255,255,0.75);
-  --text-hello:         #6b9e7a;
+  --text-hello:         #adadad;
 
   /* Inputs */
-  --input-bg:           #0d1a10;
+  --input-bg:           #292929;
 
   /* Status — success */
   --success-text:       #4ade80;
@@ -138,6 +140,8 @@ html {
   --shadow-card:        0 2px 16px rgba(0,0,0,0.3);
   --radius:             15px;
   --sidebar-width:      18rem;
+  
+  --category-icon-color: #e5e7eb;
 }
 
 /* resets */

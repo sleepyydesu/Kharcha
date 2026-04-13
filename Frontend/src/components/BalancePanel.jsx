@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getWallet, getProfile } from "../services/api";
 import hiddenIcon from "../assets/hiddenBalanceIcon.svg";
 import showIcon   from "../assets/showBalanceIcon.svg";
 import "./BalancePanel.css";
 
-export default function BalancePanel() {
+export default function BalancePanel({ dashboardOnly = false }) {
+  const panelRef = useRef(null);
   const [name,    setName]    = useState("");
   const [balance, setBalance] = useState(null);
   const [visible, setVisible] = useState(false);
@@ -13,7 +14,7 @@ export default function BalancePanel() {
   /* Load profile name once */
   useEffect(() => {
     getProfile()
-      .then(d => setName(d?.profile?.full_name || d?.profile?.name || ""))
+      .then(d => setName(d?.profile?.full_name || d?.profile?.organization_name || d?.profile?.name || ""))
       .catch(() => {});
   }, []);
 
@@ -30,6 +31,21 @@ export default function BalancePanel() {
     }
   }, []);
 
+  /* Keep --balance-panel-height in sync with actual rendered height */
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+      document.documentElement.style.setProperty("--balance-panel-height", `${h}px`);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--balance-panel-height");
+    };
+  }, []);
+
   function handleToggle() {
     const next = !visible;
     setVisible(next);
@@ -44,7 +60,7 @@ export default function BalancePanel() {
   }
 
   return (
-    <div className="balance-panel">
+    <div ref={panelRef} className={`balance-panel${dashboardOnly ? " balance-panel--dashboard-only" : ""}`}>
       {/* Header row */}
       <div className="balance-panel__top">
         <div className="balance-panel__greeting">

@@ -150,3 +150,10 @@
   .balance-panel__amount { font-size: 18px; }
   .balance-panel__amount--hidden { font-size: 16px; letter-spacing: 3px; }
 }
+
+/* ── Mobile: hide on non-dashboard pages ─────────────────── */
+@media (max-width: 900px) {
+  .balance-panel--dashboard-only {
+    display: none;
+  }
+}

@@ -1,30 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; }
-body {
+
+/* When authenticated, override the green auth background set by index.css */
+body.app-authenticated {
   margin: 0;
   background: var(--background);
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--text-color);
 }
+
 button { font-family: inherit; }
 input  { font-family: inherit; }
 
-/* ── Shell ─────────────────────────────────────────────── */
 .app-shell {
   display: flex;
   min-height: 100vh;
 }
 
-/*
-  Desktop:
-    left margin  = sidebar width (240px)
-    right margin = balance panel width (260px)
-*/
+@media (min-width: 901px) and (max-width: 1056px) {
+  :root,
+  [data-theme="dark"] {
+    --sidebar-width: calc((100vw - 480px) / 2);
+  }
+}
+
 .app-content {
   flex: 1;
   margin-left: var(--sidebar-width);
   margin-right: var(--sidebar-width);
+  min-width: 480px;
   min-height: 100vh;
   background: var(--background);
 }
@@ -33,7 +38,10 @@ input  { font-family: inherit; }
   .app-content {
     margin-left: 0;
     margin-right: 0;
-    padding-top: 68px;   /* clears fixed balance bar (~68px tall) */
-    padding-bottom: 68px; /* clears bottom nav */
+    padding-bottom: 68px;
+  }
+
+  .app-content--has-panel {
+    padding-top: var(--balance-panel-height, 68px);
   }
 }

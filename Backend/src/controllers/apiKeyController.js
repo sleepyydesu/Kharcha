@@ -96,7 +96,7 @@ const listApiKeys = async (req, res) => {
 
         const { data: keys, error } = await supabase
             .from("api_keys")
-            .select("api_key_id, key_prefix, name, is_active, last_used_at, created_at, expires_at")
+            .select("api_key_id, key_prefix, name, is_active, last_used_at, created_at, expires_at, default_category_id, transaction_categories(category_id, name, icon_url, icon_type, color)")
             .eq("account_id", account_id)
             .order("created_at", { ascending: false });
 
@@ -149,4 +149,53 @@ const revokeApiKey = async (req, res) => {
     }
 };
 
-module.exports = { createApiKey, listApiKeys, revokeApiKey };
+module.exports = { createApiKey, listApiKeys, revokeApiKey, updateApiKey };
+
+// ─────────────────────────────────────────────────────────────
+//  UPDATE API KEY
+//  PATCH /api/org/api-keys/:api_key_id
+//  Body: { name?, default_category_id? }
+//  Lets the org label their key and set a default category for QR payments
+// ─────────────────────────────────────────────────────────────
+async function updateApiKey(req, res) {
+    try {
+        const { account_id, account_type } = req.account;
+        const { api_key_id } = req.params;
+        const { name, default_category_id, callback_url } = req.body;
+
+        if (account_type !== "organization") {
+            return res.status(403).json({ success: false, message: "Organization accounts only." });
+        }
+
+        const { data: key, error: fetchError } = await supabase
+            .from("api_keys")
+            .select("api_key_id")
+            .eq("api_key_id", api_key_id)
+            .eq("account_id", account_id)
+            .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!key) return res.status(404).json({ success: false, message: "API key not found." });
+
+        const updates = {};
+        if (name !== undefined)                updates.name = name;
+        if (default_category_id !== undefined) updates.default_category_id = default_category_id || null;
+        // callback_url requires: ALTER TABLE api_keys ADD COLUMN callback_url TEXT;
+        // Only include if the column exists (will be ignored gracefully once migrated)
+        if (callback_url !== undefined)        updates.callback_url = callback_url?.trim() || null;
+
+        const { data: updated, error } = await supabase
+            .from("api_keys")
+            .update(updates)
+            .eq("api_key_id", api_key_id)
+            .select("api_key_id, key_prefix, name, is_active, default_category_id, last_used_at, created_at")
+            .single();
+
+        if (error) throw error;
+
+        return res.status(200).json({ success: true, message: "API key updated.", api_key: updated });
+    } catch (err) {
+        console.error("[updateApiKey]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+}

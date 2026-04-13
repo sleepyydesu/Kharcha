@@ -1,0 +1,64 @@
+/* ============================================================
+   CategoryIcon
+   Two rendering modes:
+     SVG  → CSS mask-image, colour comes from --category-icon-color
+     PNG  → plain <img>, colour is baked in
+   ============================================================ */
+
+/* --category-icon-color is defined in variables.css — change it there. */
+
+/* ── Shared wrapper ─────────────────────────────────────────── */
+.cat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm, 10px);
+  overflow: hidden;
+}
+
+/* ── SVG mode (default categories) ─────────────────────────── */
+/*
+   The SVG is used purely as a *shape mask*.
+   The visible colour is background-color — controlled by
+   --category-icon-color so one variable changes everything.
+*/
+.cat-icon__svg-mask {
+  display: inline-block;
+  background-color: var(--category-icon-color);
+
+  /* Override per-icon via inline style if you want a different colour */
+  -webkit-mask-image: var(--_icon-url);
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+
+  mask-image: var(--_icon-url);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+
+  /* Size set via width/height inline styles from the component */
+}
+
+/* ── PNG mode (user-uploaded icons) ────────────────────────── */
+.cat-icon__png {
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* ── Fallback placeholder (no icon_url set yet) ─────────────── */
+.cat-icon__placeholder {
+  background-color: var(--bg-soft, #f3f6f3);
+  color: var(--text-muted, #6b7280);
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  user-select: none;
+}
+
+/* ── Size variants ──────────────────────────────────────────── */
+.cat-icon--sm  { width: 20px; height: 20px; }
+.cat-icon--md  { width: 28px; height: 28px; }
+.cat-icon--lg  { width: 40px; height: 40px; }
+.cat-icon--xl  { width: 56px; height: 56px; }
