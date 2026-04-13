@@ -135,16 +135,62 @@ export const changeMpin = (body) =>
 
 // ── Auth — Password reset ─────────────────────────────────────
 export const sendPasswordResetOTP = (body) =>
-    request("/auth/password/forgot-send-otp", {
-        method: "POST",
-        body: JSON.stringify(body),
-    });
+request("/auth/password/forgot-send-otp", {
+    method: "POST",
+    body: JSON.stringify(body),
+});
 
 export const resetPassword = (body) =>
     request("/auth/password/reset", {
         method: "POST",
         body: JSON.stringify(body),
     });
+
+// ── Categories ────────────────────────────────────────────────
+export const getCategories = () => request("/categories");
+
+// ── Expenses ──────────────────────────────────────────────────
+export const getExpenseOverview = (start_date, end_date) =>
+    request(`/expenses?start_date=${start_date}&end_date=${end_date}`);
+
+export const getExpensesByCategory = (
+    categoryId,
+    start_date,
+    end_date,
+    page = 1
+) =>
+    request(
+        `/expenses/category/${categoryId}?start_date=${start_date}&end_date=${end_date}&page=${page}&limit=50`
+    );
+
+export const createExpense = (payload) =>
+    request("/expenses", { method: "POST", body: JSON.stringify(payload) });
+
+export const deleteExpense = (id) =>
+    request(`/expenses/${id}`, { method: "DELETE" });
+
+// ── Income ────────────────────────────────────────────────────
+export const getIncome = (start_date, end_date) =>
+    request(`/income?start_date=${start_date}&end_date=${end_date}`);
+
+export const createIncome = (payload) =>
+    request("/income", { method: "POST", body: JSON.stringify(payload) });
+
+export const deleteIncome = (id) =>
+    request(`/income/${id}`, { method: "DELETE" });
+
+// ── Budgets ───────────────────────────────────────────────────
+export const getBudgets = (start_date, end_date) =>
+    request(`/budgets?start_date=${start_date}&end_date=${end_date}`);
+
+export const createBudget = (payload) =>
+    request("/budgets", { method: "POST", body: JSON.stringify(payload) });
+
+export const updateBudget = (id, payload) =>
+    request(`/budgets/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+
+export const deleteBudget = (id) =>
+    request(`/budgets/${id}`, { method: "DELETE" });
 
 // ── API Keys (org) ────────────────────────────────────────────
 export const listApiKeys = () => request("/org/api-keys");
