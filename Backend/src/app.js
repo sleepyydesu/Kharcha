@@ -19,7 +19,7 @@ const {
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
-const categoryRoutes = require("./routes/catgoryRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 const {
     publicRouter: qrPublicRoutes,
     orgRouter: qrOrgRoutes,
@@ -29,7 +29,6 @@ const {
 const expenseRoutes = require("./routes/expenseRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
-const categoryRoutes = require("./routes/catgoryRoutes"); // ← typo in filename kept as-is
 
 const app = express();
 
