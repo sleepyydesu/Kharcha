@@ -1,31 +1,11 @@
-const nodemailer = require("nodemailer");
+const { MailtrapClient } = require("mailtrap");
 
-// Create transporter from env vars.
-// In development without SMTP config, OTP is logged to console.
-const createTransporter = () => {
-    if (!process.env.SMTP_HOST) return null;
-
-    const port = parseInt(process.env.SMTP_PORT) || 587;
-    const secure = process.env.SMTP_SECURE === "true" || port === 465;
-
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port,
-        secure,
-        auth: {
-            user: process.env.SMTP_USER,
-            // Strip spaces from app passwords (Gmail displays them spaced for readability)
-            pass: (process.env.SMTP_PASS || "").replace(/\s/g, ""),
-        },
-        // Required for Railway and other cloud hosts where TLS cert chain
-        // may not verify cleanly against Gmail's STARTTLS certificate.
-        tls: {
-            rejectUnauthorized: false,
-        },
-    });
+const getClient = () => {
+    if (!process.env.MAILTRAP_TOKEN) return null;
+    return new MailtrapClient({ token: process.env.MAILTRAP_TOKEN });
 };
 
-// Returns a human-readable subject and description for each OTP type.
+// Returns subject, heading and description for each OTP type.
 const getOTPCopy = (otpType, appName) => {
     switch (otpType) {
         case "password_reset":
@@ -47,35 +27,33 @@ const getOTPCopy = (otpType, appName) => {
             return {
                 subject: `Your ${appName} Verification Code`,
                 heading: "Verify Your Email",
-                description:
-                    "Use the code below to verify your email address.",
+                description: "Use the code below to verify your email address.",
             };
     }
 };
 
 /**
- * Sends an OTP email to the given address.
+ * Sends an OTP email via Mailtrap Email Sending (HTTP API).
  * @param {string} email
  * @param {string} otp
  * @param {string} [otpType="signup"]  — "signup" | "password_reset" | "mpin_reset"
  */
 const sendOTPEmail = async (email, otp, otpType = "signup") => {
-    const transporter = createTransporter();
+    const client = getClient();
     const appName = process.env.APP_NAME || "Kharcha";
     const { subject, heading, description } = getOTPCopy(otpType, appName);
 
-    if (!transporter) {
-        // Development fallback — no SMTP configured
+    if (!client) {
         console.log(`\n📧  [DEV MODE] OTP (${otpType}) for ${email}: ${otp}\n`);
         return;
     }
 
-    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+    const fromEmail = process.env.MAILTRAP_FROM || `noreply@rachitmanandhar.com.np`;
+    const fromName = process.env.APP_NAME || "Kharcha";
 
-    try {
-        await transporter.sendMail({
-        from: `"${appName}" <${fromEmail}>`,
-        to: email,
+    await client.send({
+        from: { name: fromName, email: fromEmail },
+        to: [{ email }],
         subject,
         text: `${heading}\n\n${description}\n\nYour code: ${otp}\n\nThis code expires in 15 minutes. Do not share it with anyone.`,
         html: `
@@ -92,12 +70,9 @@ const sendOTPEmail = async (email, otp, otpType = "signup") => {
                 </p>
             </div>
         `,
-        });
-        console.log(`📧  OTP email sent to ${email} (type: ${otpType})`);
-    } catch (err) {
-        console.error(`❌  Failed to send OTP email to ${email}:`, err.message);
-        throw err;
-    }
+    });
+
+    console.log(`📧  OTP email sent to ${email} (type: ${otpType})`);
 };
 
 module.exports = { sendOTPEmail };
