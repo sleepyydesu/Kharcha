@@ -175,6 +175,12 @@ export const getExpensesByCategory = (
 export const createExpense = (payload) =>
     request("/expenses", { method: "POST", body: JSON.stringify(payload) });
 
+export const updateExpense = (id, payload) =>
+    request(`/expenses/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+
 export const deleteExpense = (id) =>
     request(`/expenses/${id}`, { method: "DELETE" });
 
@@ -184,6 +190,9 @@ export const getIncome = (start_date, end_date) =>
 
 export const createIncome = (payload) =>
     request("/income", { method: "POST", body: JSON.stringify(payload) });
+
+export const updateIncome = (id, payload) =>
+    request(`/income/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 
 export const deleteIncome = (id) =>
     request(`/income/${id}`, { method: "DELETE" });
