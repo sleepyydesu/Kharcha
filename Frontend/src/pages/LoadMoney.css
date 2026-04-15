@@ -1,0 +1,301 @@
+.lm {
+  padding: 36px 40px;
+  min-height: calc(100vh - 36px); /* fill content area */
+  display: flex;
+  flex-direction: column;
+}
+
+.lm__back {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; background: none;
+  color: var(--text-sub); font-size: 14px; font-weight: 500;
+  cursor: pointer; padding: 0; margin-bottom: 32px;
+  transition: color 0.15s;
+}
+.lm__back:hover { color: var(--primary); }
+
+/* ── Choose view ────────────────────────────────────────── */
+.lm__choose {
+  max-width: 560px;
+}
+
+/* Vertically centres the Khalti / Gift Card view inside .lm */
+.lm__view-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Khalti result banner ────────────────────────────────── */
+.lm__banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  border: 1.5px solid;
+}
+.lm__banner--success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+.lm__banner--info {
+  background: rgba(37,99,235,0.07);
+  border-color: rgba(37,99,235,0.25);
+  color: var(--icon-blue-text);
+}
+.lm__banner--error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+.lm__banner-icon {
+  font-size: 18px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.lm__banner div { flex: 1; }
+.lm__banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.lm__banner p { margin: 0; font-size: 13px; opacity: 0.8; }
+.lm__banner-close {
+  border: none; background: none;
+  font-size: 16px; cursor: pointer;
+  opacity: 0.5; padding: 0;
+  color: inherit;
+  transition: opacity 0.15s;
+}
+.lm__banner-close:hover { opacity: 1; }
+
+/* ── Choose view ─────────────────────────────────────────── */
+.lm__heading {
+  font-size: 30px; font-weight: 800;
+  color: var(--text-color); letter-spacing: -0.5px;
+  margin: 0 0 8px;
+}
+.lm__sub {
+  font-size: 15px; color: var(--text-sub);
+  margin: 0 0 32px;
+}
+
+.lm__methods {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.lm__method-card {
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+.lm__method-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 20px rgba(26,92,57,0.12);
+  transform: translateY(-2px);
+}
+
+.lm__method-icon {
+  width: 60px; height: 60px;
+  border-radius: 14px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.lm__method-icon--khalti { background: #f3eafa; }
+.lm__method-icon--gift   { background: var(--warning-bg); }
+
+.lm__method-icon img,
+.lm__method-icon svg { width: 40px; height: 40px; }
+
+.lm__method-info {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.lm__method-name {
+  font-size: 17px; font-weight: 700;
+  color: var(--text-color);
+}
+.lm__method-desc {
+  font-size: 13px; color: var(--text-sub);
+  line-height: 1.4;
+}
+.lm__method-arrow {
+  font-size: 26px; color: var(--border);
+  line-height: 1;
+}
+
+/* ── Form wrap ───────────────────────────────────────────── */
+.lm__form-wrap {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 30px;
+}
+
+.lm__form-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.lm__form-header-img {
+  width: 48px; height: 48px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.lm__form-title {
+  font-size: 20px; font-weight: 700;
+  color: var(--text-color); margin: 0 0 3px;
+}
+.lm__form-sub {
+  font-size: 13px; color: var(--text-sub); margin: 0;
+}
+
+.lm__label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-sub); letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* Amount input */
+.lm__input-row {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden; margin-bottom: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lm__input-row:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,92,57,0.1);
+}
+.lm__prefix {
+  padding: 0 16px;
+  font-size: 20px; color: var(--text-muted);
+  border-right: 1.5px solid var(--border);
+  line-height: 1; user-select: none;
+}
+.lm__input {
+  flex: 1; border: none; background: transparent;
+  padding: 16px 14px;
+  font-size: 22px; font-weight: 700;
+  color: var(--text-color); outline: none;
+}
+
+/* Code input */
+.lm__input--code {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 18px; font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--text-color);
+  background: var(--card); outline: none;
+  margin-bottom: 20px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lm__input--code:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,92,57,0.1);
+}
+
+/* Presets */
+.lm__presets {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.lm__preset {
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--shaded-background);
+  font-size: 13px; font-weight: 500;
+  color: var(--text-sub); cursor: pointer;
+  transition: all 0.15s;
+}
+.lm__preset:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(26,92,57,0.06);
+}
+.lm__preset--active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* Buttons */
+.lm__pay-btn {
+  width: 100%;
+  padding: 17px;
+  border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.lm__pay-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.lm__pay-btn:not(:disabled):hover { transform: translateY(-1px); }
+
+.lm__pay-btn--khalti { background: #5C2D91; color: #fff; }
+.lm__pay-btn--khalti:hover:not(:disabled) { background: #4a2475; }
+
+.lm__pay-btn--gift   { background: var(--primary); color: #fff; }
+.lm__pay-btn--gift:hover:not(:disabled) { background: var(--primary-dark); }
+
+.lm__pay-btn:not(.lm__pay-btn--khalti):not(.lm__pay-btn--gift) {
+  background: var(--primary); color: #fff;
+}
+
+.lm__note {
+  text-align: center;
+  font-size: 12px; color: var(--text-muted);
+  margin-top: 10px;
+}
+.lm__error {
+  font-size: 13px; color: var(--error-text);
+  background: var(--error-bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+/* Success */
+.lm__success {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  padding: 48px 24px;
+}
+.lm__success-ring {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--success-bg);
+  color: var(--primary);
+  font-size: 36px; font-weight: 700;
+  display: grid; place-items: center;
+  margin: 0 auto 20px;
+}
+.lm__success h2 {
+  font-size: 24px; font-weight: 800;
+  color: var(--text-color); margin: 0 0 8px;
+}
+.lm__success p {
+  color: var(--text-sub); font-size: 15px;
+  margin: 0 0 28px;
+}
+
+@media (max-width: 900px) {
+  .lm { padding: 24px 16px; }
+  .lm__form-wrap { padding: 20px 16px; }
+}

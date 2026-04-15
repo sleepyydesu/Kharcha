@@ -11,13 +11,13 @@ router.get("/db-test", async (req, res) => {
 
         res.json({
             success: true,
-            message: "Database connected successfully ✅",
+            message: "Database connected successfully",
             data: data,
         });
     } catch (err) {
         res.status(500).json({
             success: false,
-            message: "Database connection failed ❌",
+            message: "Database connection failed",
             error: err.message,
         });
     }
