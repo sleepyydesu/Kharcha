@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ApiDocs.css";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = "https://api.kharcha.app"; // or use import.meta.env.VITE_API_URL
 
 // ─── Code block with copy ────────────────────────────────────
 function Code({ children, lang = "bash" }) {
@@ -115,6 +115,7 @@ const NAV = [
     { id: "flow-dynamic", label: "Dynamic QR Code", indent: true },
     { id: "flow-hosted", label: "Hosted Payment Page", indent: true },
     { id: "flow-card", label: "Kharcha Card (RFID)", indent: true },
+    { id: "flow-credit", label: "Card Number + CVV", indent: true },
     { id: "webhooks", label: "Webhooks" },
     { id: "polling", label: "Polling Status" },
     { id: "errors", label: "Error Reference" },
@@ -231,6 +232,26 @@ export default function ApiDocs() {
                                     taps their physical Kharcha card on your
                                     RC522 reader; your terminal charges their
                                     wallet instantly via API key.
+                                </p>
+                                <span className="docs__flow-card-link">
+                                    See integration →
+                                </span>
+                            </div>
+                        </div>
+                        <div
+                            className="docs__flow-card"
+                            onClick={() => scrollTo("flow-credit")}
+                        >
+                            <div className="docs__flow-card-icon">🔢</div>
+                            <div>
+                                <p className="docs__flow-card-title">
+                                    Card Number + CVV
+                                </p>
+                                <p className="docs__flow-card-desc">
+                                    Online checkout integration. Customer enters
+                                    their 16-digit card number and CVV; your
+                                    server verifies and charges via API key —
+                                    no redirect required.
                                 </p>
                                 <span className="docs__flow-card-link">
                                     See integration →
@@ -832,6 +853,282 @@ if data["success"]:
                         <code className="docs__inline-code">403</code> in that
                         case. Display the error on your terminal and ask the
                         customer to contact support.
+                    </div>
+                </Section>
+
+                {/* ══════════════════════════════════════════════
+                    CARD NUMBER + CVV (ONLINE CHECKOUT)
+                ══════════════════════════════════════════════ */}
+                <Section id="flow-credit">
+                    <h2 className="docs__h2">Card Number + CVV</h2>
+                    <p className="docs__p">
+                        For online checkouts where the customer types their card
+                        details. Your server collects the 16-digit card number
+                        and CVV, then calls Kharcha's payment API to verify and
+                        charge in one step. No redirect, no QR — pure
+                        server-to-server.
+                    </p>
+
+                    <div className="docs__callout docs__callout--info">
+                        <strong>API key required.</strong> Both endpoints
+                        authenticate via{" "}
+                        <code className="docs__inline-code">X-API-Key</code>.
+                        Never call these from client-side JavaScript — always
+                        proxy through your own server so the key stays secret.
+                    </div>
+
+                    {/* Verify */}
+                    <h3 className="docs__h3">
+                        <Badge method="POST" />{" "}
+                        <code>/api/payment/verify</code>
+                    </h3>
+                    <p className="docs__p">
+                        Pre-authorization check. Validates the card number and
+                        CVV and confirms the card is active — without charging
+                        anything. Use this to give instant feedback on your
+                        checkout form before the customer clicks{" "}
+                        <em>Pay Now</em>.
+                    </p>
+                    <ParamTable
+                        params={[
+                            {
+                                name: "X-API-Key",
+                                type: "header",
+                                required: true,
+                                desc: "Your organisation API key.",
+                            },
+                            {
+                                name: "card_number",
+                                type: "string",
+                                required: true,
+                                desc: "16-digit Kharcha card number. Spaces are stripped automatically.",
+                            },
+                            {
+                                name: "cvv",
+                                type: "string",
+                                required: true,
+                                desc: "3-digit CVV from the back of the card.",
+                            },
+                        ]}
+                    />
+                    <Tabs tabs={["Node.js", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/payment/verify", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.KHARCHA_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    card_number: "7333300000000012",
+    cvv: "842",
+  }),
+});
+const data = await res.json();
+// data.valid === true  → card is good, proceed to charge
+// data.valid === false → show data.message to the customer`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/payment/verify \\
+  -H "X-API-Key: kh_live_xxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{"card_number":"7333300000000012","cvv":"842"}'`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`// Card valid and active
+{
+  "success": true,
+  "valid": true,
+  "card": {
+    "card_type": "virtual",
+    "card_last4": "0012",
+    "status": "active",
+    "daily_limit": 5000,
+    "expiry_date": "2029-05-01"
+  }
+}
+
+// Card found but CVV wrong
+{
+  "success": true,
+  "valid": false,
+  "error_code": "INVALID_CVV",
+  "message": "CVV does not match."
+}
+
+// Card blocked
+{
+  "success": true,
+  "valid": false,
+  "error_code": "CARD_INACTIVE",
+  "message": "Card is blocked."
+}`}</Code>
+
+                    {/* Charge */}
+                    <h3 className="docs__h3">
+                        <Badge method="POST" />{" "}
+                        <code>/api/payment/charge</code>
+                    </h3>
+                    <p className="docs__p">
+                        Verify and charge in a single call. Kharcha validates
+                        the CVV, checks the daily limit, and atomically debits
+                        the cardholder's wallet and credits yours. Returns a
+                        full transaction receipt on success.
+                    </p>
+                    <ParamTable
+                        params={[
+                            {
+                                name: "X-API-Key",
+                                type: "header",
+                                required: true,
+                                desc: "Your organisation API key.",
+                            },
+                            {
+                                name: "card_number",
+                                type: "string",
+                                required: true,
+                                desc: "16-digit Kharcha card number.",
+                            },
+                            {
+                                name: "cvv",
+                                type: "string",
+                                required: true,
+                                desc: "3-digit CVV.",
+                            },
+                            {
+                                name: "amount",
+                                type: "number",
+                                required: true,
+                                desc: "Amount in NPR. Minimum NPR 1.",
+                            },
+                            {
+                                name: "currency",
+                                type: "string",
+                                required: false,
+                                desc: 'Must be "NPR" (default). Only NPR is supported.',
+                            },
+                            {
+                                name: "remarks",
+                                type: "string",
+                                required: false,
+                                desc: "Note shown in the cardholder's transaction history.",
+                            },
+                        ]}
+                    />
+                    <Tabs tabs={["Node.js", "Python", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/payment/charge", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.KHARCHA_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    card_number: "7333300000000012",
+    cvv: "842",
+    amount: 1250,
+    remarks: "Order #1042 – Shoes",
+  }),
+});
+const data = await res.json();
+
+if (data.success) {
+  console.log("Paid!", data.transaction.transaction_id);
+  // Mark order as paid in your DB
+} else {
+  // Show data.message or handle data.error_code
+  console.error(data.error_code, data.message);
+}`}</Code>
+                        <Code lang="python">{`import requests, os
+
+resp = requests.post(
+    "${BASE_URL}/api/payment/charge",
+    headers={
+        "X-API-Key": os.environ["KHARCHA_API_KEY"],
+        "Content-Type": "application/json",
+    },
+    json={
+        "card_number": "7333300000000012",
+        "cvv": "842",
+        "amount": 1250,
+        "remarks": "Order #1042 – Shoes",
+    },
+)
+data = resp.json()
+if data["success"]:
+    print("Paid!", data["transaction"]["transaction_id"])`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/payment/charge \\
+  -H "X-API-Key: kh_live_xxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "card_number": "7333300000000012",
+    "cvv": "842",
+    "amount": 1250,
+    "remarks": "Order #1042 – Shoes"
+  }'`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`// 200 OK — payment successful
+{
+  "success": true,
+  "message": "Payment processed successfully.",
+  "transaction": {
+    "transaction_id": "txn_abc123def456",
+    "amount": 1250,
+    "currency": "NPR",
+    "card_type": "virtual",
+    "card_last4": "0012",
+    "merchant": { "account_id": "uuid", "display_name": "Your Shop" },
+    "remarks": "Order #1042 – Shoes",
+    "method": "Kharcha Card",
+    "status": "completed",
+    "processed_at": "2026-04-27T10:23:45.000Z"
+  }
+}`}</Code>
+
+                    {/* Error codes table */}
+                    <h3 className="docs__h3">Payment error codes</h3>
+                    <p className="docs__p">
+                        The{" "}
+                        <code className="docs__inline-code">error_code</code>{" "}
+                        field lets you handle specific failures without parsing
+                        the human-readable message string.
+                    </p>
+                    <div className="docs__error-table-wrap">
+                        <table className="docs__param-table">
+                            <thead>
+                                <tr>
+                                    <th>error_code</th>
+                                    <th>HTTP</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[
+                                    ["INVALID_API_KEY",      "401", "Missing, revoked, or expired API key."],
+                                    ["CARD_NOT_FOUND",       "404", "Card number not registered in Kharcha."],
+                                    ["INVALID_CVV",          "401", "CVV does not match the card."],
+                                    ["CARD_INACTIVE",        "403", "Card is blocked, expired, or pending activation."],
+                                    ["DAILY_LIMIT_EXCEEDED", "400", "Charge would exceed the card's daily spend limit."],
+                                    ["INSUFFICIENT_BALANCE", "400", "Cardholder wallet balance is too low."],
+                                    ["SELF_CHARGE",          "400", "Your org account is the same as the cardholder."],
+                                    ["VALIDATION_ERROR",     "400", "Missing or invalid request fields."],
+                                    ["RATE_LIMITED",         "429", "More than 20 requests/min from this IP."],
+                                    ["SERVER_ERROR",         "500", "Internal error — contact support."],
+                                ].map(([code, http, desc]) => (
+                                    <tr key={code}>
+                                        <td><code className="docs__inline-code">{code}</code></td>
+                                        <td><code className="docs__inline-code">{http}</code></td>
+                                        <td>{desc}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="docs__callout docs__callout--warn">
+                        <strong>Rate limit:</strong> both endpoints are capped
+                        at <strong>20 requests per minute per IP</strong>. If
+                        you hit this, you'll receive a{" "}
+                        <code className="docs__inline-code">429</code> with{" "}
+                        <code className="docs__inline-code">RATE_LIMITED</code>.
+                        Implement exponential back-off and never retry CVV
+                        failures automatically — repeated failures may indicate
+                        fraud.
                     </div>
                 </Section>
 
