@@ -85,6 +85,10 @@ app.use("/api/income", incomeRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/categories", categoryRoutes);
 
+// ── AI Assistant ──────────────────────────────────────────────
+const aiRoutes = require("./routes/aiRoutes");
+app.use("/api/ai", aiRoutes);
+
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.redirect("/api/docs");

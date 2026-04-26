@@ -27,6 +27,7 @@ import PaymentGateway from "./pages/PaymentGateway";
 import ApiDocs from "./pages/ApiDocs";
 import Services from "./pages/Services";
 import KharchaCard from "./pages/KharchaCard";
+import KharchaBot from "./components/KharchaBot";
 
 // ── Bubble Background (Auth only) ─────────────────────────────
 function BubblePortal() {
@@ -193,6 +194,7 @@ function AppShell({ qrOpen, setQrOpen }) {
             </div>
 
             <QRScanner open={qrOpen} onClose={handleQrClose} />
+            <KharchaBot />
         </>
     );
 }

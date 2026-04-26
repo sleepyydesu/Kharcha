@@ -269,6 +269,10 @@ export const payCheckout = (session_id, body = {}) =>
         body: JSON.stringify(body),
     });
 
+// ── AI Assistant ──────────────────────────────────────────────
+export const chatWithBot = (body) =>
+    request("/ai/chat", { method: "POST", body: JSON.stringify(body) });
+
 // ── Kharcha Card ──────────────────────────────────────────────
 export const getMyCard = () => request("/cards/my-card");
 
