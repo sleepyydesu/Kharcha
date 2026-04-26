@@ -9,7 +9,7 @@ const {
     completePayment,
     getPaymentSessionStatus,
 } = require("../controllers/qrCodeController");
-const { authenticate } = require("../middleware/authmiddleware");
+const { authenticate, flexAuth } = require("../middleware/authmiddleware");
 
 // ── Public router (/api/qr-codes) ───────────────────────────
 // IMPORTANT: this must be a SEPARATE router from orgRouter below.
@@ -24,22 +24,22 @@ publicRouter.get("/:qr_id", resolveQRCode);
 // ── Org-authenticated router (/api/org/qr-codes) ─────────────
 const orgRouter = express.Router();
 
-// All org routes require a valid JWT
-orgRouter.use(authenticate);
-
+// QR code management — dashboard operations, JWT only
 // POST   /api/org/qr-codes           — create a named dynamic QR
 // GET    /api/org/qr-codes           — list all org QR codes
 // PATCH  /api/org/qr-codes/:qr_id   — update name/amount/note/callback
 // DELETE /api/org/qr-codes/:qr_id   — delete
-orgRouter.post("/", createQRCode);
-orgRouter.get("/", listQRCodes);
-orgRouter.patch("/:qr_id", updateQRCode);
-orgRouter.delete("/:qr_id", deleteQRCode);
+orgRouter.post("/",           authenticate, createQRCode);
+orgRouter.get("/",            authenticate, listQRCodes);
+orgRouter.patch("/:qr_id",    authenticate, updateQRCode);
+orgRouter.delete("/:qr_id",   authenticate, deleteQRCode);
 
-// Payment session endpoints (POS creates a per-transaction QR)
-orgRouter.post("/payments/create", createPaymentSession);
-orgRouter.post("/payments/complete", completePayment);
-// GET /api/org/qr-codes/payments/status/:session_id — merchant polls after showing QR
-orgRouter.get("/payments/status/:session_id", getPaymentSessionStatus);
+// Payment session endpoints — support JWT (org dashboard) OR API key (POS/server)
+// POST /api/org/qr-codes/payments/create  — merchant creates a per-transaction QR session
+// POST /api/org/qr-codes/payments/complete — user pays (still JWT — called by Kharcha app)
+// GET  /api/org/qr-codes/payments/status/:session_id — merchant polls for payment result
+orgRouter.post("/payments/create",                    flexAuth, createPaymentSession);
+orgRouter.post("/payments/complete",                  authenticate, completePayment);
+orgRouter.get("/payments/status/:session_id",         flexAuth, getPaymentSessionStatus);
 
 module.exports = { publicRouter, orgRouter };

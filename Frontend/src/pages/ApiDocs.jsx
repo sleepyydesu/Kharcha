@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ApiDocs.css";
 
-const BASE_URL = "https://api.kharcha.app"; // or use import.meta.env.VITE_API_URL
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 // ─── Code block with copy ────────────────────────────────────
 function Code({ children, lang = "bash" }) {
@@ -114,6 +114,7 @@ const NAV = [
     { id: "auth", label: "Authentication" },
     { id: "flow-dynamic", label: "Dynamic QR Code", indent: true },
     { id: "flow-hosted", label: "Hosted Payment Page", indent: true },
+    { id: "flow-card", label: "Kharcha Card (RFID)", indent: true },
     { id: "webhooks", label: "Webhooks" },
     { id: "polling", label: "Polling Status" },
     { id: "errors", label: "Error Reference" },
@@ -210,6 +211,26 @@ export default function ApiDocs() {
                                     Redirect the user to Kharcha's secure
                                     checkout. They log in, pay, and get bounced
                                     back to your site with a success token.
+                                </p>
+                                <span className="docs__flow-card-link">
+                                    See integration →
+                                </span>
+                            </div>
+                        </div>
+                        <div
+                            className="docs__flow-card"
+                            onClick={() => scrollTo("flow-card")}
+                        >
+                            <div className="docs__flow-card-icon">💳</div>
+                            <div>
+                                <p className="docs__flow-card-title">
+                                    Kharcha Card (RFID POS)
+                                </p>
+                                <p className="docs__flow-card-desc">
+                                    Accept contactless payments in-store. Customer
+                                    taps their physical Kharcha card on your
+                                    RC522 reader; your terminal charges their
+                                    wallet instantly via API key.
                                 </p>
                                 <span className="docs__flow-card-link">
                                     See integration →
@@ -650,6 +671,167 @@ app.get("/payment/callback", async (req, res) => {
                         <code className="docs__inline-code">session_id</code>{" "}
                         against your database to confirm the amount matches what
                         you expected.
+                    </div>
+                </Section>
+
+                {/* ══════════════════════════════════════════════
+                    KHARCHA CARD (RFID POS)
+                ══════════════════════════════════════════════ */}
+                <Section id="flow-card">
+                    <h2 className="docs__h2">Kharcha Card (RFID POS)</h2>
+                    <p className="docs__p">
+                        Accept contactless payments from Kharcha physical cards
+                        at your point-of-sale terminal. The customer taps their
+                        NFC/RFID card on an RC522 reader; your terminal sends
+                        the card UID and amount to Kharcha, which atomically
+                        debits the cardholder's wallet and credits yours.
+                    </p>
+
+                    <div className="docs__callout docs__callout--info">
+                        <strong>API key required.</strong> POS terminals
+                        authenticate with an{" "}
+                        <code className="docs__inline-code">X-API-Key</code>{" "}
+                        header — not a user JWT. Generate a key from your
+                        organisation dashboard under <em>API Keys</em>.
+                    </div>
+
+                    {/* Step 1 */}
+                    <h3 className="docs__h3">Step 1 — Read the card UID</h3>
+                    <p className="docs__p">
+                        When the customer taps, your RC522 reader returns a
+                        card UID (4 or 7 bytes, uppercase hex e.g.{" "}
+                        <code className="docs__inline-code">A3B2C1D0</code>).
+                        First, look up the card to confirm it is active and
+                        retrieve the internal{" "}
+                        <code className="docs__inline-code">card_id</code>{" "}
+                        needed for the charge call.
+                    </p>
+                    <Code lang="http">{`GET ${BASE_URL}/api/cards/pos/lookup/:rfid_uid
+X-API-Key: kh_live_xxxxxxxxxxxx`}</Code>
+                    <Code lang="json">{`// 200 OK — card is active
+{
+  "success": true,
+  "card": {
+    "card_id": "A3B2C1D0",
+    "account_id": "uuid-of-cardholder",
+    "card_number": "7333300000000012",
+    "status": "active",
+    "daily_limit": 5000
+  }
+}
+
+// 403 — card is blocked or inactive
+{ "success": false, "message": "Card is blocked. Payment declined." }
+
+// 404 — UID not registered
+{ "success": false, "message": "RFID card not found." }`}</Code>
+
+                    {/* Step 2 */}
+                    <h3 className="docs__h3">Step 2 — Charge the card</h3>
+                    <p className="docs__p">
+                        Submit the charge using the{" "}
+                        <code className="docs__inline-code">card_id</code>{" "}
+                        returned in Step 1. Kharcha checks the daily limit,
+                        debits the cardholder, and credits your wallet in a
+                        single atomic transaction.
+                    </p>
+                    <ParamTable
+                        params={[
+                            {
+                                name: "X-API-Key",
+                                type: "header",
+                                required: true,
+                                desc: "Your organisation API key.",
+                            },
+                            {
+                                name: "card_id",
+                                type: "string",
+                                required: true,
+                                desc: "RFID UID from the lookup response (uppercase hex).",
+                            },
+                            {
+                                name: "amount",
+                                type: "number",
+                                required: true,
+                                desc: "Amount in NPR. Minimum NPR 1.",
+                            },
+                            {
+                                name: "remarks",
+                                type: "string",
+                                required: false,
+                                desc: "Optional note shown in the cardholder's transaction history.",
+                            },
+                        ]}
+                    />
+                    <Tabs tabs={["Node.js", "Python", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/pos/charge", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.KHARCHA_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    card_id: "A3B2C1D0",
+    amount: 850,
+    remarks: "Coffee & pastry",
+  }),
+});
+const data = await res.json();
+if (data.success) {
+  console.log("Charged!", data.transaction.transaction_id);
+  console.log("Balance after:", data.transaction.balance_after, "NPR");
+}`}</Code>
+                        <Code lang="python">{`import requests
+
+resp = requests.post(
+    "${BASE_URL}/api/pos/charge",
+    headers={
+        "X-API-Key": os.environ["KHARCHA_API_KEY"],
+        "Content-Type": "application/json",
+    },
+    json={"card_id": "A3B2C1D0", "amount": 850, "remarks": "Coffee & pastry"},
+)
+data = resp.json()
+if data["success"]:
+    print("Charged!", data["transaction"]["transaction_id"])`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/pos/charge \\
+  -H "X-API-Key: kh_live_xxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{"card_id":"A3B2C1D0","amount":850,"remarks":"Coffee & pastry"}'`}</Code>
+                    </Tabs>
+
+                    <Code lang="json">{`// 200 OK — payment successful
+{
+  "success": true,
+  "message": "Payment successful.",
+  "transaction": {
+    "transaction_id": "txn_abc123def456",
+    "amount": 850,
+    "currency": "NPR",
+    "balance_after": 4150,
+    "merchant": { "account_id": "uuid", "display_name": "Your Café" },
+    "remarks": "Coffee & pastry",
+    "method": "Kharcha Card",
+    "status": "completed"
+  }
+}
+
+// 400 — insufficient balance
+{ "success": false, "message": "Insufficient wallet balance." }
+
+// 400 — daily limit reached
+{ "success": false, "message": "Card daily limit reached." }
+
+// 403 — card inactive/blocked
+{ "success": false, "message": "Card is blocked." }`}</Code>
+
+                    <div className="docs__callout docs__callout--warn">
+                        <strong>Always verify the lookup first.</strong> A card
+                        that was active at lookup may become blocked between
+                        Steps 1 and 2 — the charge endpoint will return{" "}
+                        <code className="docs__inline-code">403</code> in that
+                        case. Display the error on your terminal and ask the
+                        customer to contact support.
                     </div>
                 </Section>
 

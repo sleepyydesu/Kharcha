@@ -62,7 +62,7 @@ const posCharge = async (req, res) => {
             return res.status(400).json({ success: false, message: "amount must be a positive number (min NPR 1)." });
         }
         const { data: card, error: cardError } = await supabase
-            .from("physical_cards").select("card_id, account_id, status, daily_limit")
+            .from("cards").select("card_id, account_id, status, daily_limit")
             .eq("card_id", card_id.toUpperCase()).maybeSingle();
         if (cardError) throw cardError;
         if (!card) return res.status(404).json({ success: false, message: "Card not found." });

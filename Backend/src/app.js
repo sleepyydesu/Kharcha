@@ -25,10 +25,10 @@ const {
     orgRouter: qrOrgRoutes,
 } = require("./routes/qrCodeRoutes");
 
-// ✅ NEW ROUTES — note: categoryRoutes file is named catgoryRoutes (typo in filename)
 const expenseRoutes = require("./routes/expenseRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
@@ -79,11 +79,13 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/org/qr-codes", qrOrgRoutes); // org CRUD — authenticated
 app.use("/api/qr-codes", qrPublicRoutes); // public resolve — no auth
 
-// ✅ NEW
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/categories", categoryRoutes);
+
+// External org payment API (card number + CVV verification)
+app.use("/api/payment", paymentRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {
