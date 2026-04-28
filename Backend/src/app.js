@@ -29,6 +29,7 @@ const expenseRoutes = require("./routes/expenseRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const payPortalRoutes = require("./routes/payPortalRoutes");
 
 const app = express();
 
@@ -40,7 +41,7 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Payment-Token"],
     exposedHeaders: [
       "X-RateLimit-Limit",
       "X-RateLimit-Remaining",
@@ -86,6 +87,9 @@ app.use("/api/categories", categoryRoutes);
 
 // External org payment API (card number + CVV verification)
 app.use("/api/payment", paymentRoutes);
+
+// Standalone payment portal (OTP-based, no JWT)
+app.use("/api/pay-portal", payPortalRoutes);
 
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => {

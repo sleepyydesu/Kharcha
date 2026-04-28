@@ -8,6 +8,13 @@ const getClient = () => {
 // Returns subject, heading and description for each OTP type.
 const getOTPCopy = (otpType, appName) => {
     switch (otpType) {
+        case "payment":
+            return {
+                subject: `Your ${appName} Payment OTP`,
+                heading: "Confirm Your Payment",
+                description:
+                    "Use the code below to verify your identity and authorise this payment. Never share this code with anyone.",
+            };
         case "password_reset":
             return {
                 subject: `Reset your ${appName} password`,

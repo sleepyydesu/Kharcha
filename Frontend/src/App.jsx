@@ -146,7 +146,7 @@ function AuthApp({ onLogin }) {
     );
 }
 
-// ── App Shell ────────────────────────────────────────────────
+// ── App Shell (authenticated) ────────────────────────────────
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
@@ -181,10 +181,6 @@ function AppShell({ qrOpen, setQrOpen }) {
                             path="/org/dynamic-qr"
                             element={<DynamicQRPayment />}
                         />
-                        <Route
-                            path="/pay/:session_id"
-                            element={<PaymentGateway />}
-                        />
                         <Route path="/developers" element={<ApiDocs />} />
                         <Route path="/services" element={<Services />} />
                         <Route path="/card" element={<KharchaCard />} />
@@ -208,13 +204,31 @@ function App() {
         document.body.classList.toggle("app-authenticated", isAuthenticated);
     }, [isAuthenticated]);
 
-    if (!isAuthenticated) {
-        return <AuthApp onLogin={() => setIsAuthenticated(true)} />;
-    }
-
     return (
         <BrowserRouter>
-            <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
+            <Routes>
+                {/*
+                 * ── Standalone Payment Portal ────────────────────────────
+                 * Completely outside auth — no sidebar, no balance panel.
+                 * Uses its own OTP-based login, not the JWT system.
+                 */}
+                <Route path="/pay/:session_id" element={<PaymentGateway />} />
+
+                {/*
+                 * ── Everything else ──────────────────────────────────────
+                 * Protected by JWT auth.
+                 */}
+                <Route
+                    path="/*"
+                    element={
+                        isAuthenticated ? (
+                            <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
+                        ) : (
+                            <AuthApp onLogin={() => setIsAuthenticated(true)} />
+                        )
+                    }
+                />
+            </Routes>
         </BrowserRouter>
     );
 }
