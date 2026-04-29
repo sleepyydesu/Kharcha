@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { signIn } from "../services/api";
+import { signIn, getMpinStatus } from "../services/api";
 import InputField from "./InputField";
+import { useNotifications } from "../context/NotificationContext";
 
 function LoginForm({ onLogin, onShowReset }) {
+    const { addNotification } = useNotifications();
     const [identifier, setIdentifier] = useState("");
     const [credential, setCredential] = useState("");
     const [errors, setErrors] = useState({});
@@ -40,6 +42,21 @@ function LoginForm({ onLogin, onShowReset }) {
 
             if (data.success) {
                 localStorage.setItem("token", data.token);
+                // Check if MPIN is configured; if not, show a setup prompt
+                try {
+                    const mpinStatus = await getMpinStatus();
+                    if (!mpinStatus?.mpin_configured) {
+                        addNotification({
+                            id: "mpin_setup_prompt",
+                            title: "Set up your MPIN",
+                            body: "Secure your transactions by setting up your 6-digit MPIN on your Account page.",
+                            link: "/account",
+                            type: "warning",
+                        });
+                    }
+                } catch {
+                    // Non-blocking — proceed to app even if check fails
+                }
                 onLogin();
             } else {
                 setErrors({

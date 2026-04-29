@@ -6,7 +6,7 @@ import "./styles/variables.css";
 import "./App.css";
 
 import { NotificationProvider } from "./context/NotificationContext";
-import NotificationBell from "./components/NotificationBell";
+import NotificationToast from "./components/NotificationToast";
 import KharchaLogo from "./components/KharchaLogo";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -162,7 +162,7 @@ function AppShell({ qrOpen, setQrOpen }) {
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
                 <BalancePanel dashboardOnly={!isDashboard} />
-                <NotificationBell />
+                <NotificationToast />
 
                 <main
                     className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
