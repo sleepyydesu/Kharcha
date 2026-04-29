@@ -6,6 +6,7 @@ const {
     completeSignup,
     signin,
     setupMpin,
+    getMpinStatus,
     changeMpin,
     forgotPasswordSendOTP,
     resetPassword,
@@ -26,6 +27,7 @@ router.post("/signup/complete", completeSignup);
 router.post("/signin", signin);
 
 // ── MPIN (protected — requires auth token) ──────────────────
+router.get("/mpin/status", authenticate, getMpinStatus);
 router.post("/mpin/setup", authenticate, setupMpin);
 router.post("/mpin/change", authenticate, changeMpin);
 

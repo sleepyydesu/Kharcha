@@ -136,6 +136,8 @@ export const submitKYC = (body) =>
     });
 
 // ── Auth — MPIN ───────────────────────────────────────────────
+export const getMpinStatus = () => request("/auth/mpin/status");
+
 export const setupMpin = (body) =>
     request("/auth/mpin/setup", { method: "POST", body: JSON.stringify(body) });
 
@@ -275,16 +277,28 @@ export const getMyCards = () => request("/cards/my-cards");
 
 // Issue a virtual (credit-card only) card instantly
 export const issueVirtualCard = () =>
-    request("/cards/virtual/issue", { method: "POST", body: JSON.stringify({}) });
+    request("/cards/virtual/issue", {
+        method: "POST",
+        body: JSON.stringify({}),
+    });
 
 // Request a physical (credit + RFID) card — needs admin approval
 export const requestPhysicalCard = (body = {}) =>
-    request("/cards/physical/request", { method: "POST", body: JSON.stringify(body) });
+    request("/cards/physical/request", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 // Block a card by type: cardType = "virtual" | "physical"
 export const blockCard = (cardType, body = {}) =>
-    request(`/cards/${cardType}/block`, { method: "POST", body: JSON.stringify(body) });
+    request(`/cards/${cardType}/block`, {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 
 // Update daily spend limit for a card type
 export const updateCardLimits = (cardType, body) =>
-    request(`/cards/${cardType}/limits`, { method: "PATCH", body: JSON.stringify(body) });
+    request(`/cards/${cardType}/limits`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+    });

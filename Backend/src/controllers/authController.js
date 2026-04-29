@@ -76,13 +76,11 @@ const checkAvailability = async (req, res) => {
         });
     } catch (err) {
         console.error("[checkAvailability]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -136,13 +134,11 @@ const sendOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[sendOTP]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Failed to send OTP.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Failed to send OTP.",
+            error: err.message,
+        });
     }
 };
 
@@ -157,12 +153,10 @@ const verifyOTP = async (req, res) => {
         const { email, otp } = req.body;
 
         if (!email || !otp) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Email and OTP are required.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Email and OTP are required.",
+            });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -181,12 +175,10 @@ const verifyOTP = async (req, res) => {
         if (error) throw error;
 
         if (!data) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Invalid verification code.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Invalid verification code.",
+            });
         }
 
         if (new Date(data.expires_at) < new Date()) {
@@ -213,13 +205,11 @@ const verifyOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[verifyOTP]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -269,12 +259,10 @@ const completeSignup = async (req, res) => {
         }
 
         if (account_type === "organization" && !organization_name) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Organization name is required.",
-                });
+            return res.status(400).json({
+                success: false,
+                message: "Organization name is required.",
+            });
         }
 
         if (account_type === "admin" && !full_name) {
@@ -367,13 +355,11 @@ const completeSignup = async (req, res) => {
         });
     } catch (err) {
         console.error("[completeSignup]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -487,13 +473,11 @@ const signin = async (req, res) => {
         });
     } catch (err) {
         console.error("[signin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 // ─────────────────────────────────────────────────────────────
@@ -566,17 +550,51 @@ const setupMpin = async (req, res) => {
         });
     } catch (err) {
         console.error("[setupMpin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  MPIN — Status check
+//  GET /api/auth/mpin/status
+//  Headers: Authorization: Bearer <token>
+//
+//  Returns whether the authenticated account has an MPIN set up.
+//  Used by the frontend to decide whether to show Setup vs Change MPIN.
+// ─────────────────────────────────────────────────────────────
+const getMpinStatus = async (req, res) => {
+    try {
+        const { account_id } = req.account;
+
+        const { data: account, error } = await supabase
+            .from("accounts")
+            .select("mpin_hash")
+            .eq("account_id", account_id)
+            .single();
+
+        if (error || !account) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Account not found." });
+        }
+
+        return res.status(200).json({
+            success: true,
+            mpin_set: !!account.mpin_hash,
+        });
+    } catch (err) {
+        console.error("[getMpinStatus]", err);
+        return res
+            .status(500)
+            .json({ success: false, message: "Server error." });
+    }
+};
+
 //  MPIN — Change (already has MPIN)
 //  POST /api/auth/mpin/change
 //  Headers: Authorization: Bearer <token>
@@ -656,13 +674,11 @@ const changeMpin = async (req, res) => {
         });
     } catch (err) {
         console.error("[changeMpin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+            error: err.message,
+        });
     }
 };
 
@@ -677,7 +693,9 @@ const forgotPasswordSendOTP = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is required." });
         }
         const normalizedEmail = email.toLowerCase().trim();
 
@@ -689,7 +707,9 @@ const forgotPasswordSendOTP = async (req, res) => {
 
         if (account) {
             const otp = generateOTP();
-            const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+            const expiresAt = new Date(
+                Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
+            ).toISOString();
 
             await supabase
                 .from("otp_verifications")
@@ -714,7 +734,13 @@ const forgotPasswordSendOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[forgotPasswordSendOTP]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -734,7 +760,12 @@ const resetPassword = async (req, res) => {
             });
         }
         if (new_password.length < 8) {
-            return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Password must be at least 8 characters.",
+                });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -753,10 +784,18 @@ const resetPassword = async (req, res) => {
         if (otpError) throw otpError;
 
         if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
-            return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Invalid or expired reset code.",
+                });
         }
 
-        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", otpRecord.id);
+        await supabase
+            .from("otp_verifications")
+            .update({ is_used: true })
+            .eq("id", otpRecord.id);
 
         const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
         const { error: updateError } = await supabase
@@ -768,11 +807,18 @@ const resetPassword = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Password reset successfully. Please sign in with your new password.",
+            message:
+                "Password reset successfully. Please sign in with your new password.",
         });
     } catch (err) {
         console.error("[resetPassword]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -785,7 +831,9 @@ const forgotMpinSendOTP = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required." });
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is required." });
         }
         const normalizedEmail = email.toLowerCase().trim();
 
@@ -797,7 +845,9 @@ const forgotMpinSendOTP = async (req, res) => {
 
         if (account) {
             const otp = generateOTP();
-            const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+            const expiresAt = new Date(
+                Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
+            ).toISOString();
 
             await supabase
                 .from("otp_verifications")
@@ -822,7 +872,13 @@ const forgotMpinSendOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[forgotMpinSendOTP]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -842,7 +898,12 @@ const resetMpin = async (req, res) => {
             });
         }
         if (new_mpin.toString().length !== 6 || isNaN(new_mpin)) {
-            return res.status(400).json({ success: false, message: "MPIN must be exactly 6 digits." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "MPIN must be exactly 6 digits.",
+                });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -861,10 +922,18 @@ const resetMpin = async (req, res) => {
         if (otpError) throw otpError;
 
         if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
-            return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Invalid or expired reset code.",
+                });
         }
 
-        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", otpRecord.id);
+        await supabase
+            .from("otp_verifications")
+            .update({ is_used: true })
+            .eq("id", otpRecord.id);
 
         const mpin_hash = await bcrypt.hash(new_mpin.toString(), SALT_ROUNDS);
         const { error: updateError } = await supabase
@@ -880,7 +949,13 @@ const resetMpin = async (req, res) => {
         });
     } catch (err) {
         console.error("[resetMpin]", err);
-        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error.",
+                error: err.message,
+            });
     }
 };
 
@@ -891,6 +966,7 @@ module.exports = {
     completeSignup,
     signin,
     setupMpin,
+    getMpinStatus,
     changeMpin,
     forgotPasswordSendOTP,
     resetPassword,
