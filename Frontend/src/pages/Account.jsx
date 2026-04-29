@@ -5,6 +5,7 @@ import {
     uploadProfilePicture,
     deleteProfilePicture,
     submitKYC,
+    getMpinStatus,
     setupMpin,
     changeMpin,
     sendPasswordResetOTP,
@@ -265,7 +266,6 @@ function SetupMpinCard({ onSuccess, toast }) {
         setLoad(true);
         try {
             await setupMpin({ password: pw, mpin: next });
-            localStorage.setItem("mpin_set", "true");
             dismiss("mpin_setup_prompt"); // clear the notification
             toast(
                 "MPIN set up successfully! You can now use your MPIN to sign in.",
@@ -802,10 +802,8 @@ export default function Account() {
     const [error, setError] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [kycDone, setKycDone] = useState(false);
-    // Read from localStorage — updated on login/signup/setup
-    const [mpinSet, setMpinSet] = useState(
-        () => localStorage.getItem("mpin_set") === "true",
-    );
+    // null = loading, true/false = known
+    const [mpinSet, setMpinSet] = useState(null);
 
     // Theme
     const [theme, setTheme] = useState(
@@ -822,8 +820,11 @@ export default function Account() {
 
     useEffect(() => {
         setLoading(true);
-        getProfile()
-            .then((res) => setProfile(res.profile))
+        Promise.all([getProfile(), getMpinStatus()])
+            .then(([profileRes, mpinRes]) => {
+                setProfile(profileRes.profile);
+                setMpinSet(mpinRes.mpin_set);
+            })
             .catch((err) => setError(err.message || "Failed to load profile."))
             .finally(() => setLoading(false));
     }, []);
@@ -1230,7 +1231,22 @@ export default function Account() {
                                 Security
                             </SectionTitle>
                             <div className="acct-section-cards">
-                                {mpinSet ? (
+                                {mpinSet === null ? (
+                                    <div
+                                        className="acct-card"
+                                        style={{
+                                            padding: "18px",
+                                            color: "var(--muted)",
+                                            fontSize: "12px",
+                                        }}
+                                    >
+                                        <span
+                                            className="acct-spinner"
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        Checking MPIN status…
+                                    </div>
+                                ) : mpinSet ? (
                                     <ChangeMpinCard toast={showToast} />
                                 ) : (
                                     <SetupMpinCard

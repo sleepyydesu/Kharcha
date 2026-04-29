@@ -40,13 +40,6 @@ function LoginForm({ onLogin, onShowReset }) {
 
             if (data.success) {
                 localStorage.setItem("token", data.token);
-                // Persist mpin_set so Account page can decide setup vs change
-                if (data.account) {
-                    localStorage.setItem(
-                        "mpin_set",
-                        data.account.mpin_set ? "true" : "false",
-                    );
-                }
                 onLogin();
             } else {
                 setErrors({

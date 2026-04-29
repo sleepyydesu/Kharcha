@@ -273,8 +273,6 @@ function SignupForm({ onLogin }) {
             if (completeData.success) {
                 if (completeData.token) {
                     localStorage.setItem("token", completeData.token);
-                    // New accounts never have MPIN set
-                    localStorage.setItem("mpin_set", "false");
                 }
                 // Queue MPIN setup notification — user will see it once they enter the app
                 addNotification({
