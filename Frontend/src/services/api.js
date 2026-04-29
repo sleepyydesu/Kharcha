@@ -270,19 +270,21 @@ export const payCheckout = (session_id, body = {}) =>
     });
 
 // ── Kharcha Card ──────────────────────────────────────────────
-export const getMyCard = () => request("/cards/my-card");
+// Fetch both virtual and physical cards in one call
+export const getMyCards = () => request("/cards/my-cards");
 
-export const requestCard = (body = {}) =>
-    request("/cards/request", { method: "POST", body: JSON.stringify(body) });
+// Issue a virtual (credit-card only) card instantly
+export const issueVirtualCard = () =>
+    request("/cards/virtual/issue", { method: "POST", body: JSON.stringify({}) });
 
-export const blockMyCard = (body = {}) =>
-    request("/cards/my-card/block", {
-        method: "POST",
-        body: JSON.stringify(body),
-    });
+// Request a physical (credit + RFID) card — needs admin approval
+export const requestPhysicalCard = (body = {}) =>
+    request("/cards/physical/request", { method: "POST", body: JSON.stringify(body) });
 
-export const updateCardLimits = (body) =>
-    request("/cards/my-card/limits", {
-        method: "PATCH",
-        body: JSON.stringify(body),
-    });
+// Block a card by type: cardType = "virtual" | "physical"
+export const blockCard = (cardType, body = {}) =>
+    request(`/cards/${cardType}/block`, { method: "POST", body: JSON.stringify(body) });
+
+// Update daily spend limit for a card type
+export const updateCardLimits = (cardType, body) =>
+    request(`/cards/${cardType}/limits`, { method: "PATCH", body: JSON.stringify(body) });
