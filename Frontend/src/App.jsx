@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import "./styles/variables.css";
 import "./App.css";
 
+import { NotificationProvider } from "./context/NotificationContext";
+import NotificationBell from "./components/NotificationBell";
 import KharchaLogo from "./components/KharchaLogo";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -160,6 +162,7 @@ function AppShell({ qrOpen, setQrOpen }) {
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
                 <BalancePanel dashboardOnly={!isDashboard} />
+                <NotificationBell />
 
                 <main
                     className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
@@ -205,31 +208,41 @@ function App() {
     }, [isAuthenticated]);
 
     return (
-        <BrowserRouter>
-            <Routes>
-                {/*
-                 * ── Standalone Payment Portal ────────────────────────────
-                 * Completely outside auth — no sidebar, no balance panel.
-                 * Uses its own OTP-based login, not the JWT system.
-                 */}
-                <Route path="/pay/:session_id" element={<PaymentGateway />} />
+        <NotificationProvider>
+            <BrowserRouter>
+                <Routes>
+                    {/*
+                     * ── Standalone Payment Portal ────────────────────────────
+                     * Completely outside auth — no sidebar, no balance panel.
+                     * Uses its own OTP-based login, not the JWT system.
+                     */}
+                    <Route
+                        path="/pay/:session_id"
+                        element={<PaymentGateway />}
+                    />
 
-                {/*
-                 * ── Everything else ──────────────────────────────────────
-                 * Protected by JWT auth.
-                 */}
-                <Route
-                    path="/*"
-                    element={
-                        isAuthenticated ? (
-                            <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
-                        ) : (
-                            <AuthApp onLogin={() => setIsAuthenticated(true)} />
-                        )
-                    }
-                />
-            </Routes>
-        </BrowserRouter>
+                    {/*
+                     * ── Everything else ──────────────────────────────────────
+                     * Protected by JWT auth.
+                     */}
+                    <Route
+                        path="/*"
+                        element={
+                            isAuthenticated ? (
+                                <AppShell
+                                    qrOpen={qrOpen}
+                                    setQrOpen={setQrOpen}
+                                />
+                            ) : (
+                                <AuthApp
+                                    onLogin={() => setIsAuthenticated(true)}
+                                />
+                            )
+                        }
+                    />
+                </Routes>
+            </BrowserRouter>
+        </NotificationProvider>
     );
 }
 
