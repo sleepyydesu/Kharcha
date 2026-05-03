@@ -79,7 +79,12 @@ export const initiateKhalti = (amount) =>
         method: "POST",
         body: JSON.stringify({ amount }),
     });
-
+//--─ eSewa ────────────────────────────────────────────────────
+export const initiateEsewa = (amount) =>
+    request("/esewa/initiate", {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+    });
 // ── Gift Cards ────────────────────────────────────────────────
 export const redeemGiftCard = (code) =>
     request("/gift-cards/redeem", {

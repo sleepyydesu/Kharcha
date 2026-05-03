@@ -16,13 +16,14 @@ const {
   authRateLimiter,
 } = require("./middleware/securityMiddleware");
 
+const esewaRoutes = require("./routes/esewaRoutes");
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const {
-    publicRouter: qrPublicRoutes,
-    orgRouter: qrOrgRoutes,
+  publicRouter: qrPublicRoutes,
+  orgRouter: qrOrgRoutes,
 } = require("./routes/qrCodeRoutes");
 
 const expenseRoutes = require("./routes/expenseRoutes");
@@ -41,7 +42,12 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Payment-Token"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-API-Key",
+      "X-Payment-Token",
+    ],
     exposedHeaders: [
       "X-RateLimit-Limit",
       "X-RateLimit-Remaining",
@@ -67,6 +73,7 @@ app.use(
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/test", testRoutes);
 app.use("/api/khalti", khaltiRoutes);
+app.use("/api/esewa", esewaRoutes);
 app.use("/api/auth", authRateLimiter, authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
