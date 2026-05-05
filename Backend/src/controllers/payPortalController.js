@@ -421,10 +421,44 @@ const resendPortalOTP = async (req, res) => {
     }
 };
 
+const getSessionStatus = async (req, res) => {
+    try {
+        const { session_id } = req.params;
+        const account_id = req.apiKeyAccount; // from verifyApiKey
+
+        const { data: session, error } = await supabase
+            .from("payment_sessions")
+            .select("session_id, status, amount, paid_at, transaction_id, account_id")
+            .eq("session_id", session_id)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!session)
+            return res.status(404).json({ success: false, message: "Session not found." });
+
+        // Ensure only the org that created the session can query it
+        if (session.account_id !== account_id)
+            return res.status(403).json({ success: false, message: "Access denied." });
+
+        return res.status(200).json({
+            success: true,
+            session_id:     session.session_id,
+            status:         session.status,        // "pending" | "success" | "expired" | "cancelled"
+            amount:         session.amount,
+            transaction_id: session.transaction_id || null,
+            paid_at:        session.paid_at || null,
+        });
+    } catch (err) {
+        console.error("[getSessionStatus]", err);
+        return res.status(500).json({ success: false, message: "Server error." });
+    }
+};
+
 module.exports = {
     createPortalSession,
     getPortalSession,
     loginAndSendOTP,
     verifyOTPAndPay,
     resendPortalOTP,
+    getSessionStatus,
 };

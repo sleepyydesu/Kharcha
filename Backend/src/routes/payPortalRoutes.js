@@ -7,6 +7,7 @@ const {
     loginAndSendOTP,
     verifyOTPAndPay,
     resendPortalOTP,
+    getSessionStatus,
 } = require("../controllers/payPortalController");
 
 const router = express.Router();
@@ -27,6 +28,7 @@ const otpLimit = rateLimit({
 router.post("/sessions/create", verifyApiKey, createPortalSession);
 
 // Payer portal flow
+router.get("/sessions/:session_id/status", verifyApiKey, getSessionStatus);
 router.get( "/:session_id/session",    getPortalSession);
 router.post("/:session_id/login",      authLimit, loginAndSendOTP);
 router.post("/:session_id/verify-otp", otpLimit,  verifyOTPAndPay);
