@@ -41,7 +41,7 @@ function LoginForm({ onLogin, onShowReset }) {
             });
 
             if (data.success) {
-                localStorage.setItem("token", data.token);
+                // Token is now an httpOnly cookie — nothing to store here.
                 // Check if MPIN is configured; if not, show a setup prompt
                 try {
                     const mpinStatus = await getMpinStatus();
@@ -98,6 +98,10 @@ function LoginForm({ onLogin, onShowReset }) {
     const canSubmit =
         identifier.trim().length > 0 && credential.length > 0 && !loading;
 
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && canSubmit) handleSubmit();
+    };
+
     return (
         <div className="form-body slide-in">
             {errors.general && (
@@ -125,6 +129,7 @@ function LoginForm({ onLogin, onShowReset }) {
                         general: "",
                     }));
                 }}
+                onKeyDown={handleKeyDown}
                 icon="phone"
                 error={errors.identifier}
             />
@@ -142,6 +147,7 @@ function LoginForm({ onLogin, onShowReset }) {
                         general: "",
                     }));
                 }}
+                onKeyDown={handleKeyDown}
                 icon="lock"
                 error={errors.credential}
             />

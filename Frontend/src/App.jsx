@@ -297,18 +297,21 @@ function AppShell({ qrOpen, setQrOpen }) {
 
 // ── Root App ─────────────────────────────────────────────────
 function App() {
+    // Auth state is driven by a lightweight session flag in localStorage.
+    // The actual credential is the httpOnly cookie — JS never touches it.
+    // "kharcha_session" = "1" just means "the user successfully logged in
+    // during this browser profile"; the server is the real authority.
     const [isAuthenticated, setIsAuthenticated] = useState(
-        () => !!localStorage.getItem("token"),
+        () => localStorage.getItem("kharcha_session") === "1",
     );
     const [qrOpen, setQrOpen] = useState(false);
     const [sessionExpired, setSessionExpired] = useState(false);
 
-    // Listen for the global session-expired event fired by api.js on any 401
+    // Listen for the global session-expired event fired by services/api.js
+    // when a refresh token attempt fails (idle timeout or 7-day expiry).
     useEffect(() => {
         const handleExpired = () => {
-            if (localStorage.getItem("token")) {
-                setSessionExpired(true);
-            }
+            setSessionExpired(true);
         };
         window.addEventListener("kharcha:session-expired", handleExpired);
         return () =>
@@ -316,7 +319,7 @@ function App() {
     }, []);
 
     const handleSessionDismiss = useCallback(() => {
-        localStorage.removeItem("token");
+        localStorage.removeItem("kharcha_session");
         setSessionExpired(false);
         setIsAuthenticated(false);
     }, []);
@@ -358,7 +361,10 @@ function App() {
                                 />
                             ) : (
                                 <AuthApp
-                                    onLogin={() => setIsAuthenticated(true)}
+                                    onLogin={() => {
+                                        localStorage.setItem("kharcha_session", "1");
+                                        setIsAuthenticated(true);
+                                    }}
                                 />
                             )
                         }

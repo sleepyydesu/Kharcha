@@ -1,22 +1,32 @@
 const bcrypt = require("bcrypt");
 const { verifyAuthToken } = require("../utils/jwtUtils");
+const { ACCESS_COOKIE } = require("../utils/cookieUtils");
 const supabase = require("../services/supabaseClient");
 
 /**
- * Middleware: authenticate via JWT Bearer token.
+ * Middleware: authenticate via the kharcha_access httpOnly cookie.
+ * Falls back to Authorization: Bearer <token> so Swagger / API tools still work.
  * Attaches decoded token payload to req.account.
  */
 const authenticate = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    // 1. Prefer the httpOnly cookie (browser clients)
+    let token = req.cookies?.[ACCESS_COOKIE];
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // 2. Fall back to Authorization header (Swagger / mobile / API clients)
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.split(" ")[1];
+        }
+    }
+
+    if (!token) {
         return res.status(401).json({
             success: false,
             message: "No token provided. Please sign in.",
         });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = verifyAuthToken(token);
 
     if (!decoded) {
@@ -91,9 +101,6 @@ async function resolveApiKey(rawKey) {
 /**
  * Middleware: authenticate via X-API-Key header (POS terminals, org integrations).
  * Attaches the resolved key record to req.apiKey.
- *
- * Usage:
- *   router.get("/pos/lookup/:rfid_uid", authenticateApiKey, handler);
  */
 const authenticateApiKey = async (req, res, next) => {
     const rawKey = req.headers["x-api-key"];
@@ -109,27 +116,25 @@ const authenticateApiKey = async (req, res, next) => {
         return res.status(401).json({ success: false, message: error });
     }
 
-    req.apiKey = apiKey; // { api_key_id, account_id, ... }
+    req.apiKey = apiKey;
     next();
 };
 
 /**
- * Middleware: accept EITHER a JWT Bearer token OR an X-API-Key header.
- * If JWT is present, sets req.account (same shape as authenticate).
- * If X-API-Key is present, sets req.apiKey AND a synthetic req.account
- *   with just account_id so downstream controllers can use either.
- *
- * Used by endpoints that serve both the Kharcha dashboard (JWT) and
- * automated POS/server integrations (API key) — e.g. dynamic QR
- * payment sessions.
+ * Middleware: accept EITHER a JWT cookie/Bearer token OR an X-API-Key header.
+ * Used by endpoints that serve both the Kharcha dashboard and POS integrations.
  */
 const flexAuth = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    const rawKey     = req.headers["x-api-key"];
+    // Check cookie first, then Authorization header
+    let token = req.cookies?.[ACCESS_COOKIE];
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.split(" ")[1];
+        }
+    }
 
-    // Prefer JWT when present
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-        const token   = authHeader.split(" ")[1];
+    if (token) {
         const decoded = verifyAuthToken(token);
         if (!decoded) {
             return res.status(401).json({
@@ -142,20 +147,20 @@ const flexAuth = async (req, res, next) => {
     }
 
     // Fall back to API key
+    const rawKey = req.headers["x-api-key"];
     if (rawKey) {
         const { apiKey, error } = await resolveApiKey(rawKey);
         if (error) {
             return res.status(401).json({ success: false, message: error });
         }
         req.apiKey  = apiKey;
-        // Provide a minimal req.account so controllers can use account_id uniformly
         req.account = { account_id: apiKey.account_id, account_type: "organization" };
         return next();
     }
 
     return res.status(401).json({
         success: false,
-        message: "Authentication required. Provide a Bearer token or X-API-Key header.",
+        message: "Authentication required. Provide a cookie session, Bearer token, or X-API-Key header.",
     });
 };
 

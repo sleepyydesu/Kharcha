@@ -10,6 +10,7 @@ import {
     changeMpin,
     sendPasswordResetOTP,
     resetPassword,
+    signOut,
 } from "../services/api";
 import { useNotifications } from "../context/NotificationContext";
 import "./Account.css";
@@ -873,8 +874,13 @@ export default function Account() {
     };
 
     // ── Logout ───────────────────────────────────────────────────
-    const handleLogout = () => {
-        localStorage.removeItem("token");
+    const handleLogout = async () => {
+        try {
+            await signOut();
+        } catch {
+            // ignore — clear local state regardless
+        }
+        localStorage.removeItem("kharcha_session");
         navigate("/");
         window.location.reload();
     };

@@ -271,9 +271,7 @@ function SignupForm({ onLogin }) {
             const completeData = await signupComplete(completePayload);
 
             if (completeData.success) {
-                if (completeData.token) {
-                    localStorage.setItem("token", completeData.token);
-                }
+                // Token is now an httpOnly cookie — nothing to store here.
                 // Queue MPIN setup notification — user will see it once they enter the app
                 addNotification({
                     id: "mpin_setup_prompt",
