@@ -19,7 +19,14 @@ async function request(path, options = {}) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Request failed");
+    if (!res.ok) {
+        // If the token expired or is invalid, fire a global event so the app
+        // can show the session-expired modal from anywhere, without prop-drilling.
+        if (res.status === 401 && data.message?.toLowerCase().includes("token")) {
+            window.dispatchEvent(new CustomEvent("kharcha:session-expired"));
+        }
+        throw new Error(data.message || "Request failed");
+    }
 
     return data;
 }

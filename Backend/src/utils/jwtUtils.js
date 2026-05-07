@@ -21,11 +21,11 @@ const verifySignupToken = (token) => {
 };
 
 /**
- * Long-lived auth token issued after signup/signin.
- * Expires in 7 days.
+ * Auth token issued after signup/signin.
+ * Expires in 30 minutes.
  */
 const generateAuthToken = (payload) => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: "30m" });
 };
 
 const verifyAuthToken = (token) => {

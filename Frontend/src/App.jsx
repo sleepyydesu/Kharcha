@@ -42,6 +42,105 @@ function BubblePortal() {
     );
 }
 
+// ── Session Expired Modal ─────────────────────────────────────
+function SessionExpiredModal({ onDismiss }) {
+    return createPortal(
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(0,0,0,0.55)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+                animation: "fadeIn 0.2s ease",
+            }}
+        >
+            <div
+                style={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+                    padding: "36px 32px 28px",
+                    maxWidth: "380px",
+                    width: "90%",
+                    textAlign: "center",
+                    animation: "slideUp 0.25s ease",
+                }}
+            >
+                {/* Icon */}
+                <div
+                    style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: "50%",
+                        background: "var(--warning-bg)",
+                        border: "1.5px solid var(--warning-border)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 26,
+                        margin: "0 auto 18px",
+                    }}
+                >
+                    🔒
+                </div>
+
+                <h2
+                    style={{
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        color: "var(--text-color)",
+                        margin: "0 0 8px",
+                    }}
+                >
+                    Session Expired
+                </h2>
+
+                <p
+                    style={{
+                        fontSize: "14px",
+                        color: "var(--text-sub)",
+                        margin: "0 0 24px",
+                        lineHeight: 1.6,
+                    }}
+                >
+                    Your session has expired for security. Please sign in again
+                    to continue.
+                </p>
+
+                <button
+                    onClick={onDismiss}
+                    style={{
+                        width: "100%",
+                        padding: "12px",
+                        background: "var(--primary)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "10px",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        letterSpacing: "0.01em",
+                    }}
+                >
+                    Sign in again
+                </button>
+            </div>
+
+            <style>{`
+                @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+                @keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+            `}</style>
+        </div>,
+        document.body,
+    );
+}
+
 // ── Auth App ─────────────────────────────────────────────────
 function AuthApp({ onLogin }) {
     const [activeTab, setActiveTab] = useState("login");
@@ -202,6 +301,25 @@ function App() {
         () => !!localStorage.getItem("token"),
     );
     const [qrOpen, setQrOpen] = useState(false);
+    const [sessionExpired, setSessionExpired] = useState(false);
+
+    // Listen for the global session-expired event fired by api.js on any 401
+    useEffect(() => {
+        const handleExpired = () => {
+            if (localStorage.getItem("token")) {
+                setSessionExpired(true);
+            }
+        };
+        window.addEventListener("kharcha:session-expired", handleExpired);
+        return () =>
+            window.removeEventListener("kharcha:session-expired", handleExpired);
+    }, []);
+
+    const handleSessionDismiss = useCallback(() => {
+        localStorage.removeItem("token");
+        setSessionExpired(false);
+        setIsAuthenticated(false);
+    }, []);
 
     useEffect(() => {
         document.body.classList.toggle("app-authenticated", isAuthenticated);
@@ -210,6 +328,11 @@ function App() {
     return (
         <NotificationProvider>
             <BrowserRouter>
+                {/* Session-expired modal sits above everything */}
+                {sessionExpired && (
+                    <SessionExpiredModal onDismiss={handleSessionDismiss} />
+                )}
+
                 <Routes>
                     {/*
                      * ── Standalone Payment Portal ────────────────────────────
