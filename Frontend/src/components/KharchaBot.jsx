@@ -223,7 +223,10 @@ export default function KharchaBot() {
 
             const summarizeExpenses = (data) => {
                 if (!data) return null;
-                const categories = (data.categories || data.expense_summary || []).map((c) => ({
+                // Backend returns { success, data: [...] }; also handle bare array fallback
+                const rows = data.data || data.categories || data.expense_summary || (Array.isArray(data) ? data : []);
+                if (!Array.isArray(rows)) return null;
+                const categories = rows.map((c) => ({
                     name: c.category_name || c.name || "Other",
                     total: c.total_amount || c.total || 0,
                     count: c.count || c.transaction_count || 0,
@@ -234,8 +237,11 @@ export default function KharchaBot() {
 
             const summarizeBudgets = (data) => {
                 if (!data) return null;
-                return (data.budgets || data || []).map((b) => ({
-                    category: b.category_name || b.name || "Category",
+                // Backend returns { success, data: [...] }; data.data is the array
+                const budgets = data.data || data.budgets || (Array.isArray(data) ? data : []);
+                if (!Array.isArray(budgets)) return [];
+                return budgets.map((b) => ({
+                    category: b.categories?.name || b.category_name || b.name || "Category",
                     budgetAmount: b.amount || b.budget_amount || 0,
                     spent: b.spent || b.spent_amount || 0,
                 }));
@@ -243,7 +249,8 @@ export default function KharchaBot() {
 
             const summarizeIncome = (data) => {
                 if (!data) return null;
-                const entries = data.income || data.incomes || [];
+                // Backend returns { success, data: [...], total_income, pagination }
+                const entries = data.data || data.income || data.incomes || [];
                 const total = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
                 return { totalIncome: total.toFixed(2), entries: entries.slice(0, 5) };
             };
