@@ -10,9 +10,12 @@ import walletSendIcon from "../assets/walletSendIcon.svg";
 import bankIcon from "../assets/bankIcon.svg";
 import statementsIcon from "../assets/transactionHistoryIcon.svg";
 import accountIcon from "../assets/accountIcon.svg";
-import electricityIcon from "../assets/electricityIcon.svg";
-import internetIcon from "../assets/internetIcon.svg";
 import topupIcon from "../assets/topupIcon.svg";
+import internetIcon from "../assets/internetIcon.svg";
+import landlineIcon from "../assets/landlineIcon.svg";
+import waterIcon from "../assets/waterIcon.svg";
+import electricityIcon from "../assets/electricityIcon.svg";
+import educationIcon from "../assets/educationIcon.svg";
 
 function QRIcon({ size = 22 }) {
     return (
@@ -81,27 +84,39 @@ export default function Sidebar({ onScanQR }) {
                     </button>
 
                     <div className="sidebar__group">
-                        <button
-                            className={`sidebar__item ${servicesOpen ? "sidebar__item--open" : ""}`}
-                            onClick={() => setServicesOpen((o) => !o)}
+                        <div
+                            className={`sidebar__item sidebar__item--split ${at("/services") ? "sidebar__item--active" : ""} ${servicesOpen ? "sidebar__item--open" : ""}`}
                         >
-                            <img
-                                src={servicesIcon}
-                                className="sidebar__icon"
-                                alt=""
-                            />
-                            <span>Services</span>
-                            <Chevron />
-                        </button>
+                            {/* Left side: navigate to /services */}
+                            <button
+                                className="sidebar__item-main"
+                                onClick={() => navigate("/services")}
+                            >
+                                <img
+                                    src={servicesIcon}
+                                    className="sidebar__icon"
+                                    alt=""
+                                />
+                                <span>Services</span>
+                            </button>
+                            {/* Right side: toggle dropdown only */}
+                            <button
+                                className="sidebar__chevron-btn"
+                                onClick={() => setServicesOpen((o) => !o)}
+                                aria-label="Toggle services menu"
+                            >
+                                <Chevron />
+                            </button>
+                        </div>
                         {servicesOpen && (
                             <div className="sidebar__dropdown">
                                 <button className="sidebar__child">
                                     <img
-                                        src={electricityIcon}
+                                        src={topupIcon}
                                         className="sidebar__icon sidebar__icon--sm"
                                         alt=""
                                     />
-                                    Electricity
+                                    Topup
                                 </button>
                                 <button className="sidebar__child">
                                     <img
@@ -113,11 +128,35 @@ export default function Sidebar({ onScanQR }) {
                                 </button>
                                 <button className="sidebar__child">
                                     <img
-                                        src={topupIcon}
+                                        src={landlineIcon}
                                         className="sidebar__icon sidebar__icon--sm"
                                         alt=""
                                     />
-                                    Topup
+                                    Landline
+                                </button>
+                                <button className="sidebar__child">
+                                    <img
+                                        src={waterIcon}
+                                        className="sidebar__icon sidebar__icon--sm"
+                                        alt=""
+                                    />
+                                    Water
+                                </button>
+                                <button className="sidebar__child">
+                                    <img
+                                        src={electricityIcon}
+                                        className="sidebar__icon sidebar__icon--sm"
+                                        alt=""
+                                    />
+                                    Electricity
+                                </button>
+                                <button className="sidebar__child">
+                                    <img
+                                        src={educationIcon}
+                                        className="sidebar__icon sidebar__icon--sm"
+                                        alt=""
+                                    />
+                                    School/College
                                 </button>
                             </div>
                         )}
