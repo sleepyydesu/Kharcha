@@ -2355,12 +2355,12 @@ const swaggerSpec = {
 
         // ── Admin — Cards ─────────────────────────────────────────────────
 
-        "/api/cards/admin/activate": {
+        "/api/cards/admin/activate-physical": {
             post: {
                 tags: ["Admin — Cards"],
-                summary: "Activate a card (admin)",
+                summary: "Activate a physical card (admin)",
                 description:
-                    "Admin-only. After physically programming an RC522 RFID card with a UID, call this endpoint to link that UID to a user account and set the card as active. `request_id` is optional — supply it to mark the card request as issued.",
+                    "Admin-only. After physically programming an RC522 RFID card with a UID, call this endpoint to link that UID to a user account, generate card credentials, and set the card as active. The CVV is emailed to the account holder — it is never returned in the response. `request_id` is optional — supply it to mark the card request as issued.",
                 security: [{ BearerAuth: [] }],
                 requestBody: {
                     required: true,
@@ -2368,13 +2368,13 @@ const swaggerSpec = {
                         "application/json": {
                             schema: {
                                 type: "object",
-                                required: ["card_id", "account_id"],
+                                required: ["rfid_uid", "account_id"],
                                 properties: {
-                                    card_id: {
+                                    rfid_uid: {
                                         type: "string",
                                         example: "A3B2C1D0",
                                         description:
-                                            "RFID UID read from the physical card (uppercase hex)",
+                                            "RFID UID read from the physical card (uppercase hex, 4 or 7 bytes)",
                                     },
                                     account_id: {
                                         type: "string",

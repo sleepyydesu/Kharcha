@@ -1,117 +1,180 @@
 import { useState } from "react";
-import { signIn } from "../services/api";
+import { signIn, getMpinStatus } from "../services/api";
 import InputField from "./InputField";
+import { useNotifications } from "../context/NotificationContext";
 
 function LoginForm({ onLogin, onShowReset }) {
-  const [identifier, setIdentifier] = useState("");
-  const [credential, setCredential] = useState("");
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+    const { addNotification } = useNotifications();
+    const [identifier, setIdentifier] = useState("");
+    const [credential, setCredential] = useState("");
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
-  function validate() {
-    const e = {};
-    if (!identifier.trim()) e.identifier = "Phone number or email is required";
-    if (!credential) e.credential = "Password or MPIN is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  // If the identifier looks like a Nepali phone number without the country code,
-  // prepend +977 so the API always receives a fully-qualified number.
-  function normalizePhone(raw) {
-    const val = raw.trim();
-    if (val.startsWith("+977")) return val;           // already has country code
-    if (/^(97|98)\d{8}$/.test(val)) return "+977" + val; // 10-digit local number
-    return val;                                        // email or other — pass through
-  }
-
-  async function handleSubmit() {
-    if (!validate()) return;
-
-    setLoading(true);
-    setErrors({});
-
-    try {
-      const data = await signIn({ identifier: normalizePhone(identifier), credential });
-
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        onLogin();
-      } else {
-        setErrors({ general: data.message || "Login failed. Please try again." });
-      }
-    } catch (err) {
-      const msg = err.message;
-
-      if (msg.includes("400")) {
-        setErrors({ general: "Please check your input and try again." });
-      } else if (msg.includes("401")) {
-        setErrors({ credential: "Incorrect password or MPIN. Please try again." });
-      } else if (msg.includes("403")) {
-        setErrors({ general: "Your account has been deactivated. Contact support." });
-      } else if (msg.includes("404")) {
-        setErrors({ identifier: "No account found with this email or phone number." });
-      } else {
-        setErrors({ general: msg || "Something went wrong. Please try again later." });
-      }
-    } finally {
-      setLoading(false);
+    function validate() {
+        const e = {};
+        if (!identifier.trim())
+            e.identifier = "Phone number or email is required";
+        if (!credential) e.credential = "Password or MPIN is required";
+        setErrors(e);
+        return Object.keys(e).length === 0;
     }
-  }
 
-  const canSubmit = identifier.trim().length > 0 && credential.length > 0 && !loading;
+    // If the identifier looks like a Nepali phone number without the country code,
+    // prepend +977 so the API always receives a fully-qualified number.
+    function normalizePhone(raw) {
+        const val = raw.trim();
+        if (val.startsWith("+977")) return val; // already has country code
+        if (/^(97|98)\d{8}$/.test(val)) return "+977" + val; // 10-digit local number
+        return val; // email or other — pass through
+    }
 
-  return (
-    <div className="form-body slide-in">
-      {errors.general && (
-        <p style={{ color: "var(--error, #e53e3e)", fontSize: "13px", marginBottom: "12px" }}>
-          {errors.general}
-        </p>
-      )}
+    async function handleSubmit() {
+        if (!validate()) return;
 
-      <InputField
-        label="Phone Number or Email"
-        type="text"
-        placeholder="98XXXXXXXX or john@example.com"
-        value={identifier}
-        onChange={(e) => {
-          setIdentifier(e.target.value);
-          setErrors((prev) => ({ ...prev, identifier: "", general: "" }));
-        }}
-        icon="phone"
-        error={errors.identifier}
-      />
+        setLoading(true);
+        setErrors({});
 
-      <InputField
-        label="Password / MPIN"
-        type="password"
-        placeholder="Enter your password or 6-digit MPIN"
-        value={credential}
-        onChange={(e) => {
-          setCredential(e.target.value);
-          setErrors((prev) => ({ ...prev, credential: "", general: "" }));
-        }}
-        icon="lock"
-        error={errors.credential}
-      />
+        try {
+            const data = await signIn({
+                identifier: normalizePhone(identifier),
+                credential,
+            });
 
-      <button
-        className="btn-primary"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        style={{ marginTop: "16px" }}
-      >
-        {loading ? "Signing in…" : "Log In to Kharcha"}
-      </button>
+            if (data.success) {
+                // Token is now an httpOnly cookie — nothing to store here.
+                // Check if MPIN is configured; if not, show a setup prompt
+                try {
+                    const mpinStatus = await getMpinStatus();
+                    if (!mpinStatus?.mpin_configured) {
+                        addNotification({
+                            id: "mpin_setup_prompt",
+                            title: "Set up your MPIN",
+                            body: "Secure your transactions by setting up your 6-digit MPIN on your Account page.",
+                            link: "/account",
+                            type: "warning",
+                        });
+                    }
+                } catch {
+                    // Non-blocking — proceed to app even if check fails
+                }
+                onLogin();
+            } else {
+                setErrors({
+                    general: data.message || "Login failed. Please try again.",
+                });
+            }
+        } catch (err) {
+            const msg = err.message;
 
-      <p className="footer-note">
-        Forgot your credentials?{" "}
-        <a href="#" onClick={(e) => { e.preventDefault(); onShowReset(); }}>
-          Reset password
-        </a>
-      </p>
-    </div>
-  );
+            if (msg.includes("400")) {
+                setErrors({
+                    general: "Please check your input and try again.",
+                });
+            } else if (msg.includes("401")) {
+                setErrors({
+                    credential: "Incorrect password or MPIN. Please try again.",
+                });
+            } else if (msg.includes("403")) {
+                setErrors({
+                    general:
+                        "Your account has been deactivated. Contact support.",
+                });
+            } else if (msg.includes("404")) {
+                setErrors({
+                    identifier:
+                        "No account found with this email or phone number.",
+                });
+            } else {
+                setErrors({
+                    general:
+                        msg || "Something went wrong. Please try again later.",
+                });
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const canSubmit =
+        identifier.trim().length > 0 && credential.length > 0 && !loading;
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && canSubmit) handleSubmit();
+    };
+
+    return (
+        <div className="form-body slide-in">
+            {errors.general && (
+                <p
+                    style={{
+                        color: "var(--error, #e53e3e)",
+                        fontSize: "13px",
+                        marginBottom: "12px",
+                    }}
+                >
+                    {errors.general}
+                </p>
+            )}
+
+            <InputField
+                label="Phone Number or Email"
+                type="text"
+                placeholder="98XXXXXXXX or john@example.com"
+                value={identifier}
+                onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setErrors((prev) => ({
+                        ...prev,
+                        identifier: "",
+                        general: "",
+                    }));
+                }}
+                onKeyDown={handleKeyDown}
+                icon="phone"
+                error={errors.identifier}
+            />
+
+            <InputField
+                label="Password / MPIN"
+                type="password"
+                placeholder="Enter your password or 6-digit MPIN"
+                value={credential}
+                onChange={(e) => {
+                    setCredential(e.target.value);
+                    setErrors((prev) => ({
+                        ...prev,
+                        credential: "",
+                        general: "",
+                    }));
+                }}
+                onKeyDown={handleKeyDown}
+                icon="lock"
+                error={errors.credential}
+            />
+
+            <button
+                className="btn-primary"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                style={{ marginTop: "16px" }}
+            >
+                {loading ? "Signing in…" : "Log In to Kharcha"}
+            </button>
+
+            <p className="footer-note">
+                Forgot your credentials?{" "}
+                <a
+                    href="#"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onShowReset();
+                    }}
+                >
+                    Reset password
+                </a>
+            </p>
+        </div>
+    );
 }
 
 export default LoginForm;

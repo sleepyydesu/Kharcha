@@ -1,685 +1,536 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
-    resolveQRCode,
-    transfer,
-    getTransactionCategories,
-} from "../services/api";
-import CategoryIcon from "../components/CategoryIcon";
+    getPortalSession,
+    portalLogin,
+    portalVerifyAndPay,
+    portalResendOTP,
+} from "../services/payPortalApi";
+import KharchaLogo from "../assets/KharchaLogo.png";
 import "./PaymentGateway.css";
 
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-// ─── Helpers ──────────────────────────────────────────────────
-function getToken() {
-    return localStorage.getItem("token");
-}
-function setToken(t) {
-    localStorage.setItem("token", t);
-}
-
-async function apiLogin(identifier, credential) {
-    const res = await fetch(`${BASE}/auth/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, credential }),
+// ── Helpers ────────────────────────────────────────────────────
+function formatNPR(amount) {
+    return Number(amount).toLocaleString("en-NP", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Login failed");
-    return data; // { token, account_type, ... }
 }
 
-function redirect(return_url, params) {
-    if (!return_url) return;
-    const url = new URL(return_url);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    window.location.href = url.toString();
+// ── Brand Components ───────────────────────────────────────────
+function KharchaWordmark() {
+    return (
+        <div className="kpw-wordmark">
+            <img src={KharchaLogo} alt="Kharcha" className="kpw-wordmark-logo" />
+            <span>Kharcha</span>
+        </div>
+    );
 }
 
-// ─── Icons ────────────────────────────────────────────────────
-function KharchaLogo() {
+function KharchaPoweredLogo() {
     return (
-        <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="10" fill="#6366f1" />
-            <text
-                x="18"
-                y="25"
-                textAnchor="middle"
-                fill="white"
-                fontSize="18"
-                fontWeight="800"
-                fontFamily="system-ui"
-            >
-                K
-            </text>
-        </svg>
+        <div className="kpw-left-footer">
+            <span className="kpw-powered-label">Payment powered by</span>
+            <div className="kpw-powered-brand">
+                <img src={KharchaLogo} alt="Kharcha" className="kpw-powered-logo" />
+                <span>Kharcha</span>
+            </div>
+        </div>
     );
 }
-function LockIcon() {
+
+// ── Icons ──────────────────────────────────────────────────────
+const IconClock = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+);
+const IconCheck = () => (
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M8 12l3 3 5-5.5" />
+    </svg>
+);
+const IconXCircle = () => (
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+);
+const IconBack = () => (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+    </svg>
+);
+const IconMail = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 7l-10 7L2 7" />
+    </svg>
+);
+const IconEye = ({ off }) => (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {off ? (
+            <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
+        ) : (
+            <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
+        )}
+    </svg>
+);
+function Spinner({ size = 18, color = "currentColor" }) {
     return (
-        <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-        >
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-    );
-}
-function CheckCircleIcon() {
-    return (
-        <svg
-            width="52"
-            height="52"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-        >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12l3 3 5-6" />
-        </svg>
-    );
-}
-function XCircleIcon() {
-    return (
-        <svg
-            width="52"
-            height="52"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-        >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-    );
-}
-function StoreIcon() {
-    return (
-        <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-        >
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"
+            style={{ animation: "kpw-spin 0.7s linear infinite", flexShrink: 0 }}>
+            <circle cx="12" cy="12" r="10" opacity="0.25" />
+            <path d="M22 12a10 10 0 0 0-10-10" />
         </svg>
     );
 }
 
-// ─── MPIN pad ─────────────────────────────────────────────────
-function MpinPad({ value, onChange, disabled }) {
-    const DIGITS = 6;
-    const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
-    function tap(k) {
+// ── OTP Input ──────────────────────────────────────────────────
+function OTPInput({ length = 6, value, onChange, disabled }) {
+    const refs = useRef([]);
+    function handleKey(i, e) {
         if (disabled) return;
-        if (k === "⌫") onChange(value.slice(0, -1));
-        else if (value.length < DIGITS) onChange(value + k);
+        const digits = value.split("");
+        if (e.key === "Backspace") {
+            if (digits[i]) { digits[i] = ""; onChange(digits.join("")); }
+            else if (i > 0) { digits[i - 1] = ""; onChange(digits.join("")); refs.current[i - 1]?.focus(); }
+            return;
+        }
+        if (e.key === "ArrowLeft" && i > 0) { refs.current[i - 1]?.focus(); return; }
+        if (e.key === "ArrowRight" && i < length - 1) { refs.current[i + 1]?.focus(); return; }
+        if (!/^\d$/.test(e.key)) return;
+        digits[i] = e.key;
+        onChange(digits.join(""));
+        if (i < length - 1) refs.current[i + 1]?.focus();
+    }
+    function handlePaste(e) {
+        if (disabled) return;
+        e.preventDefault();
+        const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
+        onChange(pasted.padEnd(length, "").slice(0, length));
+        refs.current[Math.min(pasted.length, length - 1)]?.focus();
     }
     return (
-        <div className="pgw__mpin">
-            <div className="pgw__mpin-dots">
-                {Array.from({ length: DIGITS }).map((_, i) => (
-                    <div
-                        key={i}
-                        className={`pgw__mpin-dot${i < value.length ? " pgw__mpin-dot--on" : ""}`}
-                    />
-                ))}
-            </div>
-            <div className="pgw__mpin-pad">
-                {keys.map((k, i) => (
-                    <button
-                        key={i}
-                        type="button"
-                        className={`pgw__mpin-key${!k ? " pgw__mpin-key--empty" : ""}${k === "⌫" ? " pgw__mpin-key--del" : ""}`}
-                        onClick={() => k && tap(k)}
-                        disabled={disabled || !k}
-                    >
-                        {k}
-                    </button>
-                ))}
-            </div>
+        <div className="kpw-otp-row">
+            {Array.from({ length }).map((_, i) => (
+                <input key={i} ref={el => (refs.current[i] = el)}
+                    className={`kpw-otp-cell${value[i] ? " kpw-otp-cell--filled" : ""}`}
+                    type="text" inputMode="numeric" maxLength={1}
+                    value={value[i] || ""} readOnly disabled={disabled}
+                    onKeyDown={e => handleKey(i, e)} onPaste={handlePaste}
+                    onFocus={e => e.target.select()} onClick={() => refs.current[i]?.focus()}
+                    autoComplete="one-time-code" />
+            ))}
         </div>
     );
 }
 
-// ─── Step tracker ─────────────────────────────────────────────
-function Steps({ current }) {
-    const steps = ["Login", "Review", "Pay"];
-    return (
-        <div className="pgw__steps">
-            {steps.map((label, i) => {
-                const idx = i + 1;
-                const done = idx < current;
-                const active = idx === current;
-                return (
-                    <div key={label} className="pgw__step-item">
-                        <div
-                            className={`pgw__step-dot${done ? " pgw__step-dot--done" : ""}${active ? " pgw__step-dot--active" : ""}`}
-                        >
-                            {done ? "✓" : idx}
-                        </div>
-                        <span
-                            className={`pgw__step-label${active ? " pgw__step-label--active" : ""}`}
-                        >
-                            {label}
-                        </span>
-                        {i < steps.length - 1 && (
-                            <div
-                                className={`pgw__step-line${done ? " pgw__step-line--done" : ""}`}
-                            />
-                        )}
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
-// ─── Merchant header card ──────────────────────────────────────
-function MerchantCard({ merchant, amount, note }) {
-    return (
-        <div className="pgw__merchant-card">
-            <div className="pgw__merchant-avatar">
-                <StoreIcon />
-            </div>
-            <div className="pgw__merchant-info">
-                <p className="pgw__merchant-name">
-                    {merchant?.name || "Merchant"}
-                </p>
-                {note && <p className="pgw__merchant-note">{note}</p>}
-            </div>
-            <div className="pgw__merchant-amount">
-                <span className="pgw__amount-currency">NPR</span>
-                <span className="pgw__amount-value">
-                    {Number(amount).toLocaleString("en-NP", {
-                        minimumFractionDigits: 2,
-                    })}
-                </span>
-            </div>
-        </div>
-    );
-}
-
-// ─── Main Page ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────
 export default function PaymentGateway() {
     const { session_id } = useParams();
-    const [searchParams] = useSearchParams();
-    const return_url = searchParams.get("return_url") || "";
+    const [searchParams]  = useSearchParams();
+    const return_url      = searchParams.get("return_url") || "";
 
-    // ── Session ───────────────────────────────────────────────
-    const [session, setSession] = useState(null); // resolved QR info
-    const [loading, setLoading] = useState(true);
-    const [sessionErr, setSessionErr] = useState("");
+    const [session,        setSession]        = useState(null);
+    const [sessionLoading, setSessionLoading] = useState(true);
+    const [sessionErr,     setSessionErr]     = useState("");
 
-    // ── Auth ──────────────────────────────────────────────────
-    const [authed, setAuthed] = useState(Boolean(getToken()));
-    const [identifier, setIdentifier] = useState("");
-    const [password, setPassword] = useState("");
-    const [loginErr, setLoginErr] = useState("");
-    const [loggingIn, setLoggingIn] = useState(false);
+    const [screen, setScreen] = useState("login");
 
-    // ── Payment form ──────────────────────────────────────────
-    const [step, setStep] = useState(authed ? 2 : 1); // 1=login 2=review 3=pay
-    const [categories, setCategories] = useState([]);
-    const [selectedCat, setSelectedCat] = useState(null);
-    const [remarks, setRemarks] = useState("");
-    const [remarksErr, setRemarksErr] = useState("");
-    const [mpin, setMpin] = useState("");
-    const [paying, setPaying] = useState(false);
-    const [payErr, setPayErr] = useState("");
+    const [identifier,      setIdentifier]      = useState("");
+    const [credential,      setCredential]      = useState("");
+    const [showCredential,  setShowCredential]  = useState(false);
+    const [loginErr,        setLoginErr]        = useState("");
+    const [loggingIn,       setLoggingIn]       = useState(false);
 
-    // ── Result ────────────────────────────────────────────────
-    const [result, setResult] = useState(null); // { status: "success"|"failed", txn_id? }
+    const [otp,            setOtp]            = useState("");
+    const [remarks,        setRemarks]        = useState("");
+    const [otpErr,         setOtpErr]         = useState("");
+    const [verifying,      setVerifying]      = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const [resending,      setResending]      = useState(false);
+    const resendTimer = useRef(null);
 
-    // Fetch session on mount
+    const [result, setResult] = useState(null);
+
     useEffect(() => {
-        resolveQRCode(session_id)
-            .then((d) => setSession(d.qr))
-            .catch((e) =>
-                setSessionErr(
-                    e.message || "Payment session not found or expired.",
-                ),
-            )
-            .finally(() => setLoading(false));
+        getPortalSession(session_id)
+            .then(d => setSession(d.session))
+            .catch(e => setSessionErr(e.message || "Payment session not found or expired."))
+            .finally(() => setSessionLoading(false));
     }, [session_id]);
 
-    // Load categories when entering review step
-    useEffect(() => {
-        if (step === 2 && authed) {
-            getTransactionCategories()
-                .then((d) => {
-                    const cats = d?.categories || [];
-                    setCategories(cats);
-                    // Pre-select the default category if the session has one
-                    if (session?.default_category) {
-                        setSelectedCat(session.default_category);
-                    }
-                })
-                .catch(() => {});
-        }
-    }, [step, authed]); // eslint-disable-line
+    function startCooldown(secs = 60) {
+        setResendCooldown(secs);
+        clearInterval(resendTimer.current);
+        resendTimer.current = setInterval(() => {
+            setResendCooldown(c => {
+                if (c <= 1) { clearInterval(resendTimer.current); return 0; }
+                return c - 1;
+            });
+        }, 1000);
+    }
 
-    // ── Login ─────────────────────────────────────────────────
+    // ── Normalise phone → +977XXXXXXXXXX ──────────────────────
+    function normaliseIdentifier(raw) {
+        const id = raw.trim();
+        if (id.includes("@")) return id; // email — leave as-is
+        let digits = id.replace(/[\s\-().]/g, "");
+        if (digits.startsWith("+977")) return digits;
+        if (digits.startsWith("977"))  return `+${digits}`;
+        if (digits.startsWith("0"))    digits = digits.slice(1);
+        return `+977${digits}`;
+    }
+
     async function handleLogin(e) {
         e.preventDefault();
-        if (!identifier.trim() || !password.trim()) return;
-        setLoggingIn(true);
-        setLoginErr("");
+        if (!identifier.trim()) { setLoginErr("Please enter your email or phone number."); return; }
+        if (!credential.toString().trim()) {
+            setLoginErr("Please enter your password or MPIN.");
+            return;
+        }
+        setLoggingIn(true); setLoginErr("");
         try {
-            const data = await apiLogin(identifier.trim(), password.trim());
-            setToken(data.token || data.access_token);
-            setAuthed(true);
-            setStep(2);
+            const normId = normaliseIdentifier(identifier);
+            await portalLogin(session_id, normId, credential.toString().trim());
+            setScreen("otp");
+            startCooldown(60);
         } catch (err) {
-            setLoginErr(err.message || "Login failed.");
+            setLoginErr(err.message || "Login failed. Please check your credentials.");
         } finally {
             setLoggingIn(false);
         }
     }
 
-    // ── Review → Pay ──────────────────────────────────────────
-    function handleReview(e) {
-        e.preventDefault();
-        if (!remarks.trim()) {
-            setRemarksErr("Please enter a remark for this payment.");
-            return;
-        }
-        setRemarksErr("");
-        setStep(3);
-    }
-
-    // ── Pay ───────────────────────────────────────────────────
-    async function handlePay() {
-        if (mpin.length < 4) return;
-        setPaying(true);
-        setPayErr("");
+    async function handleVerifyAndPay(e) {
+        e?.preventDefault();
+        if (otp.replace(/\s/g, "").length < 6) { setOtpErr("Please enter the 6-digit OTP."); return; }
+        setVerifying(true); setOtpErr("");
         try {
-            const res = await transfer({
-                receiver_identifier: session.merchant.account_id,
-                amount: Number(session.amount),
-                ...(selectedCat
-                    ? { category_id: selectedCat.category_id }
-                    : {}),
-                remarks: remarks.trim(),
-                qr_id: session_id,
-                mpin,
-            });
-            const txn_id = res.transaction?.transaction_id || "";
-            setResult({ status: "success", txn_id });
-            // Auto-redirect after 2 s
-            setTimeout(() => {
-                redirect(return_url, {
-                    status: "success",
-                    transaction_id: txn_id,
-                    session_id,
-                    amount: session.amount,
-                });
-            }, 2000);
+            const data = await portalVerifyAndPay(session_id, otp.trim(), remarks);
+            setResult({ status: "success", txn_id: data.transaction?.transaction_id });
+            setScreen("result");
+            if (return_url) {
+                setTimeout(() => {
+                    const url = new URL(return_url);
+                    url.searchParams.set("status", "success");
+                    url.searchParams.set("transaction_id", data.transaction?.transaction_id || "");
+                    url.searchParams.set("session_id", session_id);
+                    window.location.href = url.toString();
+                }, 3000);
+            }
         } catch (err) {
-            setPayErr(err.message || "Payment failed.");
-            // If wrong MPIN, let user retry — don't lock them out
+            setOtpErr(err.message || "Incorrect OTP. Please try again.");
+            setOtp("");
         } finally {
-            setPaying(false);
+            setVerifying(false);
         }
     }
 
-    // ── Cancel ────────────────────────────────────────────────
-    function handleCancel() {
-        redirect(return_url, { status: "cancelled", session_id });
+    useEffect(() => {
+        if (screen === "otp" && otp.length === 6 && !verifying) handleVerifyAndPay();
+    }, [otp]); // eslint-disable-line
+
+    async function handleResend() {
+        if (resendCooldown > 0 || resending) return;
+        setResending(true); setOtpErr(""); setOtp("");
+        try {
+            await portalResendOTP(session_id);
+            startCooldown(60);
+        } catch (err) {
+            setOtpErr(err.message || "Failed to resend OTP.");
+        } finally {
+            setResending(false);
+        }
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  RENDER
-    // ─────────────────────────────────────────────────────────
+    function handleCancel() {
+        if (!return_url) return;
+        const url = new URL(return_url);
+        url.searchParams.set("status", "cancelled");
+        url.searchParams.set("session_id", session_id);
+        window.location.href = url.toString();
+    }
+
+    const expiryFormatted = session?.expires_at
+        ? new Date(session.expires_at).toLocaleString("en-NP", { dateStyle: "medium", timeStyle: "short" })
+        : null;
 
     return (
-        <div className="pgw__root">
-            {/* ── Branded header ── */}
-            <header className="pgw__header">
-                <div className="pgw__logo-row">
-                    <KharchaLogo />
-                    <span className="pgw__logo-name">Kharcha</span>
+        <div className="kpw-root">
+          <div className="kpw-container">
+
+            {/* ── Left — payment details ── */}
+            <div className="kpw-left">
+                <div className="kpw-left-inner">
+                    <KharchaWordmark />
+
+                    {sessionLoading && (
+                        <div className="kpw-left-loading"><Spinner size={26} color="var(--primary)" /></div>
+                    )}
+
+                    {!sessionLoading && sessionErr && (
+                        <p className="kpw-left-err-text">This payment link is invalid or has expired.</p>
+                    )}
+
+                    {!sessionLoading && !sessionErr && session && (
+                        <>
+                            <h1 className="kpw-left-heading">Payment Details</h1>
+
+                            {expiryFormatted && (
+                                <div className="kpw-expiry-banner">
+                                    <IconClock />
+                                    <span>This payment will expire on <strong>{expiryFormatted}</strong></span>
+                                </div>
+                            )}
+
+                            <div className="kpw-billed-row">
+                                <span className="kpw-billed-label">Billed To:</span>
+                                <span className="kpw-billed-value">{session.merchant_name}</span>
+                            </div>
+
+                            <p className="kpw-amount-summary-heading">Amount Summary:</p>
+                            <div className="kpw-amount-row">
+                                <span className="kpw-amount-row-label">Total Payable Amount</span>
+                                <span className="kpw-amount-row-value">Rs {formatNPR(session.amount)}</span>
+                            </div>
+
+                            {session.note && (
+                                <div className="kpw-details-block">
+                                    <div className="kpw-detail-row">
+                                        <span className="kpw-detail-label">Note</span>
+                                        <span className="kpw-detail-value">{session.note}</span>
+                                    </div>
+                                    <div className="kpw-detail-row">
+                                        <span className="kpw-detail-label">Session</span>
+                                        <span className="kpw-detail-value">{String(session_id).slice(0, 8).toUpperCase()}…</span>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    <KharchaPoweredLogo />
                 </div>
-                <div className="pgw__secure-badge">
-                    <LockIcon /> Secure Checkout
-                </div>
-            </header>
+            </div>
 
-            <main className="pgw__main">
-                {/* ── Loading ── */}
-                {loading && (
-                    <div className="pgw__loading">
-                        <div className="pgw__spinner" />
-                        <p>Loading payment details…</p>
-                    </div>
-                )}
+            {/* ── Right — auth/pay flow ── */}
+            <div className="kpw-right">
+                <div className="kpw-right-inner">
 
-                {/* ── Session error ── */}
-                {!loading && sessionErr && (
-                    <div className="pgw__error-screen">
-                        <div className="pgw__error-icon">
-                            <XCircleIcon />
-                        </div>
-                        <h2 className="pgw__error-title">
-                            Payment Link Invalid
-                        </h2>
-                        <p className="pgw__error-msg">{sessionErr}</p>
-                        {return_url && (
-                            <button
-                                className="pgw__btn pgw__btn--ghost"
-                                onClick={handleCancel}
-                            >
-                                Return to Merchant
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* ── Result screen ── */}
-                {result && (
-                    <div
-                        className={`pgw__result pgw__result--${result.status}`}
-                    >
-                        <div className="pgw__result-icon">
-                            {result.status === "success" ? (
-                                <CheckCircleIcon />
-                            ) : (
-                                <XCircleIcon />
+                    {/* Session error */}
+                    {!sessionLoading && sessionErr && (
+                        <div className="kpw-panel kpw-panel--result">
+                            <div className="kpw-result-icon kpw-result-icon--fail"><IconXCircle /></div>
+                            <h2 className="kpw-result-title">Invalid Link</h2>
+                            <p className="kpw-result-sub">{sessionErr}</p>
+                            {return_url && (
+                                <button className="kpw-btn kpw-btn--ghost" onClick={handleCancel}>
+                                    Return to Merchant
+                                </button>
                             )}
                         </div>
-                        <h2 className="pgw__result-title">
-                            {result.status === "success"
-                                ? "Payment Successful!"
-                                : "Payment Failed"}
-                        </h2>
-                        {result.status === "success" && (
-                            <p className="pgw__result-amount">
-                                NPR{" "}
-                                {Number(session.amount).toLocaleString(
-                                    "en-NP",
-                                    { minimumFractionDigits: 2 },
-                                )}
-                            </p>
-                        )}
-                        <p className="pgw__result-redirect">
-                            {return_url
-                                ? "Redirecting you back…"
-                                : "You may close this page."}
-                        </p>
-                    </div>
-                )}
+                    )}
 
-                {/* ── Main flow ── */}
-                {!loading && !sessionErr && !result && session && (
-                    <div className="pgw__card">
-                        {/* Merchant + amount */}
-                        <MerchantCard
-                            merchant={session.merchant}
-                            amount={session.amount}
-                            note={session.note}
-                        />
-
-                        <Steps current={step} />
-
-                        {/* ── Step 1: Login ── */}
-                        {step === 1 && (
-                            <form className="pgw__form" onSubmit={handleLogin}>
-                                <p className="pgw__form-title">Log in to pay</p>
-                                <div className="pgw__field">
-                                    <label className="pgw__label">
-                                        Phone or Email
-                                    </label>
-                                    <input
-                                        className="pgw__input"
-                                        type="text"
-                                        placeholder="98XXXXXXXX or you@email.com"
-                                        value={identifier}
-                                        onChange={(e) => {
-                                            setIdentifier(e.target.value);
-                                            setLoginErr("");
-                                        }}
-                                        autoFocus
-                                        required
-                                    />
+                    {/* ── Screen: login ── */}
+                    {!sessionErr && !sessionLoading && screen === "login" && (
+                        <div className="kpw-panel">
+                            <div className="kpw-panel-topbar">
+                                <div className="kpw-panel-icon"><IconMail /></div>
+                                <h2>Sign in to Pay</h2>
+                            </div>
+                            <div className="kpw-panel-body">
+                                <div className="kpw-panel-head">
+                                    <p>Use your Kharcha account credentials to authorise this payment.</p>
                                 </div>
-                                <div className="pgw__field">
-                                    <label className="pgw__label">
-                                        Password
-                                    </label>
-                                    <input
-                                        className="pgw__input"
-                                        type="password"
-                                        placeholder="Your Kharcha password"
-                                        value={password}
-                                        onChange={(e) => {
-                                            setPassword(e.target.value);
-                                            setLoginErr("");
-                                        }}
-                                        required
-                                    />
-                                </div>
-                                {loginErr && (
-                                    <p className="pgw__field-err">{loginErr}</p>
-                                )}
-                                <button
-                                    className="pgw__btn pgw__btn--primary"
-                                    type="submit"
-                                    disabled={
-                                        loggingIn || !identifier || !password
-                                    }
-                                >
-                                    {loggingIn
-                                        ? "Logging in…"
-                                        : "Log In & Continue"}
-                                </button>
-                                {return_url && (
-                                    <button
-                                        type="button"
-                                        className="pgw__btn pgw__btn--ghost"
-                                        onClick={handleCancel}
-                                    >
-                                        Cancel
-                                    </button>
-                                )}
-                            </form>
-                        )}
 
-                        {/* ── Step 2: Review ── */}
-                        {step === 2 && (
-                            <form className="pgw__form" onSubmit={handleReview}>
-                                <p className="pgw__form-title">
-                                    Review & confirm details
-                                </p>
+                                <form className="kpw-form" onSubmit={handleLogin} noValidate>
+                                    <div className="kpw-field">
+                                        <label className="kpw-label">Mobile Number or Email</label>
+                                        <input
+                                            className="kpw-input"
+                                            type="text"
+                                            placeholder="98XXXXXXXX or you@email.com"
+                                            value={identifier}
+                                            onChange={e => { setIdentifier(e.target.value); setLoginErr(""); }}
+                                            autoFocus
+                                            autoComplete="username"
+                                        />
+                                    </div>
 
-                                {categories.length > 0 && (
-                                    <div className="pgw__field">
-                                        <label className="pgw__label">
-                                            Category{" "}
-                                            <span className="pgw__optional">
-                                                (optional)
-                                            </span>
-                                        </label>
-                                        <div className="pgw__cats">
-                                            <button
-                                                type="button"
-                                                className={`pgw__cat${!selectedCat ? " pgw__cat--active" : ""}`}
-                                                onClick={() =>
-                                                    setSelectedCat(null)
-                                                }
-                                            >
-                                                None
+                                    <div className="kpw-field">
+                                        <label className="kpw-label">Password / MPIN</label>
+                                        <div className="kpw-input-wrap">
+                                            <input
+                                                className={`kpw-input kpw-input--icon-right${loginErr ? " kpw-input--err" : ""}`}
+                                                type={showCredential ? "text" : "password"}
+                                                placeholder="Enter your password or MPIN"
+                                                value={credential}
+                                                onChange={e => { setCredential(e.target.value); setLoginErr(""); }}
+                                                autoComplete="current-password"
+                                            />
+                                            <button type="button" className="kpw-eye-btn"
+                                                onClick={() => setShowCredential(v => !v)}
+                                                tabIndex={-1} aria-label={showCredential ? "Hide" : "Show"}>
+                                                <IconEye off={showCredential} />
                                             </button>
-                                            {categories.map((cat) => (
-                                                <button
-                                                    key={cat.category_id}
-                                                    type="button"
-                                                    className={`pgw__cat${selectedCat?.category_id === cat.category_id ? " pgw__cat--active" : ""}`}
-                                                    onClick={() =>
-                                                        setSelectedCat(cat)
-                                                    }
-                                                >
-                                                    {cat.icon_url ? (
-                                                        <CategoryIcon
-                                                            iconUrl={cat.icon_url}
-                                                            iconType={cat.icon_type || "svg"}
-                                                            name={cat.name}
-                                                            size={20}
-                                                        />
-                                                    ) : null}
-                                                    {cat.name}
-                                                </button>
-                                            ))}
                                         </div>
                                     </div>
-                                )}
 
-                                <div className="pgw__field">
-                                    <label className="pgw__label">
-                                        Remarks{" "}
-                                        <span className="pgw__req">*</span>
-                                    </label>
+                                    {loginErr && <p className="kpw-err-text">{loginErr}</p>}
+
+                                    <button className="kpw-btn kpw-btn--primary" type="submit"
+                                        disabled={loggingIn || !identifier.trim() || !credential.toString().trim()}>
+                                        {loggingIn
+                                            ? <><Spinner size={16} color="#fff" /> Signing in…</>
+                                            : "Continue →"}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {return_url && (
+                                <div className="kpw-panel-cancel-row">
+                                    <button type="button" className="kpw-cancel-link" onClick={handleCancel}>
+                                        Cancel Payment
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── Screen: OTP ── */}
+                    {!sessionErr && screen === "otp" && session && (
+                        <div className="kpw-panel">
+                            <div className="kpw-panel-topbar">
+                                <button className="kpw-back-btn"
+                                    onClick={() => { setScreen("login"); setOtp(""); setOtpErr(""); }}>
+                                    <IconBack />
+                                </button>
+                                <h2>Pay via Kharcha Wallet</h2>
+                            </div>
+
+                            <div className="kpw-panel-body">
+                                <p className="kpw-otp-enter-label">Enter OTP</p>
+
+                                <div className="kpw-field">
+                                    <label className="kpw-label">Mobile Number or Email</label>
                                     <input
-                                        className={`pgw__input${remarksErr ? " pgw__input--err" : ""}`}
+                                        className="kpw-input kpw-input--readonly"
                                         type="text"
-                                        placeholder="What is this payment for?"
-                                        maxLength={120}
-                                        value={remarks}
-                                        onChange={(e) => {
-                                            setRemarks(e.target.value);
-                                            setRemarksErr("");
-                                        }}
-                                        autoFocus
+                                        value={identifier}
+                                        disabled
+                                        readOnly
                                     />
-                                    {remarksErr && (
-                                        <p className="pgw__field-err">
-                                            {remarksErr}
+                                </div>
+
+                                <div className="kpw-field">
+                                    <label className="kpw-label">Password / MPIN</label>
+                                    <div className="kpw-input-wrap">
+                                        <input
+                                            className="kpw-input kpw-input--icon-right kpw-input--readonly"
+                                            type="password"
+                                            value={credential}
+                                            disabled
+                                            readOnly
+                                        />
+                                        <span className="kpw-eye-btn" style={{ cursor: "default" }}>
+                                            <IconEye off={false} />
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <p className="kpw-otp-section-label">
+                                    Enter OTP sent to your Mobile Number / Email Address
+                                </p>
+
+                                <OTPInput length={6} value={otp} onChange={setOtp} disabled={verifying} />
+
+                                {otpErr && <p className="kpw-err-text kpw-err-text--center">{otpErr}</p>}
+
+                                <button className="kpw-btn kpw-btn--pay" onClick={handleVerifyAndPay}
+                                    disabled={verifying || otp.length < 6}>
+                                    {verifying
+                                        ? <><Spinner size={16} color="#fff" /> Processing…</>
+                                        : `Pay Rs. ${formatNPR(session.amount)}`}
+                                </button>
+
+                                <div className="kpw-forgot-row">
+                                    Forgot your password?{" "}
+                                    <button type="button" onClick={() => {}}>Reset Password</button>
+                                </div>
+
+                                <div className="kpw-field kpw-remarks-field">
+                                    <label className="kpw-label">
+                                        Remarks <span className="kpw-optional">(optional)</span>
+                                    </label>
+                                    <input className="kpw-input" type="text"
+                                        placeholder="What's this payment for?"
+                                        maxLength={120} value={remarks}
+                                        onChange={e => setRemarks(e.target.value)}
+                                        disabled={verifying} />
+                                </div>
+
+                                <div className="kpw-resend-row">
+                                    {resendCooldown > 0
+                                        ? <span className="kpw-resend-timer">Resend OTP in <strong>{resendCooldown}s</strong></span>
+                                        : <button type="button" className="kpw-resend-btn"
+                                            onClick={handleResend} disabled={resending}>
+                                            {resending ? "Resending…" : "Resend OTP"}
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            {return_url && (
+                                <div className="kpw-panel-cancel-row">
+                                    <button type="button" className="kpw-cancel-link" onClick={handleCancel}>
+                                        Cancel Payment
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── Screen: Result ── */}
+                    {screen === "result" && result && session && (
+                        <div className="kpw-panel kpw-panel--result">
+                            {result.status === "success" ? (
+                                <>
+                                    <div className="kpw-result-icon kpw-result-icon--success"><IconCheck /></div>
+                                    <h2 className="kpw-result-title">Payment Successful!</h2>
+                                    <div className="kpw-result-amount">Rs {formatNPR(session.amount)}</div>
+                                    <p className="kpw-result-sub">
+                                        Paid to <strong>{session.merchant_name}</strong>
+                                    </p>
+                                    {result.txn_id && (
+                                        <p className="kpw-result-txn">
+                                            Txn: {String(result.txn_id).slice(0, 18)}…
                                         </p>
                                     )}
-                                </div>
-
-                                <button
-                                    className="pgw__btn pgw__btn--primary"
-                                    type="submit"
-                                >
-                                    Continue
-                                </button>
-                                <button
-                                    type="button"
-                                    className="pgw__btn pgw__btn--ghost"
-                                    onClick={handleCancel}
-                                >
-                                    Cancel
-                                </button>
-                            </form>
-                        )}
-
-                        {/* ── Step 3: MPIN ── */}
-                        {step === 3 && (
-                            <div className="pgw__form">
-                                <p className="pgw__form-title">
-                                    Enter your MPIN to pay
-                                </p>
-
-                                <div className="pgw__confirm-summary">
-                                    <div className="pgw__confirm-row">
-                                        <span className="pgw__confirm-key">
-                                            To
-                                        </span>
-                                        <span className="pgw__confirm-val">
-                                            {session.merchant.name}
-                                        </span>
-                                    </div>
-                                    <div className="pgw__confirm-row">
-                                        <span className="pgw__confirm-key">
-                                            Amount
-                                        </span>
-                                        <span className="pgw__confirm-val pgw__confirm-val--amount">
-                                            NPR{" "}
-                                            {Number(
-                                                session.amount,
-                                            ).toLocaleString("en-NP", {
-                                                minimumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </div>
-                                    {selectedCat && (
-                                        <div className="pgw__confirm-row">
-                                            <span className="pgw__confirm-key">
-                                                Category
-                                            </span>
-                                            <span className="pgw__confirm-val">
-                                                {selectedCat.name}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="pgw__confirm-row">
-                                        <span className="pgw__confirm-key">
-                                            Remarks
-                                        </span>
-                                        <span className="pgw__confirm-val">
-                                            "{remarks}"
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <MpinPad
-                                    value={mpin}
-                                    onChange={setMpin}
-                                    disabled={paying}
-                                />
-
-                                {payErr && (
-                                    <p className="pgw__field-err pgw__field-err--center">
-                                        {payErr}
+                                    <p className="kpw-result-redirect">
+                                        {return_url ? "Redirecting back in 3 seconds…" : "You may close this window."}
                                     </p>
-                                )}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="kpw-result-icon kpw-result-icon--fail"><IconXCircle /></div>
+                                    <h2 className="kpw-result-title">Payment Failed</h2>
+                                    <p className="kpw-result-sub">{result.message || "Something went wrong."}</p>
+                                    {return_url && (
+                                        <button className="kpw-btn kpw-btn--ghost" onClick={handleCancel}>
+                                            Return to Merchant
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
 
-                                <button
-                                    className="pgw__btn pgw__btn--primary pgw__btn--pay"
-                                    onClick={handlePay}
-                                    disabled={paying || mpin.length < 4}
-                                >
-                                    {paying
-                                        ? "Processing…"
-                                        : `Pay NPR ${Number(session.amount).toLocaleString()}`}
-                                </button>
-                                <button
-                                    className="pgw__btn pgw__btn--ghost"
-                                    onClick={() => {
-                                        setStep(2);
-                                        setMpin("");
-                                        setPayErr("");
-                                    }}
-                                >
-                                    Back
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </main>
+                </div>
+            </div>
 
-            <footer className="pgw__footer">
-                <p>
-                    Secured by <strong>Kharcha</strong> · Payments encrypted
-                    end-to-end
-                </p>
-            </footer>
+          </div>{/* /.kpw-container */}
         </div>
     );
 }

@@ -368,7 +368,7 @@ const resolveQRCode = async (req, res) => {
             const { data: org } = await supabase
                 .from("organizations")
                 .select("organization_name, phone_number")
-                .eq("account_id", session.merchant_id)
+                .eq("account_id", session.account_id)
                 .maybeSingle();
 
             return res.json({
@@ -376,7 +376,7 @@ const resolveQRCode = async (req, res) => {
                 qr: {
                     qr_id: session.session_id,
                     merchant: {
-                        account_id: session.merchant_id,
+                        account_id: session.account_id,
                         name: org?.organization_name || "Merchant",
                         phone_number: org?.phone_number || null,
                     },
@@ -546,6 +546,8 @@ async function dispatchQRWebhook(qr_id, payload) {
 // ─────────────────────────────────────────────
 // CREATE PAYMENT SESSION (REAL DYNAMIC QR)
 // POST /api/payments/create
+// Stores ephemeral per-transaction QR in dynamic_qr_codes so that
+// resolveQRCode finds it on the first lookup (dynamic_qr_codes step).
 // ─────────────────────────────────────────────
 const createPaymentSession = async (req, res) => {
     try {
@@ -558,24 +560,28 @@ const createPaymentSession = async (req, res) => {
                 .json({ success: false, message: "Invalid amount" });
         }
 
-        const session_id = uuidv4();
+        const qr_id = uuidv4();
 
-        const { error } = await supabase.from("payment_sessions").insert({
-            session_id,
-            merchant_id: account_id,
-            amount,
-            note: note || null,
-            status: "pending",
-            expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 mins
-        });
+        const { data: qr, error } = await supabase
+            .from("dynamic_qr_codes")
+            .insert({
+                qr_id,
+                account_id,
+                name: `Payment Session`,
+                amount: Number(amount),
+                note: note || null,
+                is_active: true,
+            })
+            .select("qr_id")
+            .single();
 
         if (error) throw error;
 
         return res.json({
             success: true,
-            session_id,
+            session_id: qr.qr_id,
             qr_payload: JSON.stringify({
-                kharcha_qr_id: session_id, // was kharcha_session_id — parseQR only recognises kharcha_qr_id
+                kharcha_qr_id: qr.qr_id,
             }),
         });
     } catch (err) {
@@ -592,26 +598,26 @@ const completePayment = async (req, res) => {
     try {
         const { session_id } = req.body;
 
-        const { data: session } = await supabase
-            .from("payment_sessions")
-            .select("*")
-            .eq("session_id", session_id)
+        const { data: qr } = await supabase
+            .from("dynamic_qr_codes")
+            .select("qr_id, is_active")
+            .eq("qr_id", session_id)
             .maybeSingle();
 
-        if (!session) {
+        if (!qr) {
             return res.status(404).json({ success: false });
         }
 
-        if (session.status !== "pending") {
+        if (!qr.is_active) {
             return res
                 .status(400)
                 .json({ success: false, message: "Already paid" });
         }
 
         await supabase
-            .from("payment_sessions")
-            .update({ status: "success" })
-            .eq("session_id", session_id);
+            .from("dynamic_qr_codes")
+            .update({ is_active: false })
+            .eq("qr_id", session_id);
 
         return res.json({ success: true });
     } catch (err) {
@@ -623,50 +629,37 @@ const completePayment = async (req, res) => {
 // GET PAYMENT SESSION STATUS
 // GET /api/org/qr-codes/payments/status/:session_id
 // Authenticated — merchant polls this after showing the session QR.
-// Returns { status: "pending" | "success" | "expired" } so the frontend
+// Returns { status: "pending" | "success" } so the frontend
 // can automatically show "Payment received!" without a manual refresh.
+// Now reads from dynamic_qr_codes: is_active=true → pending, is_active=false → success.
 // ─────────────────────────────────────────────
 const getPaymentSessionStatus = async (req, res) => {
     try {
         const { account_id } = req.account;
         const { session_id } = req.params;
 
-        const { data: session, error } = await supabase
-            .from("payment_sessions")
-            .select("session_id, merchant_id, status, amount, expires_at")
-            .eq("session_id", session_id)
+        const { data: qr, error } = await supabase
+            .from("dynamic_qr_codes")
+            .select("qr_id, account_id, is_active, amount")
+            .eq("qr_id", session_id)
             .maybeSingle();
 
         if (error) throw error;
-        if (!session)
+        if (!qr)
             return res
                 .status(404)
                 .json({ success: false, message: "Session not found." });
 
         // Only the merchant who created this session may poll it
-        if (session.merchant_id !== account_id)
+        if (qr.account_id !== account_id)
             return res
                 .status(403)
                 .json({ success: false, message: "Forbidden." });
 
-        // Auto-expire if the time window has passed and it's still pending
-        let { status } = session;
-        if (status === "pending") {
-            const expiresMs = new Date(
-                session.expires_at.endsWith("Z")
-                    ? session.expires_at
-                    : session.expires_at + "Z",
-            ).getTime();
-            if (expiresMs < Date.now()) {
-                status = "expired";
-                await supabase
-                    .from("payment_sessions")
-                    .update({ status: "expired" })
-                    .eq("session_id", session_id);
-            }
-        }
+        // is_active=true means payment is still pending; false means paid
+        const status = qr.is_active ? "pending" : "success";
 
-        return res.json({ success: true, status, amount: session.amount });
+        return res.json({ success: true, status, amount: qr.amount });
     } catch (err) {
         console.error("[getPaymentSessionStatus]", err);
         return res

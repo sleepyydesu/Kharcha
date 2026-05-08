@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import "./styles/variables.css";
 import "./App.css";
 
+import { NotificationProvider } from "./context/NotificationContext";
+import NotificationToast from "./components/NotificationToast";
 import KharchaLogo from "./components/KharchaLogo";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -36,6 +38,105 @@ function BubblePortal() {
             {[...Array(12)].map((_, i) => (
                 <div key={i} className={`bubble bubble-${i + 1}`} />
             ))}
+        </div>,
+        document.body,
+    );
+}
+
+// ── Session Expired Modal ─────────────────────────────────────
+function SessionExpiredModal({ onDismiss }) {
+    return createPortal(
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(0,0,0,0.55)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+                animation: "fadeIn 0.2s ease",
+            }}
+        >
+            <div
+                style={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+                    padding: "36px 32px 28px",
+                    maxWidth: "380px",
+                    width: "90%",
+                    textAlign: "center",
+                    animation: "slideUp 0.25s ease",
+                }}
+            >
+                {/* Icon */}
+                <div
+                    style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: "50%",
+                        background: "var(--warning-bg)",
+                        border: "1.5px solid var(--warning-border)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 26,
+                        margin: "0 auto 18px",
+                    }}
+                >
+                    🔒
+                </div>
+
+                <h2
+                    style={{
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        color: "var(--text-color)",
+                        margin: "0 0 8px",
+                    }}
+                >
+                    Session Expired
+                </h2>
+
+                <p
+                    style={{
+                        fontSize: "14px",
+                        color: "var(--text-sub)",
+                        margin: "0 0 24px",
+                        lineHeight: 1.6,
+                    }}
+                >
+                    Your session has expired for security. Please sign in again
+                    to continue.
+                </p>
+
+                <button
+                    onClick={onDismiss}
+                    style={{
+                        width: "100%",
+                        padding: "12px",
+                        background: "var(--primary)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "10px",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        letterSpacing: "0.01em",
+                    }}
+                >
+                    Sign in again
+                </button>
+            </div>
+
+            <style>{`
+                @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+                @keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+            `}</style>
         </div>,
         document.body,
     );
@@ -147,7 +248,7 @@ function AuthApp({ onLogin }) {
     );
 }
 
-// ── App Shell ────────────────────────────────────────────────
+// ── App Shell (authenticated) ────────────────────────────────
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
@@ -161,6 +262,7 @@ function AppShell({ qrOpen, setQrOpen }) {
             <div className="app-shell">
                 <Sidebar onScanQR={() => setQrOpen(true)} />
                 <BalancePanel dashboardOnly={!isDashboard} />
+                <NotificationToast />
 
                 <main
                     className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
@@ -182,10 +284,6 @@ function AppShell({ qrOpen, setQrOpen }) {
                             path="/org/dynamic-qr"
                             element={<DynamicQRPayment />}
                         />
-                        <Route
-                            path="/pay/:session_id"
-                            element={<PaymentGateway />}
-                        />
                         <Route path="/developers" element={<ApiDocs />} />
                         <Route path="/services" element={<Services />} />
                         <Route path="/card" element={<KharchaCard />} />
@@ -201,23 +299,81 @@ function AppShell({ qrOpen, setQrOpen }) {
 
 // ── Root App ─────────────────────────────────────────────────
 function App() {
+    // Auth state is driven by a lightweight session flag in localStorage.
+    // The actual credential is the httpOnly cookie — JS never touches it.
+    // "kharcha_session" = "1" just means "the user successfully logged in
+    // during this browser profile"; the server is the real authority.
     const [isAuthenticated, setIsAuthenticated] = useState(
-        () => !!localStorage.getItem("token"),
+        () => localStorage.getItem("kharcha_session") === "1",
     );
     const [qrOpen, setQrOpen] = useState(false);
+    const [sessionExpired, setSessionExpired] = useState(false);
+
+    // Listen for the global session-expired event fired by services/api.js
+    // when a refresh token attempt fails (idle timeout or 7-day expiry).
+    useEffect(() => {
+        const handleExpired = () => {
+            setSessionExpired(true);
+        };
+        window.addEventListener("kharcha:session-expired", handleExpired);
+        return () =>
+            window.removeEventListener("kharcha:session-expired", handleExpired);
+    }, []);
+
+    const handleSessionDismiss = useCallback(() => {
+        localStorage.removeItem("kharcha_session");
+        setSessionExpired(false);
+        setIsAuthenticated(false);
+    }, []);
 
     useEffect(() => {
         document.body.classList.toggle("app-authenticated", isAuthenticated);
     }, [isAuthenticated]);
 
-    if (!isAuthenticated) {
-        return <AuthApp onLogin={() => setIsAuthenticated(true)} />;
-    }
-
     return (
-        <BrowserRouter>
-            <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
-        </BrowserRouter>
+        <NotificationProvider>
+            <BrowserRouter>
+                {/* Session-expired modal sits above everything */}
+                {sessionExpired && (
+                    <SessionExpiredModal onDismiss={handleSessionDismiss} />
+                )}
+
+                <Routes>
+                    {/*
+                     * ── Standalone Payment Portal ────────────────────────────
+                     * Completely outside auth — no sidebar, no balance panel.
+                     * Uses its own OTP-based login, not the JWT system.
+                     */}
+                    <Route
+                        path="/pay/:session_id"
+                        element={<PaymentGateway />}
+                    />
+
+                    {/*
+                     * ── Everything else ──────────────────────────────────────
+                     * Protected by JWT auth.
+                     */}
+                    <Route
+                        path="/*"
+                        element={
+                            isAuthenticated ? (
+                                <AppShell
+                                    qrOpen={qrOpen}
+                                    setQrOpen={setQrOpen}
+                                />
+                            ) : (
+                                <AuthApp
+                                    onLogin={() => {
+                                        localStorage.setItem("kharcha_session", "1");
+                                        setIsAuthenticated(true);
+                                    }}
+                                />
+                            )
+                        }
+                    />
+                </Routes>
+            </BrowserRouter>
+        </NotificationProvider>
     );
 }
 
