@@ -14,6 +14,7 @@ import ResetForm from "./components/ResetForm";
 import Sidebar from "./components/Sidebar";
 import BalancePanel from "./components/BalancePanel";
 import QRScanner from "./components/QRScanner";
+import KharchaBot from "./components/KharchaBot";
 
 import Dashboard from "./pages/Dashboard";
 import LoadMoney from "./pages/LoadMoney";
@@ -29,7 +30,7 @@ import PaymentGateway from "./pages/PaymentGateway";
 import ApiDocs from "./pages/ApiDocs";
 import Services from "./pages/Services";
 import KharchaCard from "./pages/KharchaCard";
-import KharchaBot from "./components/KharchaBot";
+import AdminDashboard from "./pages/AdminDashboard";
 
 // ── Bubble Background (Auth only) ─────────────────────────────
 function BubblePortal() {
@@ -73,7 +74,6 @@ function SessionExpiredModal({ onDismiss }) {
                     animation: "slideUp 0.25s ease",
                 }}
             >
-                {/* Icon */}
                 <div
                     style={{
                         width: 56,
@@ -134,8 +134,21 @@ function SessionExpiredModal({ onDismiss }) {
             </div>
 
             <style>{`
-                @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
-                @keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+                @keyframes fadeIn {
+                    from { opacity: 0 }
+                    to { opacity: 1 }
+                }
+
+                @keyframes slideUp {
+                    from {
+                        transform: translateY(20px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
             `}</style>
         </div>,
         document.body,
@@ -150,6 +163,7 @@ function AuthApp({ onLogin }) {
     return (
         <>
             <BubblePortal />
+
             <div className="page-wrapper">
                 <div className="auth-container">
                     <div className="brand-panel">
@@ -163,26 +177,30 @@ function AuthApp({ onLogin }) {
                         <p className="brand-tagline">
                             Nepal's trusted digital wallet
                         </p>
+
                         <p className="brand-sub">
                             Send money. Pay bills. Stay in control.
                         </p>
 
                         <ul className="brand-features">
                             <li>
-                                <span className="feat-icon">⚡</span> Instant
-                                transfers
+                                <span className="feat-icon">⚡</span>
+                                Instant transfers
                             </li>
+
                             <li>
-                                <span className="feat-icon">🔒</span> Bank-grade
-                                security
+                                <span className="feat-icon">🔒</span>
+                                Bank-grade security
                             </li>
+
                             <li>
-                                <span className="feat-icon">📱</span> Works
-                                everywhere
+                                <span className="feat-icon">📱</span>
+                                Works everywhere
                             </li>
+
                             <li>
-                                <span className="feat-icon">🇳🇵</span> Made for
-                                Nepal
+                                <span className="feat-icon">🇳🇵</span>
+                                Made for Nepal
                             </li>
                         </ul>
 
@@ -195,13 +213,20 @@ function AuthApp({ onLogin }) {
                         {!showReset && (
                             <div className="tab-bar">
                                 <button
-                                    className={`tab-btn ${activeTab === "login" ? "active" : ""}`}
+                                    className={`tab-btn ${
+                                        activeTab === "login" ? "active" : ""
+                                    }`}
                                     onClick={() => setActiveTab("login")}
                                 >
                                     Login
                                 </button>
+
                                 <button
-                                    className={`tab-btn ${activeTab === "register" ? "active" : ""}`}
+                                    className={`tab-btn ${
+                                        activeTab === "register"
+                                            ? "active"
+                                            : ""
+                                    }`}
                                     onClick={() => setActiveTab("register")}
                                 >
                                     Register
@@ -238,7 +263,10 @@ function AuthApp({ onLogin }) {
                             )}
 
                             {!showReset && activeTab === "register" && (
-                                <SignupForm key="signup" onLogin={onLogin} />
+                                <SignupForm
+                                    key="signup"
+                                    onLogin={onLogin}
+                                />
                             )}
                         </div>
                     </div>
@@ -248,7 +276,7 @@ function AuthApp({ onLogin }) {
     );
 }
 
-// ── App Shell (authenticated) ────────────────────────────────
+// ── App Shell ────────────────────────────────────────────────
 function AppShell({ qrOpen, setQrOpen }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/";
@@ -265,13 +293,18 @@ function AppShell({ qrOpen, setQrOpen }) {
                 <NotificationToast />
 
                 <main
-                    className={`app-content${isDashboard ? " app-content--has-panel" : ""}`}
+                    className={`app-content${
+                        isDashboard ? " app-content--has-panel" : ""
+                    }`}
                 >
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/load" element={<LoadMoney />} />
                         <Route path="/send" element={<SendMoney />} />
-                        <Route path="/statements" element={<Statements />} />
+                        <Route
+                            path="/statements"
+                            element={<Statements />}
+                        />
                         <Route
                             path="/statements/:transaction_id"
                             element={<StatementDetail />}
@@ -279,14 +312,24 @@ function AppShell({ qrOpen, setQrOpen }) {
                         <Route path="/expenses" element={<Expenses />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/set-token" element={<SetToken />} />
-                        <Route path="/org/qr-codes" element={<OrgQRCodes />} />
+                        <Route
+                            path="/org/qr-codes"
+                            element={<OrgQRCodes />}
+                        />
                         <Route
                             path="/org/dynamic-qr"
                             element={<DynamicQRPayment />}
                         />
-                        <Route path="/developers" element={<ApiDocs />} />
+                        <Route
+                            path="/developers"
+                            element={<ApiDocs />}
+                        />
                         <Route path="/services" element={<Services />} />
                         <Route path="/card" element={<KharchaCard />} />
+                        <Route
+                            path="/admin"
+                            element={<AdminDashboard />}
+                        />
                     </Routes>
                 </main>
             </div>
@@ -299,25 +342,28 @@ function AppShell({ qrOpen, setQrOpen }) {
 
 // ── Root App ─────────────────────────────────────────────────
 function App() {
-    // Auth state is driven by a lightweight session flag in localStorage.
-    // The actual credential is the httpOnly cookie — JS never touches it.
-    // "kharcha_session" = "1" just means "the user successfully logged in
-    // during this browser profile"; the server is the real authority.
     const [isAuthenticated, setIsAuthenticated] = useState(
         () => localStorage.getItem("kharcha_session") === "1",
     );
+
     const [qrOpen, setQrOpen] = useState(false);
     const [sessionExpired, setSessionExpired] = useState(false);
 
-    // Listen for the global session-expired event fired by services/api.js
-    // when a refresh token attempt fails (idle timeout or 7-day expiry).
     useEffect(() => {
         const handleExpired = () => {
             setSessionExpired(true);
         };
-        window.addEventListener("kharcha:session-expired", handleExpired);
+
+        window.addEventListener(
+            "kharcha:session-expired",
+            handleExpired,
+        );
+
         return () =>
-            window.removeEventListener("kharcha:session-expired", handleExpired);
+            window.removeEventListener(
+                "kharcha:session-expired",
+                handleExpired,
+            );
     }, []);
 
     const handleSessionDismiss = useCallback(() => {
@@ -327,32 +373,27 @@ function App() {
     }, []);
 
     useEffect(() => {
-        document.body.classList.toggle("app-authenticated", isAuthenticated);
+        document.body.classList.toggle(
+            "app-authenticated",
+            isAuthenticated,
+        );
     }, [isAuthenticated]);
 
     return (
         <NotificationProvider>
             <BrowserRouter>
-                {/* Session-expired modal sits above everything */}
                 {sessionExpired && (
-                    <SessionExpiredModal onDismiss={handleSessionDismiss} />
+                    <SessionExpiredModal
+                        onDismiss={handleSessionDismiss}
+                    />
                 )}
 
                 <Routes>
-                    {/*
-                     * ── Standalone Payment Portal ────────────────────────────
-                     * Completely outside auth — no sidebar, no balance panel.
-                     * Uses its own OTP-based login, not the JWT system.
-                     */}
                     <Route
                         path="/pay/:session_id"
                         element={<PaymentGateway />}
                     />
 
-                    {/*
-                     * ── Everything else ──────────────────────────────────────
-                     * Protected by JWT auth.
-                     */}
                     <Route
                         path="/*"
                         element={
@@ -364,7 +405,11 @@ function App() {
                             ) : (
                                 <AuthApp
                                     onLogin={() => {
-                                        localStorage.setItem("kharcha_session", "1");
+                                        localStorage.setItem(
+                                            "kharcha_session",
+                                            "1",
+                                        );
+
                                         setIsAuthenticated(true);
                                     }}
                                 />

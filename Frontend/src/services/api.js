@@ -99,7 +99,7 @@ async function request(path, options = {}, _isRetry = false) {
 
 // ── Auth ──────────────────────────────────────────────────────
 export const signIn = (body) =>
-    request("/auth/signin", { method: "POST", body: JSON.stringify(body) });
+  request("/auth/signin", { method: "POST", body: JSON.stringify(body) });
 
 export const signupCheck = (body) =>
     request("/auth/signup/check", { method: "POST", body: JSON.stringify(body) });
@@ -123,22 +123,22 @@ export const signOutAll = () =>
 export const getWallet = () => request("/wallet");
 
 export const transfer = (body) =>
-    request("/wallet/transfer", { method: "POST", body: JSON.stringify(body) });
+  request("/wallet/transfer", { method: "POST", body: JSON.stringify(body) });
 
 export const lookupReceiver = (id) =>
-    request(`/wallet/lookup?identifier=${encodeURIComponent(id)}`);
+  request(`/wallet/lookup?identifier=${encodeURIComponent(id)}`);
 
 // ── Profile ───────────────────────────────────────────────────
 export const getProfile = () => request("/profile");
 
 export const updateProfile = (body) =>
-    request("/profile", { method: "PATCH", body: JSON.stringify(body) });
+  request("/profile", { method: "PATCH", body: JSON.stringify(body) });
 
 export const uploadProfilePicture = (body) =>
-    request("/profile/picture", { method: "POST", body: JSON.stringify(body) });
+  request("/profile/picture", { method: "POST", body: JSON.stringify(body) });
 
 export const deleteProfilePicture = () =>
-    request("/profile/picture", { method: "DELETE" });
+  request("/profile/picture", { method: "DELETE" });
 
 // ── Khalti ────────────────────────────────────────────────────
 export const initiateKhalti = (amount) =>
@@ -163,25 +163,25 @@ export const getTransactions = (params = {}) => {
 export const getTransactionCategories = () => request("/transactions/categories");
 
 export const getTransactionById = (id) =>
-    request(`/transactions/${encodeURIComponent(id)}`);
+  request(`/transactions/${encodeURIComponent(id)}`);
 
 // ── Categories ────────────────────────────────────────────────
 export const getCategories = () => request("/categories");
 
 export const createCategory = (body) =>
-    request("/categories", { method: "POST", body: JSON.stringify(body) });
+  request("/categories", { method: "POST", body: JSON.stringify(body) });
 
 export const updateCategory = (id, body) =>
-    request(`/categories/${id}`, { method: "PUT", body: JSON.stringify(body) });
+  request(`/categories/${id}`, { method: "PUT", body: JSON.stringify(body) });
 
 export const deleteCategory = (id) =>
-    request(`/categories/${id}`, { method: "DELETE" });
+  request(`/categories/${id}`, { method: "DELETE" });
 
 export const uploadCategoryIcon = (id, body) =>
     request(`/categories/${id}/icon`, { method: "POST", body: JSON.stringify(body) });
 
 export const deleteCategoryIcon = (id) =>
-    request(`/categories/${id}/icon`, { method: "DELETE" });
+  request(`/categories/${id}/icon`, { method: "DELETE" });
 
 // ── KYC ───────────────────────────────────────────────────────
 export const submitKYC = (body) =>
@@ -191,7 +191,7 @@ export const submitKYC = (body) =>
 export const getMpinStatus = () => request("/auth/mpin/status");
 
 export const setupMpin = (body) =>
-    request("/auth/mpin/setup", { method: "POST", body: JSON.stringify(body) });
+  request("/auth/mpin/setup", { method: "POST", body: JSON.stringify(body) });
 
 export const changeMpin = (body) =>
     request("/auth/mpin/change", { method: "POST", body: JSON.stringify(body) });
@@ -205,45 +205,45 @@ export const resetPassword = (body) =>
 
 // ── Expenses ──────────────────────────────────────────────────
 export const getExpenseOverview = (start_date, end_date) =>
-    request(`/expenses?start_date=${start_date}&end_date=${end_date}`);
+  request(`/expenses?start_date=${start_date}&end_date=${end_date}`);
 
 export const getExpensesByCategory = (categoryId, start_date, end_date, page = 1) =>
     request(`/expenses/category/${categoryId}?start_date=${start_date}&end_date=${end_date}&page=${page}&limit=50`);
 
 export const createExpense = (payload) =>
-    request("/expenses", { method: "POST", body: JSON.stringify(payload) });
+  request("/expenses", { method: "POST", body: JSON.stringify(payload) });
 
 export const updateExpense = (id, payload) =>
     request(`/expenses/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 
 export const deleteExpense = (id) =>
-    request(`/expenses/${id}`, { method: "DELETE" });
+  request(`/expenses/${id}`, { method: "DELETE" });
 
 // ── Income ────────────────────────────────────────────────────
 export const getIncome = (start_date, end_date) =>
-    request(`/income?start_date=${start_date}&end_date=${end_date}`);
+  request(`/income?start_date=${start_date}&end_date=${end_date}`);
 
 export const createIncome = (payload) =>
-    request("/income", { method: "POST", body: JSON.stringify(payload) });
+  request("/income", { method: "POST", body: JSON.stringify(payload) });
 
 export const updateIncome = (id, payload) =>
-    request(`/income/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  request(`/income/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 
 export const deleteIncome = (id) =>
-    request(`/income/${id}`, { method: "DELETE" });
+  request(`/income/${id}`, { method: "DELETE" });
 
 // ── Budgets ───────────────────────────────────────────────────
 export const getBudgets = (start_date, end_date) =>
-    request(`/budgets?start_date=${start_date}&end_date=${end_date}`);
+  request(`/budgets?start_date=${start_date}&end_date=${end_date}`);
 
 export const createBudget = (payload) =>
-    request("/budgets", { method: "POST", body: JSON.stringify(payload) });
+  request("/budgets", { method: "POST", body: JSON.stringify(payload) });
 
 export const updateBudget = (id, payload) =>
-    request(`/budgets/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  request(`/budgets/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 
 export const deleteBudget = (id) =>
-    request(`/budgets/${id}`, { method: "DELETE" });
+  request(`/budgets/${id}`, { method: "DELETE" });
 
 // ── API Keys (org) ────────────────────────────────────────────
 export const listApiKeys = () => request("/org/api-keys");
@@ -255,7 +255,7 @@ export const updateApiKey = (id, body) =>
     request(`/org/api-keys/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const revokeApiKey = (id) =>
-    request(`/org/api-keys/${id}`, { method: "DELETE" });
+  request(`/org/api-keys/${id}`, { method: "DELETE" });
 
 // ── Dynamic QR Codes (org) ────────────────────────────────────
 export const listOrgQRCodes = () => request("/org/qr-codes");
@@ -267,7 +267,7 @@ export const updateOrgQRCode = (id, body) =>
     request(`/org/qr-codes/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const deleteOrgQRCode = (id) =>
-    request(`/org/qr-codes/${id}`, { method: "DELETE" });
+  request(`/org/qr-codes/${id}`, { method: "DELETE" });
 
 export const resolveQRCode = (qr_id) => request(`/qr-codes/${qr_id}`);
 
@@ -276,11 +276,11 @@ export const createPaymentSession = (body) =>
     request("/org/qr-codes/payments/create", { method: "POST", body: JSON.stringify(body) });
 
 export const getPaymentSessionStatus = (session_id) =>
-    request(`/org/qr-codes/payments/status/${session_id}`);
+  request(`/org/qr-codes/payments/status/${session_id}`);
 
 // ── POS Checkout ──────────────────────────────────────────────
 export const resolveCheckout = (session_id) =>
-    request(`/pos/checkout/${session_id}`);
+  request(`/pos/checkout/${session_id}`);
 
 export const payCheckout = (session_id, body = {}) =>
     request(`/pos/checkout/${session_id}/pay`, { method: "POST", body: JSON.stringify(body) });
@@ -291,6 +291,73 @@ export const chatWithBot = (body) =>
 
 // ── Kharcha Card ──────────────────────────────────────────────
 export const getMyCards = () => request("/cards/my-cards");
+
+export const requestCard = (body = {}) =>
+  request("/cards/request", { method: "POST", body: JSON.stringify(body) });
+
+export const blockMyCard = (body = {}) =>
+  request("/cards/my-card/block", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const updateCardLimits = (body) =>
+  request("/cards/my-card/limits", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
+// ── Admin — Verification ──────────────────────────────────────
+export const adminListVerifications = ({
+  status = "pending",
+  page = 1,
+  limit = 50,
+} = {}) => {
+  const q = new URLSearchParams({ status, page, limit });
+  return request(`/admin/verification/requests?${q.toString()}`);
+};
+
+export const adminGetVerification = (request_id) =>
+  request(`/admin/verification/requests/${request_id}`);
+
+export const adminReviewVerification = (request_id, body) =>
+  request(`/admin/verification/requests/${request_id}/review`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+// ── Admin — Gift Cards ────────────────────────────────────────
+export const adminListGiftCards = ({
+  is_active,
+  page = 1,
+  limit = 100,
+} = {}) => {
+  const q = new URLSearchParams({ page, limit });
+  if (is_active !== undefined) q.set("is_active", is_active);
+  return request(`/gift-cards?${q.toString()}`);
+};
+
+export const adminGenerateGiftCards = (body) =>
+  request("/gift-cards/generate", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const adminDeactivateGiftCard = (gift_card_id) =>
+  request(`/gift-cards/${gift_card_id}/deactivate`, { method: "PATCH" });
+
+// ── Admin — Card Requests ─────────────────────────────────────
+export const adminListCardRequests = (status = "") => {
+  const q = new URLSearchParams();
+  if (status) q.set("status", status);
+  return request(`/cards/admin/requests?${q.toString()}`);
+};
+
+export const adminActivateCard = (body) =>
+  request("/cards/admin/activate", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const issueVirtualCard = () =>
     request("/cards/virtual/issue", { method: "POST", body: JSON.stringify({}) });

@@ -1,11 +1,11 @@
 /* ── Page shell ─────────────────────────────────────────────── */
 .acct-page {
-    min-height: 100vh;
-    padding: 2.5rem 2rem;
-    display: flex;
-    justify-content: center;
-    background: var(--background);
-    transition: background 0.2s;
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+  display: flex;
+  justify-content: center;
+  background: var(--background);
+  transition: background 0.2s;
 }
 
 .acct-container {
@@ -19,11 +19,11 @@
 
 /* ── Page header ────────────────────────────────────────────── */
 .acct-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .acct-title {
@@ -34,82 +34,82 @@
 }
 
 .acct-theme-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.45rem 0.875rem;
-    border: 1.5px solid var(--border);
-    border-radius: 999px;
-    background: var(--card);
-    color: var(--text-sub);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-        background 0.15s,
-        border-color 0.15s,
-        color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.875rem;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-sub);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 .acct-theme-toggle:hover {
-    background: var(--shaded-background);
-    color: var(--text-color);
+  background: var(--shaded-background);
+  color: var(--text-color);
 }
 
 /* ── Skeletons ─────────────────────────────────────────────── */
 .acct-skeletons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .acct-skeleton {
-    background: linear-gradient(
-        90deg,
-        var(--skel-from) 25%,
-        var(--skel-to) 50%,
-        var(--skel-from) 75%
-    );
-    background-size: 200% 100%;
-    animation: acctSkel 1.4s ease-in-out infinite;
-    border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--skel-from) 25%,
+    var(--skel-to) 50%,
+    var(--skel-from) 75%
+  );
+  background-size: 200% 100%;
+  animation: acctSkel 1.4s ease-in-out infinite;
+  border-radius: 14px;
 }
 .acct-skeleton--profile {
-    height: 160px;
+  height: 160px;
 }
 .acct-skeleton--card {
-    height: 72px;
+  height: 72px;
 }
 
 @keyframes acctSkel {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ── Error ─────────────────────────────────────────────────── */
 .acct-error {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--error-bg);
-    border: 1px solid var(--error-border);
-    border-radius: 10px;
-    padding: 0.875rem 1rem;
-    font-size: 0.85rem;
-    color: var(--error-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  font-size: 0.85rem;
+  color: var(--error-text);
 }
 
 /* ── Cards ─────────────────────────────────────────────────── */
 .acct-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    transition:
-        background 0.2s,
-        border-color 0.2s;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 /* ── Profile card ──────────────────────────────────────────── */
@@ -127,12 +127,12 @@
 }
 
 .acct-avatar-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .acct-avatar-wrap {
@@ -160,79 +160,79 @@
 }
 
 .acct-avatar--img {
-    border: 2px solid var(--border);
+  border: 2px solid var(--border);
 }
 
 .acct-avatar-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    opacity: 0;
-    transition: opacity 0.15s;
-    border-radius: 50%;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 50%;
 }
 .acct-avatar-wrap:hover .acct-avatar-overlay {
-    opacity: 1;
+  opacity: 1;
 }
 
 .acct-avatar-uploading {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .acct-avatar-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 .acct-avatar-btn {
-    background: none;
-    border: none;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-sub);
-    cursor: pointer;
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
-    transition: background 0.12s;
-    white-space: nowrap;
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  transition: background 0.12s;
+  white-space: nowrap;
 }
 .acct-avatar-btn:hover {
-    background: var(--shaded-background);
+  background: var(--shaded-background);
 }
 .acct-avatar-btn--remove {
-    color: var(--error-text);
+  color: var(--error-text);
 }
 .acct-avatar-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Profile info */
 .acct-profile-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .acct-profile-name-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .acct-profile-name {
@@ -243,67 +243,95 @@
 }
 
 .acct-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 0.22rem 0.55rem;
-    border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
 }
 .acct-badge--verified {
-    background: var(--success-bg);
-    color: var(--success-text);
-    border: 1px solid var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
 }
 .acct-badge--unverified {
-    background: var(--warning-bg);
-    color: var(--warning-text);
-    border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+.acct-badge--admin {
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-text);
+  border: 1px solid var(--icon-purple-text);
+  opacity: 0.75;
 }
 
 .acct-profile-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .acct-meta-row {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-size: 0.82rem;
-    color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-sub);
 }
 .acct-meta-row svg {
-    flex-shrink: 0;
-    opacity: 0.65;
+  flex-shrink: 0;
+  opacity: 0.65;
 }
 
 /* Wallet strip */
 .acct-wallet-strip {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: var(--shaded-background);
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--shaded-background);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
 }
 .acct-wallet-strip svg {
-    color: var(--primary);
-    flex-shrink: 0;
+  color: var(--primary);
+  flex-shrink: 0;
 }
 .acct-wallet-label {
-    font-size: 0.8rem;
-    color: var(--text-sub);
-    flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  flex: 1;
 }
 .acct-wallet-val {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+/* Admin dashboard button */
+.acct-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--icon-purple-text);
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+}
+.acct-admin-btn:hover {
+  opacity: 0.85;
 }
 
 /* ── KYC card ──────────────────────────────────────────────── */
@@ -316,22 +344,22 @@
 }
 
 .acct-kyc-icon {
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
-    background: var(--primary);
-    color: #fff;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .acct-kyc-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .acct-kyc-title {
@@ -342,60 +370,60 @@
 }
 
 .acct-kyc-desc {
-    font-size: 0.83rem;
-    color: var(--text-sub);
-    margin: 0;
-    line-height: 1.5;
+  font-size: 0.83rem;
+  color: var(--text-sub);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .acct-kyc-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 /* ── Pending KYC card ──────────────────────────────────────── */
 .acct-card--pending {
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    background: var(--warning-bg);
-    border-color: var(--warning-border);
-    color: var(--warning-text);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
 }
 .acct-card--pending svg {
-    flex-shrink: 0;
-    margin-top: 0.1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
 }
 .acct-card--pending strong {
-    display: block;
-    font-size: 0.88rem;
-    margin-bottom: 0.15rem;
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 0.15rem;
 }
 .acct-card--pending p {
-    font-size: 0.8rem;
-    margin: 0;
-    opacity: 0.8;
+  font-size: 0.8rem;
+  margin: 0;
+  opacity: 0.8;
 }
 
 /* ── Section title ─────────────────────────────────────────── */
 .acct-section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-sub);
-    padding: 0.5rem 0 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  padding: 0.5rem 0 0.6rem;
 }
 .acct-section-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 /* ── Action cards ──────────────────────────────────────────── */
@@ -404,177 +432,177 @@
 }
 
 .acct-action-header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    padding: 1rem 1.25rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.12s;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
 }
 .acct-action-header:hover {
-    background: var(--shaded-background);
+  background: var(--shaded-background);
 }
 .acct-action-header--static {
-    cursor: default;
+  cursor: default;
 }
 .acct-action-header--static:hover {
-    background: none;
+  background: none;
 }
 
 .acct-action-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .acct-action-icon--blue {
-    background: var(--icon-blue-bg);
-    color: var(--icon-blue-text);
+  background: var(--icon-blue-bg);
+  color: var(--icon-blue-text);
 }
 .acct-action-icon--amber {
-    background: var(--icon-amber-bg);
-    color: var(--icon-amber-text);
+  background: var(--icon-amber-bg);
+  color: var(--icon-amber-text);
 }
 .acct-action-icon--purple {
-    background: var(--icon-purple-bg);
-    color: var(--icon-purple-text);
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-text);
 }
 
 .acct-action-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 .acct-action-title {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--text-color);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-color);
 }
 .acct-action-sub {
-    font-size: 0.76rem;
-    color: var(--text-muted);
+  font-size: 0.76rem;
+  color: var(--text-muted);
 }
 
 .acct-chevron {
-    color: var(--text-muted);
-    transition: transform 0.2s;
-    flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
 }
 .acct-chevron--open {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
 }
 
 .acct-action-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0 1.25rem 1.25rem;
-    border-top: 1px solid var(--border-subtle);
-    margin-top: 0;
-    padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 0;
+  padding-top: 1rem;
 }
 
 .acct-action-hint {
-    font-size: 0.83rem;
-    color: var(--text-sub);
-    margin: 0;
-    line-height: 1.5;
+  font-size: 0.83rem;
+  color: var(--text-sub);
+  margin: 0;
+  line-height: 1.5;
 }
 .acct-action-hint strong {
-    color: var(--text-color);
+  color: var(--text-color);
 }
 
 .acct-action-btns {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ── Fields ────────────────────────────────────────────────── */
 .acct-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .acct-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color);
 }
 
 .acct-input-wrap {
-    position: relative;
+  position: relative;
 }
 
 .acct-input {
-    width: 100%;
-    padding: 0.6rem 0.875rem;
-    background: var(--input-bg);
-    border: 1.5px solid var(--border);
-    border-radius: 9px;
-    font-size: 0.88rem;
-    color: var(--text-color);
-    outline: none;
-    transition:
-        border-color 0.15s,
-        background 0.15s;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 0.6rem 0.875rem;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  font-size: 0.88rem;
+  color: var(--text-color);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  box-sizing: border-box;
 }
 .acct-input:focus {
-    border-color: var(--primary);
-    background: var(--card);
+  border-color: var(--primary);
+  background: var(--card);
 }
 .acct-input--pin {
-    letter-spacing: 0.25em;
+  letter-spacing: 0.25em;
 }
 
 .acct-toggle-eye {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-muted);
-    padding: 0.2rem;
-    line-height: 1;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.2rem;
+  line-height: 1;
 }
 .acct-toggle-eye:hover {
-    color: var(--text-color);
+  color: var(--text-color);
 }
 
 /* ── Buttons ────────────────────────────────────────────────── */
 .acct-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.6rem 1.25rem;
-    border-radius: 9px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition:
-        background 0.15s,
-        opacity 0.15s,
-        transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition:
+    background 0.15s,
+    opacity 0.15s,
+    transform 0.1s;
 }
 .acct-btn:active:not(:disabled) {
-    transform: scale(0.97);
+  transform: scale(0.97);
 }
 .acct-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .acct-btn--primary {
@@ -583,6 +611,9 @@
 }
 .acct-btn--primary:hover:not(:disabled) {
     background: var(--primary-dark);
+}
+.acct-btn--primary:hover:not(:disabled) {
+  background: var(--primary-dark);
 }
 
 .acct-btn--ghost {
@@ -593,238 +624,153 @@
 .acct-btn--ghost:hover:not(:disabled) {
     background: var(--border);
 }
+.acct-btn--ghost:hover:not(:disabled) {
+  background: var(--border);
+}
 
 /* ── Theme switch toggle ────────────────────────────────────── */
 .acct-theme-switch {
-    width: 44px;
-    height: 24px;
-    background: var(--border);
-    border: none;
-    border-radius: 999px;
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-    transition: background 0.2s;
+  width: 44px;
+  height: 24px;
+  background: var(--border);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s;
 }
 [data-theme="dark"] .acct-theme-switch {
-    background: var(--background);
+  background: var(--background);
 }
 
 .acct-theme-switch__thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s;
-    display: block;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 .acct-theme-switch__thumb--on {
-    transform: translateX(20px);
+  transform: translateX(20px);
 }
 
 /* ── Spinner ────────────────────────────────────────────────── */
 .acct-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: acctSpin 0.7s linear infinite;
-    display: inline-block;
-    flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: acctSpin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 @keyframes acctSpin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Logout button ──────────────────────────────────────────── */
 .acct-logout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.875rem;
-    border: 1.5px solid var(--error-border);
-    border-radius: 12px;
-    background: var(--error-bg);
-    color: var(--error-text);
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 0.5rem;
-    transition:
-        background 0.15s,
-        border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.875rem;
+  border: 1.5px solid var(--error-border);
+  border-radius: 12px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 [data-theme="dark"] .acct-logout:hover {
-    background: #3a1515;
+  background: #3a1515;
 }
 
 /* ── Toast ─────────────────────────────────────────────────── */
 .acct-toast {
-    position: fixed;
-    bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 9999;
-    animation: toastIn 0.25s ease-out;
-    white-space: nowrap;
-    max-width: calc(100vw - 2rem);
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  animation: toastIn 0.25s ease-out;
+  white-space: nowrap;
+  max-width: calc(100vw - 2rem);
 }
 
 @keyframes toastIn {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .acct-toast--success {
-    background: var(--primary);
-    color: #fff;
+  background: var(--primary);
+  color: #fff;
 }
 .acct-toast--error {
-    background: var(--error-text);
-    color: #fff;
+  background: var(--error-text);
+  color: #fff;
 }
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 540px) {
-    .acct-page {
-        padding: 1.5rem 1rem;
-    }
-    .acct-profile-top {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .acct-profile-meta {
-        align-items: center;
-    }
-    .acct-profile-name-row {
-        justify-content: center;
-    }
-    .acct-card--kyc {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .acct-kyc-icon {
-        width: 44px;
-        height: 44px;
-    }
-    .acct-action-btns {
-        flex-direction: column;
-    }
-    .acct-btn {
-        justify-content: center;
-    }
-}
-/* ── MPIN Setup card additions ────────────────────────────────── */
-.acct-card--mpin-setup {
-    border-color: rgba(251, 191, 36, 0.35);
-    background: rgba(251, 191, 36, 0.03);
-}
-
-.acct-action-icon--amber {
-    background: rgba(251, 191, 36, 0.15);
-    color: #fbbf24;
-}
-
-.acct-mpin-badge {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 8px;
-    padding: 2px 7px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-    background: rgba(251, 191, 36, 0.15);
-    color: #fbbf24;
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    vertical-align: middle;
-    letter-spacing: 0.3px;
-}
-
-.acct-mpin-info-box {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: rgba(108, 99, 255, 0.07);
-    border: 1px solid rgba(108, 99, 255, 0.2);
-    color: var(--text-secondary, #8b8fa8);
-    font-size: 11px;
-    line-height: 1.5;
-    margin-bottom: 14px;
-}
-
-.acct-mpin-info-box svg {
-    flex-shrink: 0;
-    margin-top: 1px;
-    color: var(--accent, #6c63ff);
-}
-
-.acct-field {
-    display: flex;
+  .acct-page {
+    padding: 1.5rem 1rem;
+  }
+  .acct-profile-top {
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 14px;
-}
-
-.acct-field-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-    color: var(--text-secondary, #8b8fa8);
-    font-weight: 600;
-}
-
-.acct-input-wrap {
-    position: relative;
-    display: flex;
     align-items: center;
-}
-
-.acct-input-wrap .acct-input {
-    padding-right: 38px;
-}
-
-.acct-eye-btn {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    color: var(--text-secondary, #8b8fa8);
-    cursor: pointer;
-    display: flex;
+    text-align: center;
+  }
+  .acct-profile-meta {
     align-items: center;
-    padding: 2px;
-    border-radius: 4px;
-    transition: color 0.12s;
-}
-
-.acct-eye-btn:hover {
-    color: var(--text, #e8eaf6);
+  }
+  .acct-profile-name-row {
+    justify-content: center;
+  }
+  .acct-card--kyc {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .acct-kyc-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .acct-action-btns {
+    flex-direction: column;
+  }
+  .acct-btn {
+    justify-content: center;
+  }
 }
