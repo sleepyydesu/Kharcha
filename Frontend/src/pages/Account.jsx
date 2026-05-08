@@ -405,3 +405,322 @@ function ChangeMpinCard({ toast }) {
         </div>
     );
 }
+
+// ── Main Account Page ────────────────────────────────────────
+function Account() {
+    const navigate = useNavigate();
+    const fileRef = useRef(null);
+
+    const { notify } = useNotifications();
+
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const [toastMsg, setToastMsg] = useState("");
+    const [toastType, setToastType] = useState("success");
+
+    const [hasMpin, setHasMpin] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const toast = (msg, type = "success") => {
+        setToastMsg(msg);
+        setToastType(type);
+
+        notify?.({
+            type,
+            message: msg,
+        });
+    };
+
+    // ── Load profile ─────────────────────────────────────────
+    useEffect(() => {
+        let mounted = true;
+
+        async function load() {
+            try {
+                const [p, mpin] = await Promise.all([
+                    getProfile(),
+                    getMpinStatus(),
+                ]);
+
+                if (!mounted) return;
+
+                setProfile(p);
+                setHasMpin(!!mpin?.has_mpin);
+            } catch (err) {
+                toast(err.message || "Failed to load account.", "error");
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        load();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    // ── Upload avatar ───────────────────────────────────────
+    const handleUpload = async (e) => {
+        const file = e.target.files?.[0];
+
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        setUploading(true);
+
+        try {
+            const updated = await uploadProfilePicture(formData);
+
+            setProfile((prev) => ({
+                ...prev,
+                profile_picture:
+                    updated?.profile_picture ||
+                    updated?.url ||
+                    prev?.profile_picture,
+            }));
+
+            toast("Profile picture updated.", "success");
+        } catch (err) {
+            toast(
+                err.message || "Failed to upload profile picture.",
+                "error",
+            );
+        } finally {
+            setUploading(false);
+
+            if (fileRef.current) {
+                fileRef.current.value = "";
+            }
+        }
+    };
+
+    // ── Remove avatar ───────────────────────────────────────
+    const handleDeletePhoto = async () => {
+        try {
+            await deleteProfilePicture();
+
+            setProfile((prev) => ({
+                ...prev,
+                profile_picture: null,
+            }));
+
+            toast("Profile picture removed.", "success");
+        } catch (err) {
+            toast(
+                err.message || "Failed to remove picture.",
+                "error",
+            );
+        }
+    };
+
+    // ── Logout ──────────────────────────────────────────────
+    const handleLogout = async () => {
+        try {
+            await signOut();
+        } catch {
+            // ignore
+        } finally {
+            localStorage.removeItem("kharcha_session");
+            window.location.reload();
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="acct-loading">
+                <div className="acct-spinner acct-spinner--lg" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="acct-page">
+            <Toast
+                msg={toastMsg}
+                type={toastType}
+                onDone={() => setToastMsg("")}
+            />
+
+            {/* ── Header ───────────────────────────────────── */}
+            <div className="acct-hero">
+                <div className="acct-hero-main">
+                    <Avatar
+                        name={profile?.full_name}
+                        src={profile?.profile_picture}
+                        size={88}
+                        onClick={() => fileRef.current?.click()}
+                    />
+
+                    <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleUpload}
+                    />
+
+                    <div className="acct-hero-info">
+                        <h1>{profile?.full_name || "User"}</h1>
+
+                        <p>{profile?.email}</p>
+
+                        <div className="acct-badges">
+                            {profile?.kyc_status && (
+                                <span className="acct-badge">
+                                    KYC: {profile.kyc_status}
+                                </span>
+                            )}
+
+                            {hasMpin && (
+                                <span className="acct-badge acct-badge--green">
+                                    MPIN Enabled
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="acct-hero-actions">
+                    <button
+                        className="acct-btn acct-btn--ghost"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploading}
+                    >
+                        {uploading ? "Uploading…" : "Change Photo"}
+                    </button>
+
+                    {profile?.profile_picture && (
+                        <button
+                            className="acct-btn acct-btn--danger"
+                            onClick={handleDeletePhoto}
+                        >
+                            Remove
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* ── Account Info ─────────────────────────────── */}
+            <section className="acct-section">
+                <SectionTitle
+                    icon={
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        >
+                            <path d="M20 21V19A4 4 0 0 0 16 15H8A4 4 0 0 0 4 19V21" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                    }
+                >
+                    Account Information
+                </SectionTitle>
+
+                <div className="acct-grid">
+                    <div className="acct-info-card">
+                        <span className="acct-info-label">
+                            Full Name
+                        </span>
+
+                        <span className="acct-info-value">
+                            {profile?.full_name || "—"}
+                        </span>
+                    </div>
+
+                    <div className="acct-info-card">
+                        <span className="acct-info-label">
+                            Email
+                        </span>
+
+                        <span className="acct-info-value">
+                            {profile?.email || "—"}
+                        </span>
+                    </div>
+
+                    <div className="acct-info-card">
+                        <span className="acct-info-label">
+                            Phone
+                        </span>
+
+                        <span className="acct-info-value">
+                            {profile?.phone || "—"}
+                        </span>
+                    </div>
+
+                    <div className="acct-info-card">
+                        <span className="acct-info-label">
+                            Joined
+                        </span>
+
+                        <span className="acct-info-value">
+                            {profile?.created_at
+                                ? fmtDate(profile.created_at)
+                                : "—"}
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Security ─────────────────────────────────── */}
+            <section className="acct-section">
+                <SectionTitle
+                    icon={
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        >
+                            <rect
+                                x="3"
+                                y="11"
+                                width="18"
+                                height="11"
+                                rx="2"
+                                ry="2"
+                            />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    }
+                >
+                    Security
+                </SectionTitle>
+
+                <div className="acct-stack">
+                    {!hasMpin ? (
+                        <SetupMpinCard
+                            toast={toast}
+                            onSuccess={() => setHasMpin(true)}
+                        />
+                    ) : (
+                        <ChangeMpinCard toast={toast} />
+                    )}
+                </div>
+            </section>
+
+            {/* ── Logout ───────────────────────────────────── */}
+            <section className="acct-section">
+                <button
+                    className="acct-btn acct-btn--danger acct-btn--logout"
+                    onClick={handleLogout}
+                >
+                    Sign Out
+                </button>
+            </section>
+        </div>
+    );
+}
+
+export default Account;
