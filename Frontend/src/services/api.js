@@ -285,6 +285,10 @@ export const resolveCheckout = (session_id) =>
 export const payCheckout = (session_id, body = {}) =>
     request(`/pos/checkout/${session_id}/pay`, { method: "POST", body: JSON.stringify(body) });
 
+// ── AI Assistant ──────────────────────────────────────────────
+export const chatWithBot = (body) =>
+    request("/ai/chat", { method: "POST", body: JSON.stringify(body) });
+
 // ── Kharcha Card ──────────────────────────────────────────────
 export const getMyCards = () => request("/cards/my-cards");
 

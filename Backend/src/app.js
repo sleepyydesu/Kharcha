@@ -90,6 +90,10 @@ app.use("/api/budgets",      budgetRoutes);
 app.use("/api/payment",      paymentRoutes);
 app.use("/api/pay-portal",   payPortalRoutes);
 
+// ── AI Assistant ──────────────────────────────────────────────
+const aiRoutes = require("./routes/aiRoutes");
+app.use("/api/ai", aiRoutes);
+
 // ── Default ──────────────────────────────────────────────────
 app.get("/", (req, res) => res.redirect("/api/docs"));
 
