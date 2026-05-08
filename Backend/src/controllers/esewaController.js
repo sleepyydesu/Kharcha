@@ -1,10 +1,11 @@
 const { initiatePayment, verifyPayment } = require("../services/esewaService");
+const supabase = require("../services/supabaseClient");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const initiateEsewaPayment = async (req, res, next) => {
   try {
-    const { account_id } = req.account; // from JWT middleware
+    const { account_id } = req.account;
     const { amount } = req.body;
 
     if (!amount) {
@@ -29,6 +30,16 @@ const initiateEsewaPayment = async (req, res, next) => {
     }
 
     const formParams = initiatePayment(parsedAmount, account_id);
+
+    // ── Save pending record so verifyPayment can look up account_id ──
+    const { error: dbError } = await supabase.from("esewa_payments").insert({
+      account_id,
+      transaction_uuid: formParams.transaction_uuid,
+      amount: parsedAmount,
+      status: "pending",
+    });
+
+    if (dbError) throw new Error(`DB error saving payment: ${dbError.message}`);
 
     return res.status(200).json({
       success: true,
