@@ -299,14 +299,17 @@ const transfer = async (req, res) => {
 
         // Fire webhook + mark session complete if this came from a dynamic QR scan
         if (qr_id) {
-            // If qr_id matches a payment_sessions record, mark it as paid.
-            // This is what allows the merchant's screen to auto-detect payment.
-            // We guard with .eq("status", "pending") so a double-tap is a no-op.
+            // Mark ephemeral session QRs (created via createPaymentSession) as
+            // paid by setting is_active=false.  We only do this for session QRs
+            // (name = "Payment Session"); persistent org QR codes must stay active
+            // so they can accept multiple payments.
+            // Guard with .eq("is_active", true) so a double-tap is a no-op.
             await supabase
-                .from("payment_sessions")
-                .update({ status: "success" })
-                .eq("session_id", qr_id)
-                .eq("status", "pending");
+                .from("dynamic_qr_codes")
+                .update({ is_active: false })
+                .eq("qr_id", qr_id)
+                .eq("name", "Payment Session")
+                .eq("is_active", true);
 
             // Dispatch webhook (non-blocking — external URL can be slow)
             dispatchQRWebhook(qr_id, {

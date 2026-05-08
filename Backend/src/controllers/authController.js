@@ -6,11 +6,35 @@ const {
     generateSignupToken,
     verifySignupToken,
     generateAuthToken,
+    generateRefreshToken,
+    hashToken,
 } = require("../utils/jwtUtils");
+const {
+    storeRefreshToken,
+    findRefreshToken,
+    rotateRefreshToken,
+    revokeRefreshToken,
+    revokeAllUserTokens,
+} = require("../services/tokenService");
+const { setAuthCookies, clearAuthCookies, REFRESH_COOKIE } = require("../utils/cookieUtils");
 
 const SALT_ROUNDS = 10;
 const OTP_EXPIRY_MINUTES = 15;
 const VALID_ACCOUNT_TYPES = ["user", "organization", "admin"];
+
+// ─────────────────────────────────────────────────────────────
+//  Internal helper — issue access + refresh cookies and persist
+//  the refresh token hash to the DB.
+//  Call this at the end of signin and completeSignup.
+// ─────────────────────────────────────────────────────────────
+async function issueTokens(res, { account_id, account_type, email }) {
+    const accessToken  = generateAuthToken({ account_id, account_type, email });
+    const refreshToken = generateRefreshToken();
+    const tokenHash    = hashToken(refreshToken);
+
+    await storeRefreshToken(account_id, tokenHash);
+    setAuthCookies(res, accessToken, refreshToken);
+}
 
 // ─────────────────────────────────────────────────────────────
 //  SIGNUP — Step 1: Check email & phone availability
@@ -37,7 +61,6 @@ const checkAvailability = async (req, res) => {
 
         const normalizedEmail = email.toLowerCase().trim();
 
-        // Check email
         const { data: existingEmail } = await supabase
             .from("accounts")
             .select("account_id")
@@ -52,7 +75,6 @@ const checkAvailability = async (req, res) => {
             });
         }
 
-        // Check phone if provided
         if (phone_number) {
             const { data: existingPhone } = await supabase
                 .from("accounts")
@@ -64,8 +86,7 @@ const checkAvailability = async (req, res) => {
                 return res.status(409).json({
                     success: false,
                     field: "phone_number",
-                    message:
-                        "An account with this phone number already exists.",
+                    message: "An account with this phone number already exists.",
                 });
             }
         }
@@ -76,13 +97,7 @@ const checkAvailability = async (req, res) => {
         });
     } catch (err) {
         console.error("[checkAvailability]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
 
@@ -96,18 +111,13 @@ const sendOTP = async (req, res) => {
         const { email } = req.body;
 
         if (!email) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Email is required." });
+            return res.status(400).json({ success: false, message: "Email is required." });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
         const otp = generateOTP();
-        const expiresAt = new Date(
-            Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
-        ).toISOString();
+        const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-        // Invalidate any previous unused signup OTPs for this email
         await supabase
             .from("otp_verifications")
             .update({ is_used: true })
@@ -115,19 +125,12 @@ const sendOTP = async (req, res) => {
             .eq("otp_type", "signup")
             .eq("is_used", false);
 
-        // Insert new OTP
         const { error: insertError } = await supabase
             .from("otp_verifications")
-            .insert({
-                email: normalizedEmail,
-                otp_code: otp,
-                otp_type: "signup",
-                expires_at: expiresAt,
-            });
+            .insert({ email: normalizedEmail, otp_code: otp, otp_type: "signup", expires_at: expiresAt });
 
         if (insertError) throw insertError;
 
-        // Send email (logs to console in dev if SMTP not configured)
         await sendOTPEmail(normalizedEmail, otp);
 
         return res.status(200).json({
@@ -136,13 +139,7 @@ const sendOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[sendOTP]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Failed to send OTP.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Failed to send OTP.", error: err.message });
     }
 };
 
@@ -157,12 +154,7 @@ const verifyOTP = async (req, res) => {
         const { email, otp } = req.body;
 
         if (!email || !otp) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Email and OTP are required.",
-                });
+            return res.status(400).json({ success: false, message: "Email and OTP are required." });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -181,29 +173,18 @@ const verifyOTP = async (req, res) => {
         if (error) throw error;
 
         if (!data) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Invalid verification code.",
-                });
+            return res.status(400).json({ success: false, message: "Invalid verification code." });
         }
 
         if (new Date(data.expires_at) < new Date()) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Verification code has expired. Please request a new one.",
+                message: "Verification code has expired. Please request a new one.",
             });
         }
 
-        // Mark OTP as used
-        await supabase
-            .from("otp_verifications")
-            .update({ is_used: true })
-            .eq("id", data.id);
+        await supabase.from("otp_verifications").update({ is_used: true }).eq("id", data.id);
 
-        // Issue short-lived signup token (15 min) to authorize the /complete step
         const signupToken = generateSignupToken({ email: normalizedEmail });
 
         return res.status(200).json({
@@ -213,92 +194,56 @@ const verifyOTP = async (req, res) => {
         });
     } catch (err) {
         console.error("[verifyOTP]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
 
 // ─────────────────────────────────────────────────────────────
 //  SIGNUP — Step 4: Complete signup
 //  POST /api/auth/signup/complete
-//  Body: {
-//    signup_token,
-//    account_type,
-//    password,
-//    phone_number?,          -- optional
-//    full_name,              -- required for: user, admin
-//    organization_name,      -- required for: organization
-//  }
-//  NOTE: MPIN is set later via the profile/settings page.
+//  Body: { signup_token, account_type, password, phone_number?,
+//          full_name | organization_name }
+//  Sets httpOnly cookies on success — no token in response body.
 // ─────────────────────────────────────────────────────────────
 const completeSignup = async (req, res) => {
     try {
-        const {
-            signup_token,
-            account_type,
-            password,
-            phone_number,
-            full_name,
-            organization_name,
-        } = req.body;
+        const { signup_token, account_type, password, phone_number, full_name, organization_name } =
+            req.body;
 
-        // ── Basic validation ─────────────────────────────────
         if (!signup_token || !account_type || !password) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "signup_token, account_type, and password are required.",
+                message: "signup_token, account_type, and password are required.",
             });
         }
 
         if (!VALID_ACCOUNT_TYPES.includes(account_type)) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Invalid account type." });
+            return res.status(400).json({ success: false, message: "Invalid account type." });
         }
 
         if (account_type === "user" && !full_name) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Full name is required." });
+            return res.status(400).json({ success: false, message: "Full name is required." });
         }
 
         if (account_type === "organization" && !organization_name) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Organization name is required.",
-                });
+            return res.status(400).json({ success: false, message: "Organization name is required." });
         }
 
         if (account_type === "admin" && !full_name) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Full name is required." });
+            return res.status(400).json({ success: false, message: "Full name is required." });
         }
 
-        // ── Validate signup_token ─────────────────────────────
         const decoded = verifySignupToken(signup_token);
         if (!decoded) {
             return res.status(401).json({
                 success: false,
-                message:
-                    "Signup session has expired or is invalid. Please start over.",
+                message: "Signup session has expired or is invalid. Please start over.",
             });
         }
 
         const email = decoded.email;
-
-        // ── Hash password ─────────────────────────────────────
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-        // ── Insert into accounts ──────────────────────────────
         const { data: accountData, error: accountError } = await supabase
             .from("accounts")
             .insert({
@@ -306,9 +251,7 @@ const completeSignup = async (req, res) => {
                 email,
                 phone_number: phone_number ? phone_number.trim() : null,
                 password_hash,
-                mpin_hash: null, // set via profile later
-                // Users must submit a KYC request to get verified.
-                // Organisations and admins are auto-verified on creation.
+                mpin_hash: null,
                 is_verified: account_type !== "user",
             })
             .select("account_id, account_type, email")
@@ -318,8 +261,7 @@ const completeSignup = async (req, res) => {
             if (accountError.code === "23505") {
                 return res.status(409).json({
                     success: false,
-                    message:
-                        "An account with this email or phone number already exists.",
+                    message: "An account with this email or phone number already exists.",
                 });
             }
             throw accountError;
@@ -327,53 +269,32 @@ const completeSignup = async (req, res) => {
 
         const { account_id } = accountData;
 
-        // ── Insert into type-specific table ───────────────────
         if (account_type === "user") {
-            const { error } = await supabase.from("users").insert({
-                account_id,
-                full_name: full_name.trim(),
-            });
+            const { error } = await supabase.from("users").insert({ account_id, full_name: full_name.trim() });
             if (error) throw error;
         } else if (account_type === "organization") {
-            const { error } = await supabase.from("organizations").insert({
-                account_id,
-                organization_name: organization_name.trim(),
-            });
+            const { error } = await supabase.from("organizations").insert({ account_id, organization_name: organization_name.trim() });
             if (error) throw error;
         } else if (account_type === "admin") {
-            const { error } = await supabase.from("admins").insert({
-                account_id,
-                full_name: full_name.trim(),
-            });
+            const { error } = await supabase.from("admins").insert({ account_id, full_name: full_name.trim() });
             if (error) throw error;
         }
 
-        // ── Create wallet for the new account ────────────────
-        const { error: walletError } = await supabase.from("wallets").insert({
-            account_id,
-            balance: 0.0,
-            currency: "NPR",
-        });
+        const { error: walletError } = await supabase.from("wallets").insert({ account_id, balance: 0.0, currency: "NPR" });
         if (walletError) throw walletError;
 
-        // ── Issue auth token ──────────────────────────────────
-        const token = generateAuthToken({ account_id, account_type, email });
+        // ── Issue tokens as httpOnly cookies ──────────────────
+        await issueTokens(res, { account_id, account_type, email });
 
         return res.status(201).json({
             success: true,
             message: "Account created successfully.",
-            token,
+            // token intentionally omitted — it lives in the cookie
             account: { account_id, account_type, email },
         });
     } catch (err) {
         console.error("[completeSignup]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
 
@@ -381,93 +302,61 @@ const completeSignup = async (req, res) => {
 //  SIGNIN
 //  POST /api/auth/signin
 //  Body: { identifier, credential }
-//
-//  identifier  → email address  OR  phone number
-//  credential  → password  OR  6-digit MPIN
-//
-//  Detection logic:
-//    identifier: contains "@"  → treat as email, else phone number
-//    credential: exactly 6 digits (numeric) → try as MPIN first,
-//                fall back to password if MPIN not set up yet
+//  Sets httpOnly cookies on success — no token in response body.
 // ─────────────────────────────────────────────────────────────
 const signin = async (req, res) => {
     try {
         const { identifier, credential } = req.body;
 
         if (!identifier || !credential) {
-            return res.status(400).json({
-                success: false,
-                message: "identifier and credential are required.",
-            });
+            return res.status(400).json({ success: false, message: "identifier and credential are required." });
         }
 
         const isEmail = identifier.includes("@");
         const lookupField = isEmail ? "email" : "phone_number";
-        const lookupValue = isEmail
-            ? identifier.toLowerCase().trim()
-            : identifier.trim();
+        const lookupValue = isEmail ? identifier.toLowerCase().trim() : identifier.trim();
 
-        // ── Fetch account by email or phone ───────────────────
         const { data: account, error } = await supabase
             .from("accounts")
-            .select(
-                "account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active, is_verified",
-            )
+            .select("account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active, is_verified")
             .eq(lookupField, lookupValue)
             .maybeSingle();
 
         if (error) throw error;
 
         if (!account) {
-            return res
-                .status(401)
-                .json({ success: false, message: "Invalid credentials." });
+            return res.status(401).json({ success: false, message: "Invalid credentials." });
         }
 
         if (!account.is_active) {
             return res.status(403).json({
                 success: false,
-                message:
-                    "Your account has been deactivated. Please contact support.",
+                message: "Your account has been deactivated. Please contact support.",
             });
         }
 
-        // ── Detect credential type ────────────────────────────
-        // A credential is treated as MPIN if it is exactly 6 numeric digits.
-        // Otherwise it is treated as a password.
         const credentialStr = credential.toString().trim();
         const looksLikeMpin = /^\d{6}$/.test(credentialStr);
 
         let authenticated = false;
 
         if (looksLikeMpin && account.mpin_hash) {
-            // Try MPIN
-            authenticated = await bcrypt.compare(
-                credentialStr,
-                account.mpin_hash,
-            );
+            authenticated = await bcrypt.compare(credentialStr, account.mpin_hash);
         }
 
         if (!authenticated) {
-            // Try password (covers: non-MPIN credential, MPIN not set, or MPIN mismatch)
             if (!account.password_hash) {
-                return res
-                    .status(401)
-                    .json({ success: false, message: "Invalid credentials." });
+                return res.status(401).json({ success: false, message: "Invalid credentials." });
             }
-            authenticated = await bcrypt.compare(
-                credentialStr,
-                account.password_hash,
-            );
+            authenticated = await bcrypt.compare(credentialStr, account.password_hash);
         }
 
         if (!authenticated) {
-            return res
-                .status(401)
-                .json({ success: false, message: "Invalid credentials." });
+            return res.status(401).json({ success: false, message: "Invalid credentials." });
         }
 
-        const token = generateAuthToken({
+        // ── Issue tokens as httpOnly cookies ──────────────────
+        await issueTokens(res, {
             account_id: account.account_id,
             account_type: account.account_type,
             email: account.email,
@@ -476,52 +365,138 @@ const signin = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Signed in successfully.",
-            token,
+            // token intentionally omitted — it lives in the cookie
             account: {
-                account_id: account.account_id,
+                account_id:   account.account_id,
                 account_type: account.account_type,
-                email: account.email,
-                mpin_set: !!account.mpin_hash,
-                is_verified: account.is_verified,
+                email:        account.email,
+                mpin_set:     !!account.mpin_hash,
+                is_verified:  account.is_verified,
             },
         });
     } catch (err) {
         console.error("[signin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
+
 // ─────────────────────────────────────────────────────────────
-//  MPIN — Setup (first time)
-//  POST /api/auth/mpin/setup
-//  Headers: Authorization: Bearer <token>
-//  Body: { password, mpin }
+//  REFRESH
+//  POST /api/auth/refresh
+//  No body — reads the kharcha_refresh httpOnly cookie.
 //
-//  Requires the account password to confirm identity before
-//  setting MPIN for the first time. Rejected if MPIN already set.
+//  Behaviour:
+//    • Valid + recently active → new access cookie + rotated refresh cookie
+//    • Expired / inactive / revoked → clears cookies + 401 (force re-login)
+//
+//  Token rotation: every successful refresh invalidates the old refresh
+//  token and issues a brand-new one. If the same old token is presented
+//  again it will be rejected (detects stolen tokens).
+// ─────────────────────────────────────────────────────────────
+const refresh = async (req, res) => {
+    try {
+        const rawRefreshToken = req.cookies?.[REFRESH_COOKIE];
+
+        if (!rawRefreshToken) {
+            return res.status(401).json({ success: false, message: "No refresh token. Please sign in." });
+        }
+
+        const tokenHash = hashToken(rawRefreshToken);
+        const record    = await findRefreshToken(tokenHash);
+
+        if (!record) {
+            // Token is expired, revoked, or the session has been idle too long.
+            clearAuthCookies(res);
+            return res.status(401).json({
+                success: false,
+                message: "Session expired due to inactivity. Please sign in again.",
+            });
+        }
+
+        // Fetch current account info (in case account_type changed, account disabled, etc.)
+        const { data: account, error } = await supabase
+            .from("accounts")
+            .select("account_id, account_type, email, is_active")
+            .eq("account_id", record.account_id)
+            .single();
+
+        if (error || !account || !account.is_active) {
+            clearAuthCookies(res);
+            return res.status(401).json({ success: false, message: "Account not found or deactivated." });
+        }
+
+        // Rotate: revoke old token, issue fresh one
+        const newRawRefreshToken = generateRefreshToken();
+        const newTokenHash       = hashToken(newRawRefreshToken);
+        await rotateRefreshToken(record.id, account.account_id, newTokenHash);
+
+        const newAccessToken = generateAuthToken({
+            account_id:   account.account_id,
+            account_type: account.account_type,
+            email:        account.email,
+        });
+
+        setAuthCookies(res, newAccessToken, newRawRefreshToken);
+
+        return res.status(200).json({ success: true, message: "Session refreshed." });
+    } catch (err) {
+        console.error("[refresh]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  SIGNOUT — current device
+//  POST /api/auth/signout
+//  Revokes this session's refresh token and clears cookies.
+// ─────────────────────────────────────────────────────────────
+const signout = async (req, res) => {
+    try {
+        const rawRefreshToken = req.cookies?.[REFRESH_COOKIE];
+        if (rawRefreshToken) {
+            await revokeRefreshToken(hashToken(rawRefreshToken));
+        }
+        clearAuthCookies(res);
+        return res.status(200).json({ success: true, message: "Signed out successfully." });
+    } catch (err) {
+        console.error("[signout]", err);
+        clearAuthCookies(res); // clear even if DB call failed
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  SIGNOUT ALL — every device
+//  POST /api/auth/signout-all
+//  Requires a valid access token (via authenticate middleware).
+//  Revokes ALL refresh tokens for the account.
+// ─────────────────────────────────────────────────────────────
+const signoutAll = async (req, res) => {
+    try {
+        const { account_id } = req.account;
+        await revokeAllUserTokens(account_id);
+        clearAuthCookies(res);
+        return res.status(200).json({ success: true, message: "Signed out from all devices." });
+    } catch (err) {
+        console.error("[signoutAll]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  MPIN endpoints (unchanged logic, no cookie changes needed)
 // ─────────────────────────────────────────────────────────────
 const setupMpin = async (req, res) => {
     try {
         const { password, mpin } = req.body;
-        const { account_id } = req.account; // injected by authenticate middleware
+        const { account_id } = req.account;
 
         if (!password || !mpin) {
-            return res.status(400).json({
-                success: false,
-                message: "Password and MPIN are required.",
-            });
+            return res.status(400).json({ success: false, message: "Password and MPIN are required." });
         }
 
         if (mpin.toString().length !== 6 || isNaN(mpin)) {
-            return res.status(400).json({
-                success: false,
-                message: "MPIN must be exactly 6 digits.",
-            });
+            return res.status(400).json({ success: false, message: "MPIN must be exactly 6 digits." });
         }
 
         const { data: account, error } = await supabase
@@ -535,24 +510,16 @@ const setupMpin = async (req, res) => {
         if (account.mpin_hash) {
             return res.status(409).json({
                 success: false,
-                message:
-                    "MPIN is already set up. Use the change-mpin endpoint to update it.",
+                message: "MPIN is already set up. Use the change-mpin endpoint to update it.",
             });
         }
 
-        const passwordMatch = await bcrypt.compare(
-            password,
-            account.password_hash,
-        );
+        const passwordMatch = await bcrypt.compare(password, account.password_hash);
         if (!passwordMatch) {
-            return res.status(401).json({
-                success: false,
-                message: "Incorrect password.",
-            });
+            return res.status(401).json({ success: false, message: "Incorrect password." });
         }
 
         const mpin_hash = await bcrypt.hash(mpin.toString(), SALT_ROUNDS);
-
         const { error: updateError } = await supabase
             .from("accounts")
             .update({ mpin_hash })
@@ -560,55 +527,49 @@ const setupMpin = async (req, res) => {
 
         if (updateError) throw updateError;
 
-        return res.status(200).json({
-            success: true,
-            message: "MPIN set up successfully.",
-        });
+        return res.status(200).json({ success: true, message: "MPIN set up successfully." });
     } catch (err) {
         console.error("[setupMpin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  MPIN — Change (already has MPIN)
-//  POST /api/auth/mpin/change
-//  Headers: Authorization: Bearer <token>
-//  Body: { current_mpin, new_mpin }
-//
-//  Requires the current MPIN to authorize the change.
-//  Rejected if MPIN has not been set up yet.
-// ─────────────────────────────────────────────────────────────
+const getMpinStatus = async (req, res) => {
+    try {
+        const { account_id } = req.account;
+
+        const { data: account, error } = await supabase
+            .from("accounts")
+            .select("mpin_hash")
+            .eq("account_id", account_id)
+            .single();
+
+        if (error || !account) {
+            return res.status(404).json({ success: false, message: "Account not found." });
+        }
+
+        return res.status(200).json({ success: true, mpin_set: !!account.mpin_hash });
+    } catch (err) {
+        console.error("[getMpinStatus]", err);
+        return res.status(500).json({ success: false, message: "Server error." });
+    }
+};
+
 const changeMpin = async (req, res) => {
     try {
         const { current_mpin, new_mpin } = req.body;
         const { account_id } = req.account;
 
         if (!current_mpin || !new_mpin) {
-            return res.status(400).json({
-                success: false,
-                message: "current_mpin and new_mpin are required.",
-            });
+            return res.status(400).json({ success: false, message: "current_mpin and new_mpin are required." });
         }
 
         if (new_mpin.toString().length !== 6 || isNaN(new_mpin)) {
-            return res.status(400).json({
-                success: false,
-                message: "New MPIN must be exactly 6 digits.",
-            });
+            return res.status(400).json({ success: false, message: "New MPIN must be exactly 6 digits." });
         }
 
         if (current_mpin.toString() === new_mpin.toString()) {
-            return res.status(400).json({
-                success: false,
-                message: "New MPIN must be different from the current one.",
-            });
+            return res.status(400).json({ success: false, message: "New MPIN must be different from the current one." });
         }
 
         const { data: account, error } = await supabase
@@ -622,27 +583,16 @@ const changeMpin = async (req, res) => {
         if (!account.mpin_hash) {
             return res.status(403).json({
                 success: false,
-                message:
-                    "MPIN has not been set up yet. Use the setup-mpin endpoint first.",
+                message: "MPIN has not been set up yet. Use the setup-mpin endpoint first.",
             });
         }
 
-        const mpinMatch = await bcrypt.compare(
-            current_mpin.toString(),
-            account.mpin_hash,
-        );
+        const mpinMatch = await bcrypt.compare(current_mpin.toString(), account.mpin_hash);
         if (!mpinMatch) {
-            return res.status(401).json({
-                success: false,
-                message: "Current MPIN is incorrect.",
-            });
+            return res.status(401).json({ success: false, message: "Current MPIN is incorrect." });
         }
 
-        const new_mpin_hash = await bcrypt.hash(
-            new_mpin.toString(),
-            SALT_ROUNDS,
-        );
-
+        const new_mpin_hash = await bcrypt.hash(new_mpin.toString(), SALT_ROUNDS);
         const { error: updateError } = await supabase
             .from("accounts")
             .update({ mpin_hash: new_mpin_hash })
@@ -650,37 +600,19 @@ const changeMpin = async (req, res) => {
 
         if (updateError) throw updateError;
 
-        return res.status(200).json({
-            success: true,
-            message: "MPIN changed successfully.",
-        });
+        return res.status(200).json({ success: true, message: "MPIN changed successfully." });
     } catch (err) {
         console.error("[changeMpin]", err);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error.",
-                error: err.message,
-            });
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  FORGOT PASSWORD — Step 1: Send OTP
-//  POST /api/auth/password/forgot-send-otp
-//  Body: { email }
-//
-//  Always returns 200 to prevent account enumeration.
-// ─────────────────────────────────────────────────────────────
 const forgotPasswordSendOTP = async (req, res) => {
     try {
         const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required." });
-        }
-        const normalizedEmail = email.toLowerCase().trim();
+        if (!email) return res.status(400).json({ success: false, message: "Email is required." });
 
+        const normalizedEmail = email.toLowerCase().trim();
         const { data: account } = await supabase
             .from("accounts")
             .select("account_id")
@@ -691,18 +623,11 @@ const forgotPasswordSendOTP = async (req, res) => {
             const otp = generateOTP();
             const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-            await supabase
-                .from("otp_verifications")
-                .update({ is_used: true })
-                .eq("email", normalizedEmail)
-                .eq("otp_type", "password_reset")
-                .eq("is_used", false);
+            await supabase.from("otp_verifications").update({ is_used: true })
+                .eq("email", normalizedEmail).eq("otp_type", "password_reset").eq("is_used", false);
 
             await supabase.from("otp_verifications").insert({
-                email: normalizedEmail,
-                otp_code: otp,
-                otp_type: "password_reset",
-                expires_at: expiresAt,
+                email: normalizedEmail, otp_code: otp, otp_type: "password_reset", expires_at: expiresAt,
             });
 
             await sendOTPEmail(normalizedEmail, otp, "password_reset");
@@ -718,20 +643,12 @@ const forgotPasswordSendOTP = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  FORGOT PASSWORD — Step 2: Verify OTP & set new password
-//  POST /api/auth/password/reset
-//  Body: { email, otp, new_password }
-// ─────────────────────────────────────────────────────────────
 const resetPassword = async (req, res) => {
     try {
         const { email, otp, new_password } = req.body;
 
         if (!email || !otp || !new_password) {
-            return res.status(400).json({
-                success: false,
-                message: "email, otp, and new_password are required.",
-            });
+            return res.status(400).json({ success: false, message: "email, otp, and new_password are required." });
         }
         if (new_password.length < 8) {
             return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
@@ -766,6 +683,11 @@ const resetPassword = async (req, res) => {
 
         if (updateError) throw updateError;
 
+        // Revoke all sessions since password changed
+        const { data: acct } = await supabase
+            .from("accounts").select("account_id").eq("email", normalizedEmail).single();
+        if (acct) await revokeAllUserTokens(acct.account_id);
+
         return res.status(200).json({
             success: true,
             message: "Password reset successfully. Please sign in with your new password.",
@@ -776,41 +698,24 @@ const resetPassword = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  FORGOT MPIN — Step 1: Send OTP
-//  POST /api/auth/mpin/forgot-send-otp
-//  Body: { email }
-// ─────────────────────────────────────────────────────────────
 const forgotMpinSendOTP = async (req, res) => {
     try {
         const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required." });
-        }
-        const normalizedEmail = email.toLowerCase().trim();
+        if (!email) return res.status(400).json({ success: false, message: "Email is required." });
 
+        const normalizedEmail = email.toLowerCase().trim();
         const { data: account } = await supabase
-            .from("accounts")
-            .select("account_id")
-            .eq("email", normalizedEmail)
-            .maybeSingle();
+            .from("accounts").select("account_id").eq("email", normalizedEmail).maybeSingle();
 
         if (account) {
             const otp = generateOTP();
             const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-            await supabase
-                .from("otp_verifications")
-                .update({ is_used: true })
-                .eq("email", normalizedEmail)
-                .eq("otp_type", "mpin_reset")
-                .eq("is_used", false);
+            await supabase.from("otp_verifications").update({ is_used: true })
+                .eq("email", normalizedEmail).eq("otp_type", "mpin_reset").eq("is_used", false);
 
             await supabase.from("otp_verifications").insert({
-                email: normalizedEmail,
-                otp_code: otp,
-                otp_type: "mpin_reset",
-                expires_at: expiresAt,
+                email: normalizedEmail, otp_code: otp, otp_type: "mpin_reset", expires_at: expiresAt,
             });
 
             await sendOTPEmail(normalizedEmail, otp, "mpin_reset");
@@ -826,20 +731,12 @@ const forgotMpinSendOTP = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  FORGOT MPIN — Step 2: Verify OTP & set new MPIN
-//  POST /api/auth/mpin/reset
-//  Body: { email, otp, new_mpin }
-// ─────────────────────────────────────────────────────────────
 const resetMpin = async (req, res) => {
     try {
         const { email, otp, new_mpin } = req.body;
 
         if (!email || !otp || !new_mpin) {
-            return res.status(400).json({
-                success: false,
-                message: "email, otp, and new_mpin are required.",
-            });
+            return res.status(400).json({ success: false, message: "email, otp, and new_mpin are required." });
         }
         if (new_mpin.toString().length !== 6 || isNaN(new_mpin)) {
             return res.status(400).json({ success: false, message: "MPIN must be exactly 6 digits." });
@@ -874,10 +771,7 @@ const resetMpin = async (req, res) => {
 
         if (updateError) throw updateError;
 
-        return res.status(200).json({
-            success: true,
-            message: "MPIN reset successfully.",
-        });
+        return res.status(200).json({ success: true, message: "MPIN reset successfully." });
     } catch (err) {
         console.error("[resetMpin]", err);
         return res.status(500).json({ success: false, message: "Server error.", error: err.message });
@@ -890,7 +784,11 @@ module.exports = {
     verifyOTP,
     completeSignup,
     signin,
+    refresh,
+    signout,
+    signoutAll,
     setupMpin,
+    getMpinStatus,
     changeMpin,
     forgotPasswordSendOTP,
     resetPassword,
