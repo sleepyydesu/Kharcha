@@ -1,18 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  Kharcha AI Controller  — powered by Groq (llama-3.1-8b-instant)
-//
-//  Token-saving strategies used here:
-//  1. Sliding-window history  – only last MAX_HISTORY messages sent to API
-//  2. Intent detection        – financial context only injected when the user
-//                               is actually asking about money / spending
-//  3. Compressed context      – numbers only, no verbose prose labels
-//  4. Tight system prompt     – clear and concise, no redundant explanations
-// ─────────────────────────────────────────────────────────────────────────────
-
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL   = "llama-3.1-8b-instant";   // fast + cheap; swap to
-                                                 // "llama-3.3-70b-versatile"
-                                                 // for smarter responses
+const GROQ_MODEL   = "llama-3.1-8b-instant";
 const GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions";
 
 // How many conversation turns to keep (user + assistant = 2 per turn).
