@@ -11,8 +11,15 @@ import {
     sendPasswordResetOTP,
     resetPassword,
     signOut,
+    biometricRegisterApi,
 } from "../services/api";
 import { useNotifications } from "../context/NotificationContext";
+import {
+    isBiometricAvailable,
+    getSavedBiometricUser,
+    registerBiometric,
+    clearSavedBiometricUser,
+} from "../hooks/useBiometric";
 import "./Account.css";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -554,6 +561,162 @@ function ChangeMpinCard({ toast }) {
                             Cancel
                         </button>
                     </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Biometric login card ──────────────────────────────────────
+function BiometricCard({ toast, profile }) {
+    // null = checking, false = unsupported, "enrolled" | "unenrolled" = known
+    const [status, setStatus] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        async function check() {
+            const available = await isBiometricAvailable();
+            if (!available) { setStatus(false); return; }
+            const saved = getSavedBiometricUser();
+            setStatus(saved ? "enrolled" : "unenrolled");
+        }
+        check();
+    }, []);
+
+    // Device doesn't support biometrics — render nothing
+    if (status === false) return null;
+
+    async function handleEnroll() {
+        setLoading(true);
+        try {
+            await registerBiometric(
+                { email: profile.email, display_name: profile.full_name || profile.email },
+                biometricRegisterApi,
+            );
+            setStatus("enrolled");
+            toast("Fingerprint login enabled for this device.", "success");
+        } catch (err) {
+            if (err.name === "NotAllowedError") {
+                toast("Fingerprint setup was cancelled.", "error");
+            } else {
+                toast(err.message || "Failed to set up fingerprint login.", "error");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handleRemove() {
+        clearSavedBiometricUser();
+        setStatus("unenrolled");
+        toast("Fingerprint login removed from this device.", "success");
+    }
+
+    const isEnrolled = status === "enrolled";
+    const savedUser  = getSavedBiometricUser();
+
+    return (
+        <div className="acct-card acct-card--action">
+            <button
+                className="acct-action-header"
+                onClick={() => setOpen((o) => !o)}
+            >
+                <div className={`acct-action-icon ${isEnrolled ? "acct-action-icon--green" : "acct-action-icon--blue"}`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+                        <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+                        <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+                        <path d="M2 12a10 10 0 0 1 18-6" />
+                        <path d="M2 17c1 .5 2.06.78 3 .87" />
+                        <path d="M22 6c.18.5.33 1 .44 1.5" />
+                        <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+                        <path d="M17.44 9a6 6 0 0 1 .56 3 22.49 22.49 0 0 1-.31 3" />
+                        <path d="M4.42 11.247A13.152 13.152 0 0 0 4 12a13.55 13.55 0 0 0 2.1 7.338" />
+                        <path d="M8.53 16.11a6 6 0 0 0 .98 3.89" />
+                        <path d="M12 20c-.3.8-.7 1.4-1 2" />
+                    </svg>
+                </div>
+                <div className="acct-action-info">
+                    <span className="acct-action-title">
+                        Fingerprint Login
+                        {status === null && (
+                            <span className="acct-mpin-badge" style={{ marginLeft: 8 }}>Checking…</span>
+                        )}
+                        {isEnrolled && (
+                            <span className="acct-mpin-badge acct-mpin-badge--active" style={{ marginLeft: 8 }}>
+                                Active
+                            </span>
+                        )}
+                    </span>
+                    <span className="acct-action-sub">
+                        {isEnrolled
+                            ? `Enabled for ${savedUser?.displayName ?? "this device"}`
+                            : "Sign in faster using your device's fingerprint or Face ID"}
+                    </span>
+                </div>
+                <svg className={`acct-chevron ${open ? "acct-chevron--open" : ""}`}
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="acct-action-body">
+                    {isEnrolled ? (
+                        <>
+                            <div className="acct-biometric-status">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--success, #38a169)" strokeWidth="2.5" strokeLinecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span>
+                                    Fingerprint login is <strong>active</strong> on this device.
+                                    You can tap the fingerprint button on the login screen to sign in instantly.
+                                </span>
+                            </div>
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--danger"
+                                    onClick={handleRemove}
+                                >
+                                    Remove Fingerprint
+                                </button>
+                                <button
+                                    className="acct-btn acct-btn--ghost"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p className="acct-biometric-hint">
+                                Your device supports biometric authentication. Set it up once
+                                and you'll be able to sign in with just a fingerprint or Face ID
+                                — no password needed.
+                            </p>
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--primary"
+                                    onClick={handleEnroll}
+                                    disabled={loading}
+                                >
+                                    {loading ? <span className="acct-spinner" /> : null}
+                                    {loading ? "Setting up…" : "Set Up Fingerprint Login"}
+                                </button>
+                                <button
+                                    className="acct-btn acct-btn--ghost"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -1267,6 +1430,7 @@ export default function Account() {
                                     email={profile.email}
                                     toast={showToast}
                                 />
+                                <BiometricCard toast={showToast} profile={profile} />
                             </div>
                         </div>
 

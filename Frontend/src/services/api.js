@@ -480,3 +480,16 @@ export const blockCard = (cardType, body = {}) =>
 
 export const updateCardLimits = (cardType, body) =>
     request(`/cards/${cardType}/limits`, { method: "PATCH", body: JSON.stringify(body) });
+
+// ── Biometric (WebAuthn) ──────────────────────────────────────
+export const biometricRegisterApi = (body) =>
+    request("/auth/biometric/register", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+
+export const biometricVerifyApi = (body) =>
+    request("/auth/biometric/verify", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });

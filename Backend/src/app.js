@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 
 const testRoutes        = require("./routes/testRoutes");
 const authRoutes        = require("./routes/authRoutes");
+const biometricRoutes   = require("./routes/biometricRoutes");
 const walletRoutes      = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const profileRoutes     = require("./routes/profileRoutes");
@@ -73,6 +74,7 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOption
 app.use("/api/test",         testRoutes);
 app.use("/api/khalti",       khaltiRoutes);
 app.use("/api/auth",         authRateLimiter, authRoutes);
+app.use("/api/auth/biometric", authRateLimiter, biometricRoutes);
 app.use("/api/wallet",       walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/profile",      profileRoutes);

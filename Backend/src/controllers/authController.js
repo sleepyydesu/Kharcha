@@ -794,4 +794,6 @@ module.exports = {
     resetPassword,
     forgotMpinSendOTP,
     resetMpin,
+    // Exported for use by biometricController
+    issueTokens,
 };
