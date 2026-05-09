@@ -480,3 +480,29 @@ export const blockCard = (cardType, body = {}) =>
 
 export const updateCardLimits = (cardType, body) =>
     request(`/cards/${cardType}/limits`, { method: "PATCH", body: JSON.stringify(body) });
+
+// ── Biometric (WebAuthn) ──────────────────────────────────────
+export const biometricRegisterApi = (body) =>
+    request("/auth/biometric/register", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+
+export const biometricVerifyApi = (body) =>
+    request("/auth/biometric/verify", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+
+export const biometricVerifyTransactionApi = (body) =>
+    request("/auth/biometric/verify-transaction", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+
+// Verify current MPIN without changing it — used before sensitive operations
+export const verifyMpinApi = (body) =>
+    request("/auth/mpin/verify", {
+        method: "POST",
+        body: JSON.stringify(body),
+    });

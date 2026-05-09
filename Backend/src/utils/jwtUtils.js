@@ -54,6 +54,32 @@ const hashToken = (token) => {
     return crypto.createHash("sha256").update(token).digest("hex");
 };
 
+/**
+ * Very short-lived token (60 s) issued after a successful WebAuthn assertion,
+ * used to authorise a single transfer without typing the MPIN.
+ * Carries { account_id, purpose: "biometric_transfer" }.
+ */
+const BIOMETRIC_TX_SECRET =
+    process.env.BIOMETRIC_TX_SECRET || process.env.JWT_SECRET;
+
+const generateBiometricTxToken = (accountId) => {
+    return jwt.sign(
+        { account_id: accountId, purpose: "biometric_transfer" },
+        BIOMETRIC_TX_SECRET,
+        { expiresIn: "60s" },
+    );
+};
+
+const verifyBiometricTxToken = (token) => {
+    try {
+        const payload = jwt.verify(token, BIOMETRIC_TX_SECRET);
+        if (payload.purpose !== "biometric_transfer") return null;
+        return payload;
+    } catch {
+        return null;
+    }
+};
+
 module.exports = {
     generateSignupToken,
     verifySignupToken,
@@ -61,4 +87,6 @@ module.exports = {
     verifyAuthToken,
     generateRefreshToken,
     hashToken,
+    generateBiometricTxToken,
+    verifyBiometricTxToken,
 };

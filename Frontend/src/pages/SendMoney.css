@@ -766,3 +766,72 @@
     font-size: 0.9rem;
     margin: 0 0 1.2rem;
 }
+/* ── Biometric payment button ─────────────────────────────── */
+.sm__btn--biometric {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             10px;
+    width:           100%;
+    padding:         0.9rem;
+    border-radius:   12px;
+    font-size:       1rem;
+    font-weight:     700;
+    cursor:          pointer;
+    border:          2px solid var(--primary);
+    background:      transparent;
+    color:           var(--primary);
+    transition:      background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.sm__btn--biometric:hover:not(:disabled) {
+    background:  var(--primary);
+    color:       #fff;
+    box-shadow:  0 4px 16px rgba(26, 92, 57, 0.22);
+}
+.sm__btn--biometric:disabled {
+    opacity: 0.5;
+    cursor:  default;
+}
+
+/* Spinner inside biometric button */
+.sm__biometric-spinner {
+    display:          inline-block;
+    width:            20px;
+    height:           20px;
+    border:           2.5px solid currentColor;
+    border-top-color: transparent;
+    border-radius:    50%;
+    animation:        sm-bio-spin 0.7s linear infinite;
+    flex-shrink:      0;
+}
+@keyframes sm-bio-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* "or" divider between biometric and MPIN buttons */
+.sm__or-divider {
+    display:         flex;
+    align-items:     center;
+    gap:             10px;
+    margin:          14px 0 10px;
+    color:           var(--text-sub);
+    font-size:       12px;
+    font-weight:     500;
+    text-transform:  uppercase;
+    letter-spacing:  0.06em;
+}
+.sm__or-divider::before,
+.sm__or-divider::after {
+    content:    "";
+    flex:       1;
+    height:     1px;
+    background: var(--border);
+}
+
+/* Error message on confirm screen */
+.sm__submit-err {
+    color:        var(--error, #e53e3e);
+    font-size:    13px;
+    margin:       0 0 10px;
+    text-align:   center;
+}

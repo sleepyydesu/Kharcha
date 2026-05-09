@@ -778,6 +778,45 @@ const resetMpin = async (req, res) => {
     }
 };
 
+// ── Verify MPIN (lightweight check, no change) ────────────────
+// POST /api/auth/mpin/verify
+// Used before sensitive setup flows (e.g. biometric transaction enrollment).
+const verifyMpin = async (req, res) => {
+    try {
+        const { account_id } = req.account;
+        const { mpin } = req.body;
+
+        if (!mpin) {
+            return res.status(400).json({ success: false, message: "mpin is required." });
+        }
+
+        const { data: account, error } = await supabase
+            .from("accounts")
+            .select("mpin_hash")
+            .eq("account_id", account_id)
+            .single();
+
+        if (error) throw error;
+
+        if (!account.mpin_hash) {
+            return res.status(403).json({
+                success: false,
+                message: "No MPIN set up on this account.",
+            });
+        }
+
+        const valid = await bcrypt.compare(mpin.toString(), account.mpin_hash);
+        if (!valid) {
+            return res.status(401).json({ success: false, message: "Incorrect MPIN." });
+        }
+
+        return res.status(200).json({ success: true, message: "MPIN verified." });
+    } catch (err) {
+        console.error("[verifyMpin]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
 module.exports = {
     checkAvailability,
     sendOTP,
@@ -794,4 +833,8 @@ module.exports = {
     resetPassword,
     forgotMpinSendOTP,
     resetMpin,
+    // Exported for use by biometricController
+    issueTokens,
+    // Lightweight MPIN check — used before sensitive setup flows (e.g. biometric enrollment)
+    verifyMpin,
 };

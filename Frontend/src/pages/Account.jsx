@@ -11,8 +11,19 @@ import {
     sendPasswordResetOTP,
     resetPassword,
     signOut,
+    biometricRegisterApi,
+    verifyMpinApi,
 } from "../services/api";
 import { useNotifications } from "../context/NotificationContext";
+import {
+    isBiometricAvailable,
+    getSavedBiometricUser,
+    registerBiometric,
+    clearSavedBiometricUser,
+    registerBiometricTx,
+    getSavedBiometricTxUser,
+    clearSavedBiometricTxUser,
+} from "../hooks/useBiometric";
 import "./Account.css";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -554,6 +565,358 @@ function ChangeMpinCard({ toast }) {
                             Cancel
                         </button>
                     </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Biometric transaction card ────────────────────────────────
+// User must confirm their current MPIN first (like Change MPIN),
+// then we run WebAuthn enrollment and store a tx-specific credential.
+function BiometricTransactionCard({ toast, profile }) {
+    const [status, setStatus] = useState(null); // null | false | "enrolled" | "unenrolled"
+    const [open, setOpen]     = useState(false);
+    const [step, setStep]     = useState("mpin"); // "mpin" | "enrolling" | "done"
+    const [mpin, setMpin]     = useState("");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        async function check() {
+            const available = await isBiometricAvailable();
+            if (!available) { setStatus(false); return; }
+            setStatus(getSavedBiometricTxUser() ? "enrolled" : "unenrolled");
+        }
+        check();
+    }, []);
+
+    // Hidden on unsupported devices
+    if (status === false) return null;
+
+    function handleOpen() {
+        setOpen((o) => !o);
+        setStep("mpin");
+        setMpin("");
+    }
+
+    async function handleConfirmMpin() {
+        if (mpin.length < 4) return toast("Enter your MPIN (4–6 digits).", "error");
+        setLoading(true);
+        try {
+            await verifyMpinApi({ mpin });
+            setStep("enrolling");
+        } catch (err) {
+            toast(
+                err.message?.includes("401") || err.message?.includes("Incorrect")
+                    ? "Incorrect MPIN. Please try again."
+                    : err.message || "MPIN verification failed.",
+                "error",
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleEnroll() {
+        setLoading(true);
+        try {
+            await registerBiometricTx(
+                { email: profile.email, display_name: profile.full_name || profile.email },
+                biometricRegisterApi,
+            );
+            setStatus("enrolled");
+            setStep("done");
+            toast("Fingerprint payment enabled. You can now send money without entering your MPIN.", "success");
+        } catch (err) {
+            if (err.name === "NotAllowedError") {
+                toast("Fingerprint setup was cancelled.", "error");
+            } else {
+                toast(err.message || "Failed to set up fingerprint for payments.", "error");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handleRemove() {
+        clearSavedBiometricTxUser();
+        setStatus("unenrolled");
+        setOpen(false);
+        toast("Fingerprint payments removed from this device.", "success");
+    }
+
+    const isEnrolled = status === "enrolled";
+
+    return (
+        <div className="acct-card acct-card--action">
+            <button className="acct-action-header" onClick={handleOpen}>
+                <div className={`acct-action-icon ${isEnrolled ? "acct-action-icon--green" : "acct-action-icon--amber"}`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+                        <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+                        <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+                        <path d="M2 12a10 10 0 0 1 18-6" />
+                        <path d="M2 17c1 .5 2.06.78 3 .87" />
+                        <path d="M22 6c.18.5.33 1 .44 1.5" />
+                        <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+                        <path d="M17.44 9a6 6 0 0 1 .56 3 22.49 22.49 0 0 1-.31 3" />
+                        <path d="M4.42 11.247A13.152 13.152 0 0 0 4 12a13.55 13.55 0 0 0 2.1 7.338" />
+                        <path d="M8.53 16.11a6 6 0 0 0 .98 3.89" />
+                        <path d="M12 20c-.3.8-.7 1.4-1 2" />
+                    </svg>
+                </div>
+                <div className="acct-action-info">
+                    <span className="acct-action-title">
+                        Fingerprint Payments
+                        {status === null && <span className="acct-mpin-badge" style={{ marginLeft: 8 }}>Checking…</span>}
+                        {isEnrolled && <span className="acct-mpin-badge acct-mpin-badge--active" style={{ marginLeft: 8 }}>Active</span>}
+                    </span>
+                    <span className="acct-action-sub">
+                        {isEnrolled
+                            ? "Send money without typing your MPIN"
+                            : "Authorise transfers with your fingerprint instead of MPIN"}
+                    </span>
+                </div>
+                <svg className={`acct-chevron ${open ? "acct-chevron--open" : ""}`}
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="acct-action-body">
+                    {isEnrolled ? (
+                        <>
+                            <div className="acct-biometric-status">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--success, #38a169)" strokeWidth="2.5" strokeLinecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span>
+                                    Fingerprint payments are <strong>active</strong>. A fingerprint
+                                    button will appear on the Send Money confirmation screen.
+                                </span>
+                            </div>
+                            <div className="acct-action-btns">
+                                <button className="acct-btn acct-btn--danger" onClick={handleRemove}>
+                                    Remove Fingerprint Payments
+                                </button>
+                                <button className="acct-btn acct-btn--ghost" onClick={() => setOpen(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    ) : step === "mpin" ? (
+                        <>
+                            <p className="acct-biometric-hint">
+                                To set up fingerprint payments, first confirm your MPIN.
+                                This ensures only you can enable this feature.
+                            </p>
+                            <PinInput label="Current MPIN" value={mpin} onChange={setMpin} />
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--primary"
+                                    onClick={handleConfirmMpin}
+                                    disabled={loading || mpin.length < 4}
+                                >
+                                    {loading ? <span className="acct-spinner" /> : null}
+                                    {loading ? "Verifying…" : "Verify MPIN"}
+                                </button>
+                                <button className="acct-btn acct-btn--ghost"
+                                    onClick={() => { setOpen(false); setMpin(""); }}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    ) : step === "enrolling" ? (
+                        <>
+                            <p className="acct-biometric-hint">
+                                MPIN confirmed. Now register your fingerprint to authorise
+                                future payments — your device will prompt you to scan it.
+                            </p>
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--primary"
+                                    onClick={handleEnroll}
+                                    disabled={loading}
+                                >
+                                    {loading ? <span className="acct-spinner" /> : null}
+                                    {loading ? "Registering…" : "Scan Fingerprint"}
+                                </button>
+                                <button className="acct-btn acct-btn--ghost"
+                                    onClick={() => { setStep("mpin"); setMpin(""); }}>
+                                    Back
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        // step === "done"
+                        <div className="acct-biometric-status">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="var(--success, #38a169)" strokeWidth="2.5" strokeLinecap="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span>Fingerprint payments are now active on this device.</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Biometric login card ──────────────────────────────────────
+function BiometricCard({ toast, profile }) {
+    // null = checking, false = unsupported, "enrolled" | "unenrolled" = known
+    const [status, setStatus] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        async function check() {
+            const available = await isBiometricAvailable();
+            if (!available) { setStatus(false); return; }
+            const saved = getSavedBiometricUser();
+            setStatus(saved ? "enrolled" : "unenrolled");
+        }
+        check();
+    }, []);
+
+    // Device doesn't support biometrics — render nothing
+    if (status === false) return null;
+
+    async function handleEnroll() {
+        setLoading(true);
+        try {
+            await registerBiometric(
+                { email: profile.email, display_name: profile.full_name || profile.email },
+                biometricRegisterApi,
+            );
+            setStatus("enrolled");
+            toast("Fingerprint login enabled for this device.", "success");
+        } catch (err) {
+            if (err.name === "NotAllowedError") {
+                toast("Fingerprint setup was cancelled.", "error");
+            } else {
+                toast(err.message || "Failed to set up fingerprint login.", "error");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handleRemove() {
+        clearSavedBiometricUser();
+        setStatus("unenrolled");
+        toast("Fingerprint login removed from this device.", "success");
+    }
+
+    const isEnrolled = status === "enrolled";
+    const savedUser  = getSavedBiometricUser();
+
+    return (
+        <div className="acct-card acct-card--action">
+            <button
+                className="acct-action-header"
+                onClick={() => setOpen((o) => !o)}
+            >
+                <div className={`acct-action-icon ${isEnrolled ? "acct-action-icon--green" : "acct-action-icon--blue"}`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+                        <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+                        <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+                        <path d="M2 12a10 10 0 0 1 18-6" />
+                        <path d="M2 17c1 .5 2.06.78 3 .87" />
+                        <path d="M22 6c.18.5.33 1 .44 1.5" />
+                        <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+                        <path d="M17.44 9a6 6 0 0 1 .56 3 22.49 22.49 0 0 1-.31 3" />
+                        <path d="M4.42 11.247A13.152 13.152 0 0 0 4 12a13.55 13.55 0 0 0 2.1 7.338" />
+                        <path d="M8.53 16.11a6 6 0 0 0 .98 3.89" />
+                        <path d="M12 20c-.3.8-.7 1.4-1 2" />
+                    </svg>
+                </div>
+                <div className="acct-action-info">
+                    <span className="acct-action-title">
+                        Fingerprint Login
+                        {status === null && (
+                            <span className="acct-mpin-badge" style={{ marginLeft: 8 }}>Checking…</span>
+                        )}
+                        {isEnrolled && (
+                            <span className="acct-mpin-badge acct-mpin-badge--active" style={{ marginLeft: 8 }}>
+                                Active
+                            </span>
+                        )}
+                    </span>
+                    <span className="acct-action-sub">
+                        {isEnrolled
+                            ? `Enabled for ${savedUser?.displayName ?? "this device"}`
+                            : "Sign in faster using your device's fingerprint or Face ID"}
+                    </span>
+                </div>
+                <svg className={`acct-chevron ${open ? "acct-chevron--open" : ""}`}
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="acct-action-body">
+                    {isEnrolled ? (
+                        <>
+                            <div className="acct-biometric-status">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--success, #38a169)" strokeWidth="2.5" strokeLinecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span>
+                                    Fingerprint login is <strong>active</strong> on this device.
+                                    You can tap the fingerprint button on the login screen to sign in instantly.
+                                </span>
+                            </div>
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--danger"
+                                    onClick={handleRemove}
+                                >
+                                    Remove Fingerprint
+                                </button>
+                                <button
+                                    className="acct-btn acct-btn--ghost"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p className="acct-biometric-hint">
+                                Your device supports biometric authentication. Set it up once
+                                and you'll be able to sign in with just a fingerprint or Face ID
+                                — no password needed.
+                            </p>
+                            <div className="acct-action-btns">
+                                <button
+                                    className="acct-btn acct-btn--primary"
+                                    onClick={handleEnroll}
+                                    disabled={loading}
+                                >
+                                    {loading ? <span className="acct-spinner" /> : null}
+                                    {loading ? "Setting up…" : "Set Up Fingerprint Login"}
+                                </button>
+                                <button
+                                    className="acct-btn acct-btn--ghost"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -1267,6 +1630,8 @@ export default function Account() {
                                     email={profile.email}
                                     toast={showToast}
                                 />
+                                <BiometricTransactionCard toast={showToast} profile={profile} />
+                                <BiometricCard toast={showToast} profile={profile} />
                             </div>
                         </div>
 
