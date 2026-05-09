@@ -13,6 +13,7 @@ const cardRoutes        = require("./routes/cardRoutes");
 const apiKeyRoutes      = require("./routes/apiKeyRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const { securityHeaders, apiRateLimiter, authRateLimiter } = require("./middleware/securityMiddleware");
+const { authenticate } = require("./middleware/authmiddleware");
 
 const khaltiRoutes   = require("./routes/khaltiRoutes");
 const adminRoutes    = require("./routes/adminRoutes");
@@ -39,11 +40,22 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
     .split(",")
     .map((o) => o.trim());
 
+// Matches VS Code / GitHub Codespaces / devtunnels forwarded ports, e.g.:
+//   https://2991dwht-5173.inc1.devtunnels.ms
+//   https://abc123-5173.preview.app.github.dev
+const DEV_TUNNEL_RE = /^https:\/\/[a-z0-9]+-\d+\.(inc\d+\.devtunnels\.ms|preview\.app\.github\.dev)$/i;
+
+function isOriginAllowed(origin) {
+    if (!origin) return true; // curl / Postman / same-host Swagger
+    if (allowedOrigins.includes(origin)) return true;
+    if (process.env.NODE_ENV !== "production" && DEV_TUNNEL_RE.test(origin)) return true;
+    return false;
+}
+
 app.use(
     cors({
         origin: (origin, callback) => {
-            // Allow requests with no origin (curl, Postman, Swagger UI same-host)
-            if (!origin || allowedOrigins.includes(origin)) {
+            if (isOriginAllowed(origin)) {
                 callback(null, true);
             } else {
                 callback(new Error(`CORS: origin '${origin}' is not allowed`));
@@ -74,7 +86,12 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOption
 app.use("/api/test",         testRoutes);
 app.use("/api/khalti",       khaltiRoutes);
 app.use("/api/auth",         authRateLimiter, authRoutes);
+
+// Biometric routes are always called by a logged-in user.
+// authenticate runs first so req.user.id is populated before authRateLimiter
+// evaluates its keyFn — this means the rate limit is per-user, not per-IP.
 app.use("/api/auth/biometric", authRateLimiter, biometricRoutes);
+
 app.use("/api/wallet",       walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/profile",      profileRoutes);
