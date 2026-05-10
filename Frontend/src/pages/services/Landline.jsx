@@ -1,93 +1,50 @@
-/**
- * src/pages/services/Landline.jsx
- *
- * Landline bill payment — Step 1: pick provider from dynamic org list.
- *                         Step 2: fill Phone Number + Amount.
- * Route: /services/landline
- */
-
 import { useState } from "react";
-import ServicePaymentPage from "../../components/ServicePaymentPage";
-import OrganizationSelector from "../../components/OrganizationSelector";
-import { TextField, AmountField } from "../../components/ServiceField";
-import { payLandline } from "../../services/paymentsApi";
-import landlineIcon from "../../assets/landlineIcon.svg";
-import { useOrganizations, ORG_TYPES } from "../../hooks/useOrganizations";
-
-function validate({ phone, amount }) {
-  const errs = {};
-  if (!phone.trim()) errs.phone = "Phone number is required.";
-  else if (!/^\d{7,10}$/.test(phone.trim()))
-    errs.phone = "Enter a valid landline number.";
-  if (!amount.trim()) errs.amount = "Amount is required.";
-  else if (isNaN(amount) || Number(amount) <= 0)
-    errs.amount = "Enter a valid amount.";
-  return errs;
-}
+import ServicePage from "./ServicePage";
 
 export default function Landline() {
-  const { orgs, loading, error } = useOrganizations(ORG_TYPES.TELECOM);
-  const [selectedOrg, setSelectedOrg] = useState(null);
   const [phone, setPhone] = useState("");
-  const [amount, setAmount] = useState("");
-  const [errors, setErrors] = useState({});
+  const [provider, setProvider] = useState("");
 
-  if (!selectedOrg) {
-    return (
-      <OrganizationSelector
-        orgs={orgs}
-        loading={loading}
-        error={error}
-        onSelect={setSelectedOrg}
-        title="Landline Bill"
-        subtitle="Pay your landline telephone bill."
-        icon={landlineIcon}
-      />
-    );
-  }
+  const fieldsValid = phone.trim().length >= 7 && !!provider;
 
-  async function handleSubmit() {
-    const errs = validate({ phone, amount });
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      throw new Error("Please fix the errors above.");
-    }
-    setErrors({});
-    return await payLandline({
-      organization_id: selectedOrg.organization_id,
-      provider: selectedOrg.organization_name,
-      phone_number: phone.trim(),
-      amount: Number(amount),
-    });
-  }
+  const fields = (
+    <>
+      <div className="sp-field">
+        <label className="sp-label">Landline Number</label>
+        <input
+          className="sp-input"
+          type="tel"
+          placeholder="01XXXXXXX"
+          maxLength={10}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+        />
+      </div>
+      <div className="sp-field">
+        <label className="sp-label">Provider</label>
+        <select
+          className="sp-select"
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+        >
+          <option value="">Select provider</option>
+          <option>Nepal Telecom</option>
+          <option>Smart Telecom</option>
+        </select>
+      </div>
+    </>
+  );
 
   return (
-    <ServicePaymentPage
-      icon={landlineIcon}
+    <ServicePage
       title="Landline Bill"
-      subtitle={`Paying via ${selectedOrg.organization_name}`}
-      onSubmit={handleSubmit}
-      submitLabel="Pay Bill"
-      onBack={() => setSelectedOrg(null)}
-    >
-      <TextField
-        id="landline-phone"
-        label="Phone Number"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="01XXXXXXX"
-        type="tel"
-        inputMode="numeric"
-        maxLength={10}
-        error={errors.phone}
-      />
-      <AmountField
-        id="landline-amount"
-        label="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        error={errors.amount}
-      />
-    </ServicePaymentPage>
+      accent="#7c3aed"
+      amountLabel="Bill Amount"
+      presets={[200, 400, 600, 800, 1000]}
+      note="Landline bills are settled within 24 hours."
+      fields={fields}
+      fieldsValid={fieldsValid}
+      getRemarks={() => `Landline Bill – ${provider} – ${phone}`}
+    />
   );
 }

@@ -1,88 +1,54 @@
-/**
- * src/pages/services/Electricity.jsx
- *
- * Electricity bill payment — Step 1: pick provider from dynamic org list.
- *                            Step 2: fill Meter ID + Amount.
- * Route: /services/electricity
- */
-
 import { useState } from "react";
-import ServicePaymentPage from "../../components/ServicePaymentPage";
-import OrganizationSelector from "../../components/OrganizationSelector";
-import { TextField, AmountField } from "../../components/ServiceField";
-import { payElectricity } from "../../services/paymentsApi";
-import electricityIcon from "../../assets/electricityIcon.svg";
-import { useOrganizations, ORG_TYPES } from "../../hooks/useOrganizations";
-
-function validate({ meterId, amount }) {
-  const errs = {};
-  if (!meterId.trim()) errs.meterId = "Meter / Customer ID is required.";
-  if (!amount.trim()) errs.amount = "Amount is required.";
-  else if (isNaN(amount) || Number(amount) <= 0)
-    errs.amount = "Enter a valid amount.";
-  return errs;
-}
+import ServicePage from "./ServicePage";
 
 export default function Electricity() {
-  const { orgs, loading, error } = useOrganizations(ORG_TYPES.ELECTRICITY);
-  const [selectedOrg, setSelectedOrg] = useState(null);
-  const [meterId, setMeterId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [errors, setErrors] = useState({});
+  const [scNo, setScNo] = useState("");
+  const [office, setOffice] = useState("");
 
-  if (!selectedOrg) {
-    return (
-      <OrganizationSelector
-        orgs={orgs}
-        loading={loading}
-        error={error}
-        onSelect={setSelectedOrg}
-        title="Electricity Bill"
-        subtitle="Pay your electricity bill."
-        icon={electricityIcon}
-      />
-    );
-  }
+  const fieldsValid = scNo.trim().length > 0 && !!office;
 
-  async function handleSubmit() {
-    const errs = validate({ meterId, amount });
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      throw new Error("Please fix the errors above.");
-    }
-    setErrors({});
-    return await payElectricity({
-      organization_id: selectedOrg.organization_id,
-      provider: selectedOrg.organization_name,
-      meter_id: meterId.trim(),
-      amount: Number(amount),
-    });
-  }
+  const fields = (
+    <>
+      <div className="sp-field">
+        <label className="sp-label">SC Number</label>
+        <input
+          className="sp-input"
+          type="text"
+          placeholder="Enter your SC number"
+          value={scNo}
+          onChange={(e) => setScNo(e.target.value)}
+        />
+      </div>
+      <div className="sp-field">
+        <label className="sp-label">NEA Office</label>
+        <select
+          className="sp-select"
+          value={office}
+          onChange={(e) => setOffice(e.target.value)}
+        >
+          <option value="">Select NEA office</option>
+          <option>Kathmandu</option>
+          <option>Lalitpur</option>
+          <option>Bhaktapur</option>
+          <option>Pokhara</option>
+          <option>Chitwan</option>
+          <option>Biratnagar</option>
+          <option>Butwal</option>
+        </select>
+      </div>
+    </>
+  );
 
   return (
-    <ServicePaymentPage
-      icon={electricityIcon}
+    <ServicePage
       title="Electricity Bill"
-      subtitle={`Paying via ${selectedOrg.organization_name}`}
-      onSubmit={handleSubmit}
-      submitLabel="Pay Bill"
-      onBack={() => setSelectedOrg(null)}
-    >
-      <TextField
-        id="elec-meter"
-        label="Meter / Customer ID"
-        value={meterId}
-        onChange={(e) => setMeterId(e.target.value)}
-        placeholder="Your meter number"
-        error={errors.meterId}
-      />
-      <AmountField
-        id="elec-amount"
-        label="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        error={errors.amount}
-      />
-    </ServicePaymentPage>
+      accent="#b45309"
+      amountLabel="Bill Amount"
+      presets={[500, 1000, 2000, 3000, 5000]}
+      note="Electricity payment is confirmed instantly with NEA."
+      fields={fields}
+      fieldsValid={fieldsValid}
+      getRemarks={() => `Electricity Bill – NEA ${office} – SC ${scNo}`}
+    />
   );
 }

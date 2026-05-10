@@ -1,88 +1,67 @@
-/**
- * src/pages/services/Education.jsx
- *
- * Education fee payment — Step 1: pick institution from dynamic org list.
- *                         Step 2: fill Student ID + Amount.
- * Route: /services/education
- */
-
 import { useState } from "react";
-import ServicePaymentPage from "../../components/ServicePaymentPage";
-import OrganizationSelector from "../../components/OrganizationSelector";
-import { TextField, AmountField } from "../../components/ServiceField";
-import { payEducation } from "../../services/paymentsApi";
-import educationIcon from "../../assets/educationIcon.svg";
-import { useOrganizations, ORG_TYPES } from "../../hooks/useOrganizations";
-
-function validate({ studentId, amount }) {
-  const errs = {};
-  if (!studentId.trim()) errs.studentId = "Student ID is required.";
-  if (!amount.trim()) errs.amount = "Amount is required.";
-  else if (isNaN(amount) || Number(amount) <= 0)
-    errs.amount = "Enter a valid amount.";
-  return errs;
-}
+import ServicePage from "./ServicePage";
 
 export default function Education() {
-  const { orgs, loading, error } = useOrganizations(ORG_TYPES.EDUCATION);
-  const [selectedOrg, setSelectedOrg] = useState(null);
   const [studentId, setStudentId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [errors, setErrors] = useState({});
+  const [institution, setInstitution] = useState("");
+  const [feeType, setFeeType] = useState("");
 
-  if (!selectedOrg) {
-    return (
-      <OrganizationSelector
-        orgs={orgs}
-        loading={loading}
-        error={error}
-        onSelect={setSelectedOrg}
-        title="School / College Fee"
-        subtitle="Pay tuition and institutional fees."
-        icon={educationIcon}
-      />
-    );
-  }
+  const fieldsValid =
+    studentId.trim().length > 0 && institution.trim().length > 0 && !!feeType;
 
-  async function handleSubmit() {
-    const errs = validate({ studentId, amount });
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      throw new Error("Please fix the errors above.");
-    }
-    setErrors({});
-    return await payEducation({
-      organization_id: selectedOrg.organization_id,
-      institution_name: selectedOrg.organization_name,
-      student_id: studentId.trim(),
-      amount: Number(amount),
-    });
-  }
+  const fields = (
+    <>
+      <div className="sp-field">
+        <label className="sp-label">Student ID / Roll No.</label>
+        <input
+          className="sp-input"
+          type="text"
+          placeholder="Enter student ID or roll number"
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+        />
+      </div>
+      <div className="sp-field">
+        <label className="sp-label">School / College Name</label>
+        <input
+          className="sp-input"
+          type="text"
+          placeholder="Enter institution name"
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value)}
+        />
+      </div>
+      <div className="sp-field">
+        <label className="sp-label">Fee Type</label>
+        <select
+          className="sp-select"
+          value={feeType}
+          onChange={(e) => setFeeType(e.target.value)}
+        >
+          <option value="">Select fee type</option>
+          <option>Tuition Fee</option>
+          <option>Admission Fee</option>
+          <option>Exam Fee</option>
+          <option>Hostel Fee</option>
+          <option>Library Fee</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </>
+  );
 
   return (
-    <ServicePaymentPage
-      icon={educationIcon}
+    <ServicePage
       title="School / College Fee"
-      subtitle={`Paying to ${selectedOrg.organization_name}`}
-      onSubmit={handleSubmit}
-      submitLabel="Pay Fee"
-      onBack={() => setSelectedOrg(null)}
-    >
-      <TextField
-        id="edu-student"
-        label="Student ID"
-        value={studentId}
-        onChange={(e) => setStudentId(e.target.value)}
-        placeholder="Your student / roll number"
-        error={errors.studentId}
-      />
-      <AmountField
-        id="edu-amount"
-        label="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        error={errors.amount}
-      />
-    </ServicePaymentPage>
+      accent="#0f766e"
+      amountLabel="Fee Amount"
+      presets={[1000, 2000, 5000, 10000, 20000]}
+      note="Fee receipt will be sent to your registered email."
+      fields={fields}
+      fieldsValid={fieldsValid}
+      getRemarks={() =>
+        `Education Fee – ${institution} – ${feeType} – ${studentId}`
+      }
+    />
   );
 }

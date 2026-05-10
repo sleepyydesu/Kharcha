@@ -1,90 +1,53 @@
-/**
- * src/pages/services/Internet.jsx
- *
- * Internet bill payment — Step 1: pick provider from dynamic org list.
- *                         Step 2: fill Customer ID + Amount.
- * Route: /services/internet
- */
-
 import { useState } from "react";
-import ServicePaymentPage from "../../components/ServicePaymentPage";
-import OrganizationSelector from "../../components/OrganizationSelector";
-import { TextField, AmountField } from "../../components/ServiceField";
-import { payInternet } from "../../services/paymentsApi";
-import internetIcon from "../../assets/internetIcon.svg";
-import { useOrganizations, ORG_TYPES } from "../../hooks/useOrganizations";
-
-function validate({ customerId, amount }) {
-  const errs = {};
-  if (!customerId.trim()) errs.customerId = "Customer ID is required.";
-  if (!amount.trim()) errs.amount = "Amount is required.";
-  else if (isNaN(amount) || Number(amount) <= 0)
-    errs.amount = "Enter a valid amount.";
-  return errs;
-}
+import ServicePage from "./ServicePage";
 
 export default function Internet() {
-  const { orgs, loading, error } = useOrganizations(ORG_TYPES.INTERNET);
-  const [selectedOrg, setSelectedOrg] = useState(null);
-  const [customerId, setCustomerId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [errors, setErrors] = useState({});
+  const [username, setUsername] = useState("");
+  const [provider, setProvider] = useState("");
 
-  // Step 1 — org selection
-  if (!selectedOrg) {
-    return (
-      <OrganizationSelector
-        orgs={orgs}
-        loading={loading}
-        error={error}
-        onSelect={setSelectedOrg}
-        title="Internet Bill"
-        subtitle="Pay your internet service provider bill."
-        icon={internetIcon}
-      />
-    );
-  }
+  const fieldsValid = username.trim().length > 0 && !!provider;
 
-  // Step 2 — payment form
-  async function handleSubmit() {
-    const errs = validate({ customerId, amount });
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      throw new Error("Please fix the errors above.");
-    }
-    setErrors({});
-    return await payInternet({
-      organization_id: selectedOrg.organization_id,
-      isp_provider: selectedOrg.organization_name,
-      customer_id: customerId.trim(),
-      amount: Number(amount),
-    });
-  }
+  const fields = (
+    <>
+      <div className="sp-field">
+        <label className="sp-label">Username / Customer ID</label>
+        <input
+          className="sp-input"
+          type="text"
+          placeholder="Enter your ISP username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+      </div>
+      <div className="sp-field">
+        <label className="sp-label">Internet Provider</label>
+        <select
+          className="sp-select"
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+        >
+          <option value="">Select provider</option>
+          <option>WorldLink</option>
+          <option>Vianet</option>
+          <option>Subisu</option>
+          <option>Classic Tech</option>
+          <option>Dish Home</option>
+          <option>CG Net</option>
+        </select>
+      </div>
+    </>
+  );
 
   return (
-    <ServicePaymentPage
-      icon={internetIcon}
+    <ServicePage
       title="Internet Bill"
-      subtitle={`Paying via ${selectedOrg.organization_name}`}
-      onSubmit={handleSubmit}
-      submitLabel="Pay Bill"
-      onBack={() => setSelectedOrg(null)}
-    >
-      <TextField
-        id="internet-cid"
-        label="Customer ID"
-        value={customerId}
-        onChange={(e) => setCustomerId(e.target.value)}
-        placeholder="Your ISP customer ID"
-        error={errors.customerId}
-      />
-      <AmountField
-        id="internet-amount"
-        label="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        error={errors.amount}
-      />
-    </ServicePaymentPage>
+      accent="#1a56db"
+      amountLabel="Bill Amount"
+      presets={[500, 800, 1000, 1500, 2000]}
+      note="Payment is processed within a few minutes."
+      fields={fields}
+      fieldsValid={fieldsValid}
+      getRemarks={() => `Internet Bill – ${provider} – ${username}`}
+    />
   );
 }
