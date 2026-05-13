@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { signIn, getMpinStatus, biometricRegisterApi, biometricVerifyApi } from "../services/api";
+import { signIn, getMpinStatus, biometricVerifyApi } from "../services/api";
 import InputField from "./InputField";
 import { useNotifications } from "../context/NotificationContext";
 import {
     isBiometricAvailable,
     getSavedBiometricUser,
-    registerBiometric,
     biometricLogin,
+    clearSavedBiometricUser,
 } from "../hooks/useBiometric";
 
 function LoginForm({ onLogin, onShowReset }) {
@@ -61,24 +61,6 @@ function LoginForm({ onLogin, onShowReset }) {
             });
 
             if (data.success) {
-                // Silently register biometrics on first login if device supports it
-                try {
-                    const available = await isBiometricAvailable();
-                    const existing  = getSavedBiometricUser();
-                    if (available && !existing) {
-                        await registerBiometric(
-                            {
-                                account_id:   data.account?.account_id,
-                                email:        data.account?.email,
-                                display_name: data.account?.email,
-                            },
-                            biometricRegisterApi,
-                        );
-                    }
-                } catch {
-                    // Non-blocking — biometric setup failure must not prevent login
-                }
-
                 try {
                     const mpinStatus = await getMpinStatus();
                     if (!mpinStatus?.mpin_configured) {
@@ -93,6 +75,12 @@ function LoginForm({ onLogin, onShowReset }) {
                 } catch {
                     // Non-blocking
                 }
+
+                // Store account info for the setup modal
+                window.__kharcha_pending_biometric_setup = {
+                    account_id: data.account?.account_id,
+                    email:      data.account?.email,
+                };
 
                 onLogin();
             } else {
@@ -127,6 +115,12 @@ function LoginForm({ onLogin, onShowReset }) {
                 setErrors({ general: data.message || "Biometric login failed. Please try again." });
             }
         } catch (err) {
+            // Clear stale credential if it's no longer valid (e.g., device changed, DB reset)
+            if (err.message?.includes("Credential not found")) {
+                clearSavedBiometricUser();
+                setBiometricReady(false);
+                setBiometricUser(null);
+            }
             if (err.name === "NotAllowedError") {
                 setErrors({ general: "Biometric verification was cancelled." });
             } else {

@@ -500,6 +500,12 @@ export const biometricVerifyTransactionApi = (body) =>
         body: JSON.stringify(body),
     });
 
+export const deleteBiometricCredentialApi = (body) =>
+    request("/auth/biometric/credential", {
+        method: "DELETE",
+        body: JSON.stringify(body),
+    });
+
 // Verify current MPIN without changing it — used before sensitive operations
 export const verifyMpinApi = (body) =>
     request("/auth/mpin/verify", {

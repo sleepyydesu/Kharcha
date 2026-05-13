@@ -361,6 +361,14 @@
     background: rgba(99, 102, 241, 0.12);
     color: #4f46e5;
 }
+.docs__badge--delete {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+.docs__badge--patch {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
 
 /* ── Flow badge ──────────────────────────────────────────────── */
 .docs__flow-badge {

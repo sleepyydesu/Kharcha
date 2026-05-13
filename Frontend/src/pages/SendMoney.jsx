@@ -11,6 +11,7 @@ import {
     isBiometricAvailable,
     getSavedBiometricTxUser,
     biometricTxLogin,
+    clearSavedBiometricTxUser,
 } from "../hooks/useBiometric";
 import "./SendMoney.css";
 
@@ -287,10 +288,15 @@ export default function SendMoney() {
             });
             setView("success");
         } catch (e) {
+            // Clear stale credential if it's no longer valid
+            if (e.message?.includes("Credential not found")) {
+                clearSavedBiometricTxUser();
+                setBiometricTxReady(false);
+            }
             if (e.name === "NotAllowedError") {
                 setSubmitErr("Fingerprint verification was cancelled.");
             } else {
-                setSubmitErr(e.message || "Biometric transfer failed.");
+                setSubmitErr(e.message || "Biometric transfer failed. Try entering MPIN instead.");
             }
         } finally {
             setBiometricSubmitting(false);

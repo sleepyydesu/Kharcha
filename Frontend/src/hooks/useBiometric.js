@@ -309,3 +309,22 @@ export async function biometricTxLogin(apiVerify) {
 
     return await apiVerify(assertionPayload);  // { biometric_token }
 }
+
+// ── Delete credential (for Account page removal) ─────────────────────────────
+
+/**
+ * Delete a biometric credential from server and clear localStorage.
+ * @param {string} credentialId - The credential ID to delete
+ * @param {Function} apiDelete - async fn that calls DELETE /auth/biometric/credential
+ * @param {string} type - "login" or "transaction" to know which localStorage to clear
+ */
+export async function deleteBiometricCredential(credentialId, apiDelete, type = "login") {
+    await apiDelete({ credentialId });
+
+    // Clear localStorage based on type
+    if (type === "transaction") {
+        localStorage.removeItem(TX_STORAGE_KEY);
+    } else {
+        localStorage.removeItem(STORAGE_KEY);
+    }
+}

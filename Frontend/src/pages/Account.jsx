@@ -13,6 +13,7 @@ import {
     signOut,
     biometricRegisterApi,
     verifyMpinApi,
+    deleteBiometricCredentialApi,
 } from "../services/api";
 import { useNotifications } from "../context/NotificationContext";
 import {
@@ -23,6 +24,7 @@ import {
     registerBiometricTx,
     getSavedBiometricTxUser,
     clearSavedBiometricTxUser,
+    deleteBiometricCredential,
 } from "../hooks/useBiometric";
 import "./Account.css";
 
@@ -638,7 +640,15 @@ function BiometricTransactionCard({ toast, profile }) {
         }
     }
 
-    function handleRemove() {
+    async function handleRemove() {
+        const savedTx = getSavedBiometricTxUser();
+        if (savedTx?.credentialId) {
+            try {
+                await deleteBiometricCredential(savedTx.credentialId, deleteBiometricCredentialApi, "transaction");
+            } catch (e) {
+                console.error("Failed to delete transaction biometric from server:", e);
+            }
+        }
         clearSavedBiometricTxUser();
         setStatus("unenrolled");
         setOpen(false);
@@ -807,7 +817,15 @@ function BiometricCard({ toast, profile }) {
         }
     }
 
-    function handleRemove() {
+    async function handleRemove() {
+        const savedUser = getSavedBiometricUser();
+        if (savedUser?.credentialId) {
+            try {
+                await deleteBiometricCredential(savedUser.credentialId, deleteBiometricCredentialApi, "login");
+            } catch (e) {
+                console.error("Failed to delete biometric from server:", e);
+            }
+        }
         clearSavedBiometricUser();
         setStatus("unenrolled");
         toast("Fingerprint login removed from this device.", "success");

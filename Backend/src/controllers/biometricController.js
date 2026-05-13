@@ -117,22 +117,24 @@ function parseAuthData(buf) {
 }
 
 /**
- * Convert a CBOR COSE public key (Map<int, any>) to a Node.js KeyObject.
+ * Convert a CBOR COSE public key (Map<int, any>) to a compact JSON string.
+ * Stores only the key components, not the full PEM format.
  *
- * Supported algorithms:
- *   kty 2 / alg -7   → EC P-256 (ES256)
- *   kty 3 / alg -257 → RSA PKCS#1 v1.5 (RS256)
+ * EC P-256: { "kty": "EC", "crv": "P-256", "x": "...", "y": "..." }
+ * RSA:     { "kty": "RSA", "n": "...", "e": "..." }
  */
-function coseToPublicKey(coseMap) {
+function coseToJson(coseMap) {
     const kty = coseMap.get(1);
 
     if (kty === 2) {
         // EC2 — P-256
         const x = coseMap.get(-2);
         const y = coseMap.get(-3);
-        return crypto.createPublicKey({
-            key:    { kty: "EC", crv: "P-256", x: x.toString("base64url"), y: y.toString("base64url") },
-            format: "jwk",
+        return JSON.stringify({
+            kty: "EC",
+            crv: "P-256",
+            x:   x.toString("base64url"),
+            y:   y.toString("base64url"),
         });
     }
 
@@ -140,13 +142,25 @@ function coseToPublicKey(coseMap) {
         // RSA
         const n = coseMap.get(-1);
         const e = coseMap.get(-2);
-        return crypto.createPublicKey({
-            key:    { kty: "RSA", n: n.toString("base64url"), e: e.toString("base64url") },
-            format: "jwk",
+        return JSON.stringify({
+            kty: "RSA",
+            n:   n.toString("base64url"),
+            e:   e.toString("base64url"),
         });
     }
 
     throw new Error(`Unsupported COSE key type: ${kty}`);
+}
+
+/**
+ * Convert stored JSON back to a Node.js KeyObject for signature verification.
+ */
+function jsonToPublicKey(keyJson) {
+    const key = JSON.parse(keyJson);
+    return crypto.createPublicKey({
+        key:    key,
+        format: "jwk",
+    });
 }
 
 /**
@@ -181,8 +195,12 @@ async function verifyAssertion({ credentialId, assertionResponse, expectedChalle
     if (clientData.challenge !== expectedChallenge) {
         return { ok: false, error: "Challenge mismatch." };
     }
-    if (clientData.origin !== EXPECTED_ORIGIN) {
-        return { ok: false, error: `Origin mismatch (got ${clientData.origin}).` };
+    // Flexible origin check - accept any origin that includes our expected hostname
+    // This handles Safari on iOS which may include different port/trailing slash variations
+    const expectedHostname = new URL(EXPECTED_ORIGIN).hostname;
+    const actualOrigin = new URL(clientData.origin);
+    if (!actualOrigin.hostname.includes(expectedHostname) && clientData.origin !== EXPECTED_ORIGIN) {
+        return { ok: false, error: `Origin mismatch (got ${clientData.origin}, expected ${EXPECTED_ORIGIN}).` };
     }
 
     // 2. Parse authData
@@ -209,8 +227,8 @@ async function verifyAssertion({ credentialId, assertionResponse, expectedChalle
         return { ok: false, error: "Credential not found." };
     }
 
-    // 4. Verify signature
-    const publicKey   = crypto.createPublicKey(cred.public_key);
+    // 4. Verify signature (using JSON-stored key)
+    const publicKey   = jsonToPublicKey(cred.public_key);
     const signatureBuf = Buffer.from(assertionResponse.signature, "base64url");
     const valid = verifyAssertionSignature(publicKey, authDataBuf, clientDataJSONBuf, signatureBuf);
     if (!valid) {
@@ -282,8 +300,11 @@ const registerBiometric = async (req, res) => {
             if (clientData.challenge !== expectedChallenge) {
                 return res.status(400).json({ success: false, message: "Challenge mismatch." });
             }
-            if (clientData.origin !== EXPECTED_ORIGIN) {
-                return res.status(400).json({ success: false, message: `Origin mismatch (got ${clientData.origin}).` });
+            // Flexible origin check for Safari/iOS compatibility
+            const expectedHostname = new URL(EXPECTED_ORIGIN).hostname;
+            const actualOrigin = new URL(clientData.origin);
+            if (!actualOrigin.hostname.includes(expectedHostname) && clientData.origin !== EXPECTED_ORIGIN) {
+                return res.status(400).json({ success: false, message: `Origin mismatch (got ${clientData.origin}, expected ${EXPECTED_ORIGIN}).` });
             }
 
             // Decode CBOR attestationObject
@@ -311,33 +332,54 @@ const registerBiometric = async (req, res) => {
                 return res.status(400).json({ success: false, message: "No attested credential data in authData." });
             }
 
-            // Serialize the public key as PEM for storage
-            let publicKeyPem;
+            // Serialize the public key as compact JSON (instead of PEM)
+            let publicKeyJson;
             try {
-                const pubKey = coseToPublicKey(parsed.credentialPublicKey);
-                publicKeyPem = pubKey.export({ type: "spki", format: "pem" });
+                publicKeyJson = coseToJson(parsed.credentialPublicKey);
             } catch (e) {
                 return res.status(400).json({ success: false, message: `Unsupported public key format: ${e.message}` });
             }
 
             const credentialId = parsed.credentialId.toString("base64url");
 
-            // Upsert — one credential per account (replace if re-registering)
-            const { error: upsertErr } = await supabase
+            // Check if credential already exists
+            const { data: existingCred } = await supabase
                 .from("biometric_credentials")
-                .upsert(
-                    {
+                .select("credential_id")
+                .eq("account_id", account_id)
+                .eq("credential_id", credentialId)
+                .maybeSingle();
+
+            let error;
+            if (existingCred) {
+                // Update existing credential
+                const { error: updateErr } = await supabase
+                    .from("biometric_credentials")
+                    .update({
+                        public_key:  publicKeyJson,
+                        sign_count:  parsed.signCount,
+                        aaguid:      parsed.aaguid ? parsed.aaguid.toString("hex") : null,
+                        updated_at:  new Date().toISOString(),
+                    })
+                    .eq("account_id", account_id)
+                    .eq("credential_id", credentialId);
+                error = updateErr;
+            } else {
+                // Insert new credential (allows multiple per account)
+                const { error: insertErr } = await supabase
+                    .from("biometric_credentials")
+                    .insert({
                         account_id,
                         credential_id: credentialId,
-                        public_key:    publicKeyPem,
+                        public_key:    publicKeyJson,
                         sign_count:    parsed.signCount,
                         aaguid:        parsed.aaguid ? parsed.aaguid.toString("hex") : null,
                         updated_at:    new Date().toISOString(),
-                    },
-                    { onConflict: "account_id" }
-                );
+                    });
+                error = insertErr;
+            }
 
-            if (upsertErr) throw upsertErr;
+            if (error) throw error;
 
             return res.status(200).json({ success: true, message: "Biometric credential registered successfully." });
         }
@@ -518,4 +560,54 @@ const verifyTransactionBiometric = async (req, res) => {
     }
 };
 
-module.exports = { registerBiometric, verifyBiometric, verifyTransactionBiometric };
+// ── Delete credential ────────────────────────────────────────────────────────
+
+/**
+ * DELETE /auth/biometric/credential
+ *
+ * Delete a biometric credential by credential_id.
+ * User must be authenticated and can only delete their own credentials.
+ *
+ * Body: { credentialId }
+ * Returns: { success, message }
+ */
+const deleteCredential = async (req, res) => {
+    const { credentialId } = req.body;
+    const account_id = req.account?.account_id;
+
+    if (!credentialId) {
+        return res.status(400).json({ success: false, message: "credentialId is required." });
+    }
+
+    try {
+        // Verify the credential belongs to this user before deleting
+        const { data: cred, error: fetchErr } = await supabase
+            .from("biometric_credentials")
+            .select("account_id")
+            .eq("credential_id", credentialId)
+            .eq("account_id", account_id)
+            .maybeSingle();
+
+        if (fetchErr) throw fetchErr;
+        if (!cred) {
+            return res.status(404).json({ success: false, message: "Credential not found or does not belong to you." });
+        }
+
+        // Delete the credential
+        const { error: deleteErr } = await supabase
+            .from("biometric_credentials")
+            .delete()
+            .eq("credential_id", credentialId)
+            .eq("account_id", account_id);
+
+        if (deleteErr) throw deleteErr;
+
+        return res.status(200).json({ success: true, message: "Biometric credential deleted successfully." });
+
+    } catch (err) {
+        console.error("[deleteCredential]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+module.exports = { registerBiometric, verifyBiometric, verifyTransactionBiometric, deleteCredential };

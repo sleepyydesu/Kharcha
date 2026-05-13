@@ -26,6 +26,7 @@ const incomeRoutes     = require("./routes/incomeRoutes");
 const budgetRoutes     = require("./routes/budgetRoutes");
 const paymentRoutes    = require("./routes/paymentRoutes");
 const payPortalRoutes  = require("./routes/payPortalRoutes");
+const oauthRoutes      = require("./routes/oauthRoutes");
 
 const app = express();
 
@@ -108,6 +109,7 @@ app.use("/api/income",       incomeRoutes);
 app.use("/api/budgets",      budgetRoutes);
 app.use("/api/payment",      paymentRoutes);
 app.use("/api/pay-portal",   payPortalRoutes);
+app.use("/api/oauth",        oauthRoutes);
 
 // ── AI Assistant ──────────────────────────────────────────────
 const aiRoutes = require("./routes/aiRoutes");

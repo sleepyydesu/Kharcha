@@ -79,16 +79,19 @@ function Section({ id, children }) {
 }
 
 const NAV = [
-    { id: "overview",      label: "Overview" },
-    { id: "auth",          label: "Authentication" },
-    { id: "flow-portal",   label: "Payment Portal",   indent: true },
-    { id: "flow-dynamic",  label: "Dynamic QR Code",  indent: true },
-    { id: "flow-hosted",   label: "Hosted Page",      indent: true },
-    { id: "flow-card",     label: "Kharcha Card (RFID)", indent: true },
-    { id: "flow-credit",   label: "Card Number + CVV", indent: true },
-    { id: "webhooks",      label: "Webhooks" },
-    { id: "polling",       label: "Polling Status" },
-    { id: "errors",        label: "Error Reference" },
+    { id: "overview",           label: "Overview" },
+    { id: "auth",               label: "Authentication" },
+    { id: "flow-portal",        label: "Payment Portal",          indent: true },
+    { id: "flow-dynamic",       label: "Dynamic QR Code",         indent: true },
+    { id: "flow-hosted",        label: "Hosted Page",             indent: true },
+    { id: "flow-card",          label: "Kharcha Card (RFID)",     indent: true },
+    { id: "flow-credit",        label: "Card Number + CVV",       indent: true },
+    { id: "flow-oauth",         label: "Linked Account (OAuth)",  indent: true },
+    { id: "oauth-client-mgmt",  label: "OAuth Client Management", indent: true },
+    { id: "oauth-user-mgmt",    label: "OAuth User Controls",     indent: true },
+    { id: "webhooks",           label: "Webhooks" },
+    { id: "polling",            label: "Polling Status" },
+    { id: "errors",             label: "Error Reference" },
 ];
 
 export default function ApiDocs() {
@@ -141,8 +144,9 @@ export default function ApiDocs() {
                                 <p className="docs__flow-card-title">Payment Portal</p>
                                 <p className="docs__flow-card-desc">
                                     Redirect the customer to Kharcha's hosted checkout page.
-                                    They log in with email + OTP, enter their MPIN, and get bounced
-                                    back to your site. No QR code, no card details.
+                                    They enter their Kharcha credentials (email/phone + password or MPIN),
+                                    verify a one-time code, and are bounced back to your site.
+                                    No QR code, no card details.
                                 </p>
                                 <span className="docs__flow-card-link">See integration →</span>
                             </div>
@@ -218,9 +222,9 @@ export default function ApiDocs() {
                     </h2>
                     <p className="docs__p">
                         The simplest integration. Redirect the user to Kharcha's secure hosted
-                        checkout page. They sign in with their Kharcha email + OTP (sent by email),
-                        review the payment details, enter their MPIN, and are redirected back to
-                        your site. No QR scanning, no card numbers.
+                        checkout page. They enter their Kharcha email/phone and password or MPIN,
+                        then verify a one-time code sent to their email. Payment is processed in
+                        that single verify step — there's no separate MPIN screen afterward.
                     </p>
 
                     <div className="docs__steps-list">
@@ -234,7 +238,7 @@ export default function ApiDocs() {
                         </div>
                         <div className="docs__step">
                             <span className="docs__step-num">3</span>
-                            <span>User enters their Kharcha email, receives an OTP, verifies it, and enters their MPIN to pay</span>
+                            <span>User enters their Kharcha email/phone + password or MPIN, receives an OTP, and verifies it — payment processes immediately</span>
                         </div>
                         <div className="docs__step">
                             <span className="docs__step-num">4</span>
@@ -383,31 +387,40 @@ app.get("/payment/callback", async (req, res) => {
                             <span className="docs__endpoint-desc">Fetch session details (public — no auth)</span>
                         </div>
                         <div className="docs__endpoint-row">
-                            <Badge method="POST" />
-                            <code className="docs__inline-code">/api/pay-portal/:session_id/send-otp</code>
+                            <Badge method="GET" />
+                            <code className="docs__inline-code">/api/pay-portal/sessions/:session_id/status</code>
                             <span className="docs__endpoint-desc">
-                                Body: <code className="docs__inline-code">{"{ email }"}</code> — Sends OTP to payer's registered email
+                                Header: <code className="docs__inline-code">X-API-Key</code> — Poll session status (<code className="docs__inline-code">pending</code> | <code className="docs__inline-code">success</code> | <code className="docs__inline-code">expired</code>)
+                            </span>
+                        </div>
+                        <div className="docs__endpoint-row">
+                            <Badge method="POST" />
+                            <code className="docs__inline-code">/api/pay-portal/:session_id/login</code>
+                            <span className="docs__endpoint-desc">
+                                Body: <code className="docs__inline-code">{"{ identifier, credential }"}</code> — Verifies credentials (password or MPIN auto-detected), sends OTP to payer's email
                             </span>
                         </div>
                         <div className="docs__endpoint-row">
                             <Badge method="POST" />
                             <code className="docs__inline-code">/api/pay-portal/:session_id/verify-otp</code>
                             <span className="docs__endpoint-desc">
-                                Body: <code className="docs__inline-code">{"{ email, otp }"}</code> — Returns a short-lived <code className="docs__inline-code">payment_token</code> (30 min)
+                                Body: <code className="docs__inline-code">{"{ otp, remarks? }"}</code> — Verifies OTP and <strong>processes the payment in one step</strong>
                             </span>
                         </div>
                         <div className="docs__endpoint-row">
                             <Badge method="POST" />
-                            <code className="docs__inline-code">/api/pay-portal/:session_id/pay</code>
+                            <code className="docs__inline-code">/api/pay-portal/:session_id/resend-otp</code>
                             <span className="docs__endpoint-desc">
-                                Header: <code className="docs__inline-code">X-Payment-Token</code> · Body: <code className="docs__inline-code">{"{ mpin, remarks? }"}</code> — Verifies MPIN and processes transfer
+                                Re-sends the OTP to the payer's email (rate-limited — one per 60 s)
                             </span>
                         </div>
                     </div>
 
                     <div className="docs__callout docs__callout--info">
-                        <strong>No JWT involved.</strong> The portal uses its own isolated auth chain:
-                        email → OTP → <code className="docs__inline-code">payment_token</code> → MPIN.
+                        <strong>Two-step auth, not three.</strong> The portal uses a{" "}
+                        <code className="docs__inline-code">credential</code> (password or MPIN —
+                        auto-detected by format) to verify identity, then a one-time OTP to
+                        authorise the payment. There is no separate MPIN screen after OTP.
                         Sessions are stored in the <code className="docs__inline-code">payment_sessions</code>{" "}
                         table, completely separate from QR codes.
                     </div>
@@ -681,7 +694,450 @@ if data["success"]: print("Paid!", data["transaction"]["transaction_id"])`}</Cod
                     </div>
                 </Section>
 
-                {/* ══ WEBHOOKS ══════════════════════════════════════ */}
+                {/* ══ FLOW 6 — OAUTH LINKED ACCOUNT ═══════════════ */}
+                <Section id="flow-oauth">
+                    <h2 className="docs__h2">
+                        <span className="docs__flow-badge docs__flow-badge--5">Flow 6</span>
+                        Linked Account (OAuth)
+                    </h2>
+                    <p className="docs__p">
+                        Let users link their Kharcha wallet to your app once — then charge
+                        them later with a simple API call and an OTP confirmation. The user never
+                        types their Kharcha password into your app. Think of it like "Pay with
+                        Kharcha" saved payment method, similar to how Khalti lets you save a bank account.
+                    </p>
+
+                    <div className="docs__callout docs__callout--info">
+                        <strong>Best for:</strong> food delivery, e-commerce, subscription services, or
+                        any app where users want to save Kharcha as their default payment method and
+                        pay with just an OTP next time.
+                    </div>
+
+                    <div className="docs__steps-list">
+                        <div className="docs__step"><span className="docs__step-num">1</span><span>Your org registers once as an OAuth client — you get a <code className="docs__inline-code">client_id</code> and <code className="docs__inline-code">client_secret</code></span></div>
+                        <div className="docs__step"><span className="docs__step-num">2</span><span>You redirect the user to Kharcha's consent page with your <code className="docs__inline-code">client_id</code> and <code className="docs__inline-code">redirect_uri</code></span></div>
+                        <div className="docs__step"><span className="docs__step-num">3</span><span>User logs in on Kharcha's site and clicks <strong>Allow</strong> — Kharcha redirects back with a one-time <code className="docs__inline-code">code</code></span></div>
+                        <div className="docs__step"><span className="docs__step-num">4</span><span>Your server exchanges the <code className="docs__inline-code">code</code> for a <code className="docs__inline-code">link_token</code> — store this in your DB against the user</span></div>
+                        <div className="docs__step"><span className="docs__step-num">5</span><span>At checkout, your server calls Kharcha with the <code className="docs__inline-code">link_token</code> — Kharcha sends an OTP to the user's email</span></div>
+                        <div className="docs__step"><span className="docs__step-num">6</span><span>User enters the OTP in your UI — your server confirms, payment is processed instantly</span></div>
+                    </div>
+
+                    {/* ── Step 0: Register ─────────────────────────── */}
+                    <h3 className="docs__h3">Step 0 — Register as an OAuth client <em>(one-time)</em></h3>
+                    <p className="docs__p">
+                        Done once using your org's <strong>API key</strong> — no login required.
+                        Generate an API key in your Kharcha organisation dashboard under{" "}
+                        <strong>QR Codes &amp; API Keys</strong> if you don't have one.
+                        You get back a <code className="docs__inline-code">client_id</code> (public,
+                        embed it in your frontend redirect) and a{" "}
+                        <code className="docs__inline-code">client_secret</code> (shown once — store
+                        it like a password, never expose it to the browser).
+                    </p>
+                    <h4 className="docs__h4"><Badge method="POST" />{" "}<code>/api/oauth/clients</code></h4>
+                    <ParamTable params={[
+                        { name: "X-API-Key",     type: "header", required: true,  desc: "Your organisation API key (kh_live_...)." },
+                        { name: "name",          type: "string", required: true,  desc: 'Your app\'s display name shown on the consent screen (e.g. "Foodmandu").' },
+                        { name: "redirect_uris", type: "array",  required: true,  desc: "Whitelist of URLs Kharcha is allowed to redirect users back to. Only exact matches are accepted." },
+                    ]} />
+                    <Tabs tabs={["cURL", "Node.js"]}>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/oauth/clients \\
+  -H "X-API-Key: kh_live_xxxxxxxxxxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Foodmandu",
+    "redirect_uris": ["https://foodmandu.com/kharcha/callback"]
+  }'`}</Code>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/clients", {
+  method: "POST",
+  headers: {
+    "X-API-Key":    process.env.KHARCHA_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Foodmandu",
+    redirect_uris: ["https://foodmandu.com/kharcha/callback"],
+  }),
+});
+const { client_id, client_secret } = await res.json();
+// ⚠ Save client_secret now — it is never shown again`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`{
+  "success": true,
+  "message": "OAuth client registered. Copy the client_secret now — it will not be shown again.",
+  "client_id": "d1e2f3a4-0000-0000-0000-abcdef123456",
+  "client_secret": "kh_cs_a1b2c3d4e5f6...",
+  "name": "Foodmandu",
+  "redirect_uris": ["https://foodmandu.com/kharcha/callback"],
+  "created_at": "2026-05-13T10:00:00.000Z"
+}`}</Code>
+
+                    {/* ── Step 1: Redirect ─────────────────────────── */}
+                    <h3 className="docs__h3">Step 1 — Redirect the user to Kharcha</h3>
+                    <p className="docs__p">
+                        When the user clicks "Link Kharcha wallet", redirect them to Kharcha's
+                        consent page. Include your <code className="docs__inline-code">client_id</code>,{" "}
+                        <code className="docs__inline-code">redirect_uri</code>, and a random{" "}
+                        <code className="docs__inline-code">state</code> value to prevent CSRF.
+                        The Kharcha frontend calls{" "}
+                        <code className="docs__inline-code">GET /api/oauth/authorize</code> in the
+                        background to load the consent screen data.
+                    </p>
+                    <Code lang="javascript">{`const params = new URLSearchParams({
+  client_id:    "d1e2f3a4-0000-0000-0000-abcdef123456",
+  redirect_uri: "https://foodmandu.com/kharcha/callback",
+  state:        crypto.randomUUID(), // save this in session to verify later
+});
+
+// Redirect the user's browser to:
+// https://kharcha.app/oauth-consent?client_id=...&redirect_uri=...&state=...
+res.redirect("https://kharcha.app/oauth-consent?" + params.toString());`}</Code>
+
+                    {/* ── Step 2: Receive code ─────────────────────── */}
+                    <h3 className="docs__h3">Step 2 — Receive the authorization code</h3>
+                    <p className="docs__p">
+                        After the user allows, Kharcha redirects to your{" "}
+                        <code className="docs__inline-code">redirect_uri</code> with a one-time{" "}
+                        <code className="docs__inline-code">code</code> (10-minute TTL, single-use) and the original <code className="docs__inline-code">state</code>.
+                    </p>
+                    <Code lang="http">{`GET https://foodmandu.com/kharcha/callback
+  ?code=a1b2c3d4e5f6...
+  &state=the-state-you-sent`}</Code>
+                    <Code lang="javascript">{`app.get("/kharcha/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  // Always verify state matches what you stored in the session
+  if (state !== req.session.oauthState) {
+    return res.status(403).send("State mismatch — possible CSRF attack");
+  }
+
+  // Exchange the code for a link_token (next step)
+  await exchangeCodeForLinkToken(code);
+});`}</Code>
+
+                    {/* ── Step 3: Exchange code ────────────────────── */}
+                    <h3 className="docs__h3">Step 3 — Exchange the code for a link_token</h3>
+                    <p className="docs__p">
+                        Call from your <strong>server only</strong>. The code expires in 10 minutes
+                        and is single-use. Store the returned{" "}
+                        <code className="docs__inline-code">link_token</code> encrypted in your
+                        database against the user.
+                    </p>
+                    <h4 className="docs__h4"><Badge method="POST" />{" "}<code>/api/oauth/token</code></h4>
+                    <ParamTable params={[
+                        { name: "client_id",     type: "string", required: true, desc: "Your OAuth client_id." },
+                        { name: "client_secret", type: "string", required: true, desc: "Your OAuth client_secret (kh_cs_...)." },
+                        { name: "code",          type: "string", required: true, desc: "The authorization code from the redirect." },
+                    ]} />
+                    <Tabs tabs={["Node.js", "Python", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    client_id:     process.env.KHARCHA_CLIENT_ID,
+    client_secret: process.env.KHARCHA_CLIENT_SECRET,
+    code:          req.query.code,
+  }),
+});
+const { link_token, authorization_id } = await res.json();
+
+// Persist both against the user in your database
+await db.users.update({ userId, kharchaLinkToken: link_token, kharchaAuthId: authorization_id });`}</Code>
+                        <Code lang="python">{`import requests, os
+
+resp = requests.post("${BASE_URL}/api/oauth/token",
+    json={
+        "client_id":     os.environ["KHARCHA_CLIENT_ID"],
+        "client_secret": os.environ["KHARCHA_CLIENT_SECRET"],
+        "code":          request.args["code"],
+    })
+data = resp.json()
+link_token       = data["link_token"]
+authorization_id = data["authorization_id"]`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/oauth/token \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "client_id":     "d1e2f3a4-0000-0000-0000-abcdef123456",
+    "client_secret": "kh_cs_a1b2c3...",
+    "code":          "a1b2c3d4e5f6..."
+  }'`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`{
+  "success": true,
+  "link_token": "kh_link_a1b2c3d4e5f6...",
+  "authorization_id": "f4e3d2c1-...",
+  "token_type": "kharcha_link",
+  "message": "Store this link_token securely. Use it to initiate payments on behalf of this user."
+}`}</Code>
+                    <div className="docs__callout docs__callout--warn">
+                        <strong>The link_token is long-lived.</strong> Treat it like a password — store
+                        it encrypted at rest. If a user revokes access from their Kharcha account, the
+                        token is immediately invalidated.
+                    </div>
+
+                    {/* ── Payment: Initiate ────────────────────────── */}
+                    <h3 className="docs__h3">Paying — Step 1: Initiate payment &amp; send OTP</h3>
+                    <p className="docs__p">
+                        When the user checks out and picks "Pay with Kharcha", call this from your
+                        server. Kharcha sends a 6-digit OTP to the linked user's Kharcha email and
+                        returns a <code className="docs__inline-code">payment_id</code>. Show the
+                        OTP input field in your UI.
+                    </p>
+                    <h4 className="docs__h4"><Badge method="POST" />{" "}<code>/api/oauth/pay/initiate</code></h4>
+                    <ParamTable params={[
+                        { name: "X-Client-Id",     type: "header", required: true,  desc: "Your OAuth client_id." },
+                        { name: "X-Client-Secret", type: "header", required: true,  desc: "Your OAuth client_secret (kh_cs_...)." },
+                        { name: "link_token",       type: "string", required: true,  desc: "The token stored for this user when they linked their account." },
+                        { name: "amount",           type: "number", required: true,  desc: "Amount in NPR (must be > 0)." },
+                        { name: "note",             type: "string", required: false, desc: 'Payment description shown in the user\'s Kharcha history (e.g. "Order #FD-8821").' },
+                        { name: "callback_url",     type: "string", required: false, desc: "Webhook URL. Kharcha POSTs an oauth_payment.success event here after confirmation." },
+                    ]} />
+                    <Tabs tabs={["Node.js", "Python", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/pay/initiate", {
+  method: "POST",
+  headers: {
+    "X-Client-Id":     process.env.KHARCHA_CLIENT_ID,
+    "X-Client-Secret": process.env.KHARCHA_CLIENT_SECRET,
+    "Content-Type":    "application/json",
+  },
+  body: JSON.stringify({
+    link_token:   user.kharchaLinkToken,
+    amount:       order.total,
+    note:         \`Order #\${order.id}\`,
+    callback_url: "https://foodmandu.com/webhooks/kharcha",
+  }),
+});
+const { payment_id, masked_email } = await res.json();
+// masked_email shows the user where OTP was sent (e.g. "ra**@gmail.com")`}</Code>
+                        <Code lang="python">{`resp = requests.post("${BASE_URL}/api/oauth/pay/initiate",
+    headers={
+        "X-Client-Id":     os.environ["KHARCHA_CLIENT_ID"],
+        "X-Client-Secret": os.environ["KHARCHA_CLIENT_SECRET"],
+        "Content-Type":    "application/json",
+    },
+    json={
+        "link_token":   user.kharcha_link_token,
+        "amount":       order.total,
+        "note":         f"Order #{order.id}",
+        "callback_url": "https://foodmandu.com/webhooks/kharcha",
+    })
+data = resp.json()
+payment_id   = data["payment_id"]
+masked_email = data["masked_email"]`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/oauth/pay/initiate \\
+  -H "X-Client-Id: d1e2f3a4-0000-0000-0000-abcdef123456" \\
+  -H "X-Client-Secret: kh_cs_a1b2c3..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"link_token":"kh_link_a1b2c3...","amount":850,"note":"Order #FD-8821"}'`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`{
+  "success": true,
+  "payment_id": "khpay_a1b2c3d4e5f6...",
+  "masked_email": "ra**@gmail.com",
+  "amount": 850,
+  "currency": "NPR",
+  "expires_in": 900,
+  "message": "An OTP has been sent to the user's registered email. Ask the user to enter it to confirm."
+}`}</Code>
+
+                    {/* ── Payment: Confirm ─────────────────────────── */}
+                    <h3 className="docs__h3">Paying — Step 2: Confirm with OTP</h3>
+                    <p className="docs__p">
+                        The user types the OTP they received. Send it to this endpoint — Kharcha
+                        verifies it, processes the transfer, and returns the transaction details.
+                        The OTP expires in <strong>15 minutes</strong> and allows up to{" "}
+                        <strong>5 attempts</strong> before the payment is invalidated.
+                    </p>
+                    <h4 className="docs__h4"><Badge method="POST" />{" "}<code>/api/oauth/pay/confirm</code></h4>
+                    <ParamTable params={[
+                        { name: "payment_id", type: "string", required: true, desc: "Returned by /pay/initiate." },
+                        { name: "otp",        type: "string", required: true, desc: "6-digit OTP entered by the user." },
+                    ]} />
+                    <Tabs tabs={["Node.js", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/pay/confirm", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ payment_id: req.body.payment_id, otp: req.body.otp }),
+});
+const data = await res.json();
+
+if (data.success) {
+  const { transaction_id, amount } = data.transaction;
+  await db.orders.markPaid({ orderId, transaction_id });
+  return res.json({ success: true, transaction_id });
+}
+
+// Handle errors: wrong OTP, expired, too many attempts
+return res.status(400).json({ success: false, message: data.message });`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/oauth/pay/confirm \\
+  -H "Content-Type: application/json" \\
+  -d '{"payment_id":"khpay_a1b2c3...","otp":"482910"}'`}</Code>
+                    </Tabs>
+                    <Code lang="json">{`{
+  "success": true,
+  "message": "Payment completed successfully.",
+  "transaction": {
+    "transaction_id": "f3a2b1c4-...",
+    "payment_id": "khpay_a1b2c3...",
+    "amount": 850,
+    "currency": "NPR",
+    "status": "completed",
+    "processed_at": "2026-05-13T10:23:45.000Z"
+  }
+}`}</Code>
+
+                    <div className="docs__status-list">
+                        {[
+                            ["401 — wrong OTP",         "Returns attempts_remaining. Try again."],
+                            ["401 — OTP expired",        "OTP was not used within 15 minutes. Call /pay/initiate again."],
+                            ["429 — too many attempts",  "5 wrong OTPs — payment invalidated. Call /pay/initiate again."],
+                            ["400 — insufficient balance","User's Kharcha wallet doesn't have enough funds."],
+                        ].map(([s, d]) => (
+                            <div className="docs__status-row" key={s}>
+                                <code className="docs__status-badge docs__status-badge--expired">{s.split("—")[0].trim()}</code>
+                                <span><strong>{s.split("—")[1].trim()}</strong> — {d}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ── Webhook ──────────────────────────────────── */}
+                    <h3 className="docs__h3">Webhook — <code>oauth_payment.success</code></h3>
+                    <p className="docs__p">
+                        If you supplied a <code className="docs__inline-code">callback_url</code> at
+                        initiate time, Kharcha fires this after a successful OTP confirmation.
+                    </p>
+                    <Code lang="json">{`// POST to your callback_url
+// Header: X-Kharcha-Event: oauth_payment.success
+{
+  "event":          "oauth_payment.success",
+  "payment_id":     "khpay_a1b2c3...",
+  "transaction_id": "f3a2b1c4-...",
+  "amount":         850,
+  "currency":       "NPR",
+  "timestamp":      "2026-05-13T10:23:45.000Z"
+}`}</Code>
+
+                    {/* ── Revoked token handling ───────────────────── */}
+                    <h3 className="docs__h3">Handling a revoked link_token</h3>
+                    <p className="docs__p">
+                        If a user revokes your app from within Kharcha, any future{" "}
+                        <code className="docs__inline-code">/pay/initiate</code> call returns{" "}
+                        <code className="docs__inline-code">401 Invalid or revoked link_token</code>.
+                        Clear the stored token and prompt the user to re-link.
+                    </p>
+                    <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/pay/initiate", { /* ... */ });
+const data = await res.json();
+
+if (!data.success && res.status === 401) {
+  await db.users.update({ userId, kharchaLinkToken: null });
+  return res.redirect("/checkout/link-kharcha");
+}`}</Code>
+                </Section>
+
+                {/* ══ OAUTH CLIENT MANAGEMENT ══════════════════════ */}
+                <Section id="oauth-client-mgmt">
+                    <h2 className="docs__h2">OAuth Client Management</h2>
+                    <p className="docs__p">
+                        Org-authenticated endpoints (<code className="docs__inline-code">X-API-Key</code> header,
+                        organization account) for managing your registered OAuth clients.
+                    </p>
+
+                    <h3 className="docs__h3"><Badge method="GET" />{" "}<code>/api/oauth/clients</code></h3>
+                    <p className="docs__p">List all OAuth clients registered by your organisation.</p>
+                    <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/oauth/clients", {
+  headers: { "X-API-Key": process.env.KHARCHA_API_KEY },
+});
+const { clients } = await res.json();
+// clients: [{ client_id, name, redirect_uris, is_active, created_at }, ...]`}</Code>
+
+                    <h3 className="docs__h3"><Badge method="DELETE" />{" "}<code>/api/oauth/clients/:client_id</code></h3>
+                    <p className="docs__p">
+                        Deactivate an OAuth client and <strong>immediately invalidate all linked
+                        user tokens</strong> for that client. Users will be prompted to re-link.
+                    </p>
+                    <Code lang="javascript">{`const res = await fetch(\`${BASE_URL}/api/oauth/clients/\${clientId}\`, {
+  method: "DELETE",
+  headers: { "X-API-Key": process.env.KHARCHA_API_KEY },
+});
+// { success: true, message: "OAuth client revoked. All linked user accounts for this client have been disconnected." }`}</Code>
+
+                    <h3 className="docs__h3"><Badge method="GET" />{" "}<code>/api/oauth/authorize</code> <em>(public)</em></h3>
+                    <p className="docs__p">
+                        Called by Kharcha's consent page frontend to load client info before showing
+                        the login/allow screen. You don't call this directly — it's listed here for
+                        transparency and custom integration.
+                    </p>
+                    <ParamTable params={[
+                        { name: "client_id",    type: "query", required: true,  desc: "Your OAuth client_id." },
+                        { name: "redirect_uri", type: "query", required: true,  desc: "Must exactly match a registered redirect_uri." },
+                        { name: "state",        type: "query", required: false, desc: "Passed through to the redirect unchanged." },
+                    ]} />
+                    <Code lang="json">{`{
+  "success": true,
+  "client": { "client_id": "d1e2f3a4-...", "name": "Foodmandu" },
+  "redirect_uri": "https://foodmandu.com/kharcha/callback",
+  "state": "random-csrf-token",
+  "permissions": [
+    "View your Kharcha wallet balance",
+    "Initiate payments from your Kharcha wallet (requires OTP confirmation every time)"
+  ]
+}`}</Code>
+
+                    <h3 className="docs__h3"><Badge method="POST" />{" "}<code>/api/oauth/authorize/complete</code> <em>(Kharcha JWT)</em></h3>
+                    <p className="docs__p">
+                        Called by Kharcha's own consent-page frontend after the user logs in and
+                        clicks Allow. Returns a <code className="docs__inline-code">redirect_url</code>{" "}
+                        containing the one-time <code className="docs__inline-code">code</code>.
+                        You don't call this — documented for transparency.
+                    </p>
+                    <ParamTable params={[
+                        { name: "client_id",    type: "string", required: true,  desc: "OAuth client_id." },
+                        { name: "redirect_uri", type: "string", required: true,  desc: "Must match a registered redirect_uri." },
+                        { name: "state",        type: "string", required: false, desc: "Passed through to the redirect unchanged." },
+                    ]} />
+                    <Code lang="json">{`{
+  "success": true,
+  "redirect_url": "https://foodmandu.com/kharcha/callback?code=a1b2c3...&state=..."
+}`}</Code>
+                </Section>
+
+                {/* ══ OAUTH USER CONTROLS ══════════════════════════ */}
+                <Section id="oauth-user-mgmt">
+                    <h2 className="docs__h2">OAuth User Controls</h2>
+                    <p className="docs__p">
+                        Kharcha users can list and revoke every app linked to their wallet from
+                        within the Kharcha app. These endpoints power those screens.
+                        Auth: JWT cookie (the linked user's own session).
+                    </p>
+
+                    <h3 className="docs__h3"><Badge method="GET" />{" "}<code>/api/oauth/my-linked-apps</code></h3>
+                    <p className="docs__p">Returns all active app links for the authenticated user.</p>
+                    <Code lang="json">{`{
+  "success": true,
+  "linked_apps": [
+    {
+      "authorization_id": "f4e3d2c1-...",
+      "app_name":         "Foodmandu",
+      "client_id":        "d1e2f3a4-...",
+      "linked_at":        "2026-05-01T09:00:00.000Z",
+      "last_used_at":     "2026-05-13T10:23:45.000Z"
+    }
+  ]
+}`}</Code>
+
+                    <h3 className="docs__h3"><Badge method="DELETE" />{" "}<code>/api/oauth/my-linked-apps/:authorization_id</code></h3>
+                    <p className="docs__p">
+                        Immediately revokes a specific app link. The app's stored{" "}
+                        <code className="docs__inline-code">link_token</code> is invalidated — any
+                        future payment attempt by that app returns{" "}
+                        <code className="docs__inline-code">401 Invalid or revoked link_token</code>.
+                    </p>
+                    <Code lang="json">{`{
+  "success": true,
+  "message": "App unlinked successfully. It can no longer charge your Kharcha wallet."
+}`}</Code>
+                </Section>
+
+
                 <Section id="webhooks">
                     <h2 className="docs__h2">Webhooks</h2>
                     <p className="docs__p">
