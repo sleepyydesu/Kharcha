@@ -168,7 +168,13 @@ function VerificationSection({ toast }) {
         action,
         admin_notes: notes,
       });
-      toast(`Verification request ${action}d successfully.`, "success");
+
+      // Fix: use correct grammar for both approve and reject toast messages
+      // Previously used template literal `${action}d` which produced
+      // "rejectd" instead of "rejected" for the reject action
+      const actionLabel = action === "approve" ? "approved" : "rejected";
+      toast(`Verification request ${actionLabel} successfully.`, "success");
+
       closeDetail();
       load();
     } catch (e) {
@@ -528,8 +534,11 @@ function GiftCardSection({ toast }) {
           <button
             className="adm-btn adm-btn--primary"
             onClick={() => {
+              // Fix: only toggle the panel open/closed
+              // Previously also cleared generated codes on every click
+              // which confused admins — now codes stay visible until
+              // admin explicitly clicks the Cancel button inside the panel
               setShowGen((s) => !s);
-              setGenerated(null);
             }}
           >
             <svg
@@ -613,16 +622,35 @@ function GiftCardSection({ toast }) {
             />
           </div>
 
-          <button
-            className="adm-btn adm-btn--primary"
-            onClick={generate}
-            disabled={genLoading}
-          >
-            {genLoading ? (
-              <span className="adm-spinner adm-spinner--sm" />
-            ) : null}
-            {genLoading ? "Generating…" : "Generate Cards"}
-          </button>
+          <div className="adm-review-btns">
+            <button
+              className="adm-btn adm-btn--primary"
+              onClick={generate}
+              disabled={genLoading}
+            >
+              {genLoading ? (
+                <span className="adm-spinner adm-spinner--sm" />
+              ) : null}
+              {genLoading ? "Generating…" : "Generate Cards"}
+            </button>
+
+            {/* Fix: added dedicated Cancel button so admin can close
+                the generate panel clearly without confusion.
+                Previously there was no close button on the panel —
+                admin had to click the top Generate button again which
+                was confusing and could cause accidental re-generation */}
+            <button
+              className="adm-btn adm-btn--ghost"
+              onClick={() => {
+                setShowGen(false);
+                setGenerated(null);
+                setAmounts([{ amount: "", qty: "" }]);
+                setMaxUses(1);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
 
           {generated && (
             <div className="adm-gen-result">
