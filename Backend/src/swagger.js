@@ -392,6 +392,31 @@ const swaggerSpec = {
             description:
                 "Expense tracker categories — list default + user-created categories, create/edit/delete custom ones, and upload/remove per-category icon images.",
         },
+        {
+            name: "OAuth — Client Registration",
+            description:
+                "Organisation-only endpoints to register and manage OAuth clients (third-party apps such as Foodmandu that want to accept Kharcha as a payment method). Requires a JWT from an **organization** account.",
+        },
+        {
+            name: "OAuth — Linking Flow",
+            description:
+                "Endpoints that power the account-linking consent screen. The third-party app redirects the user to Kharcha's frontend, which calls these endpoints to validate the client and complete the authorisation. Results in a one-time `code` that the third party exchanges for a persistent `link_token`.",
+        },
+        {
+            name: "OAuth — Token Exchange",
+            description:
+                "Third-party **backend** endpoint. Exchanges the short-lived authorization `code` (10-minute TTL, one-time use) for a persistent `link_token`. Call this from your server — never from the browser.",
+        },
+        {
+            name: "OAuth — Payments",
+            description:
+                "Third-party **backend** endpoints to charge a linked Kharcha wallet. Two-step flow: **initiate** (sends OTP to the user's email) → **confirm** (user submits OTP, payment is processed). Requires `X-Client-Id` + `X-Client-Secret` headers on initiate; only `payment_id` + `otp` on confirm.",
+        },
+        {
+            name: "OAuth — User Controls",
+            description:
+                "Kharcha-user-facing endpoints. Lets a logged-in user see every third-party app that has linked their wallet and revoke any of them at any time.",
+        },
     ],
     paths: {
         "/": {
@@ -4338,6 +4363,522 @@ const swaggerSpec = {
                     200: { description: "Icon removed, category reverted to default 'tag' icon", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
                     401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
                     404: { description: "Category not found or not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        //  OAUTH — CLIENT REGISTRATION
+        // ═══════════════════════════════════════════════════════════════
+        "/api/oauth/clients": {
+            post: {
+                tags: ["OAuth — Client Registration"],
+                summary: "Register a new OAuth client",
+                description:
+                    "Creates a new OAuth client application (e.g. Foodmandu) that can accept Kharcha as a payment method. Only **organization** accounts can call this endpoint.\n\n" +
+                    "The `client_secret` is shown **once** and never stored in plain text. Copy it immediately and store it securely — it cannot be retrieved later.\n\n" +
+                    "The `redirect_uris` array is a whitelist of URLs Kharcha is allowed to redirect the user back to after they grant consent. Only exact matches are accepted.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["name", "redirect_uris"],
+                                properties: {
+                                    name: {
+                                        type: "string",
+                                        example: "Foodmandu",
+                                        description: "Human-readable name of your application.",
+                                    },
+                                    redirect_uris: {
+                                        type: "array",
+                                        items: { type: "string", format: "uri" },
+                                        example: ["https://foodmandu.com/kharcha/callback"],
+                                        description: "Whitelist of allowed redirect URIs. Must be valid URLs.",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: "Client registered — copy the client_secret now",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:       { type: "boolean", example: true },
+                                        message:       { type: "string", example: "OAuth client registered. Copy the client_secret now — it will not be shown again." },
+                                        client_id:     { type: "string", format: "uuid", example: "d1e2f3a4-0000-0000-0000-abcdef123456" },
+                                        client_secret: { type: "string", example: "kh_cs_a1b2c3d4e5f6..." },
+                                        name:          { type: "string", example: "Foodmandu" },
+                                        redirect_uris: { type: "array", items: { type: "string" }, example: ["https://foodmandu.com/kharcha/callback"] },
+                                        created_at:    { type: "string", format: "date-time" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing name, invalid or empty redirect_uris", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "Account is not an organization", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized — missing or expired JWT", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+            get: {
+                tags: ["OAuth — Client Registration"],
+                summary: "List this organisation's OAuth clients",
+                description: "Returns all OAuth clients registered by the authenticated organization account.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "List of OAuth clients",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        clients: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    client_id:     { type: "string", format: "uuid" },
+                                                    name:          { type: "string", example: "Foodmandu" },
+                                                    redirect_uris: { type: "array", items: { type: "string" } },
+                                                    is_active:     { type: "boolean" },
+                                                    created_at:    { type: "string", format: "date-time" },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    403: { description: "Organization accounts only", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/oauth/clients/{client_id}": {
+            delete: {
+                tags: ["OAuth — Client Registration"],
+                summary: "Revoke an OAuth client",
+                description:
+                    "Deactivates the client and immediately revokes **all** existing link_tokens for every user who had linked their wallet to this client. Any future payment attempts using those tokens will fail.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "client_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the OAuth client to revoke",
+                    },
+                ],
+                responses: {
+                    200: { description: "Client revoked and all user links invalidated", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+                    403: { description: "Organization accounts only, or client not owned by you", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Client not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        //  OAUTH — LINKING FLOW
+        // ═══════════════════════════════════════════════════════════════
+        "/api/oauth/authorize": {
+            get: {
+                tags: ["OAuth — Linking Flow"],
+                summary: "Validate client and return consent screen data",
+                description:
+                    "**Called by Kharcha's own frontend** after the third-party app redirects the user here.\n\n" +
+                    "Validates the `client_id` and `redirect_uri`, then returns the client's display name and the list of permissions the user is about to grant. The frontend uses this data to render the consent screen (app name, permissions, Allow / Deny buttons).\n\n" +
+                    "**Typical redirect from third party:**\n" +
+                    "```\nhttps://kharcha.app/oauth-consent\n  ?client_id=d1e2f3a4-...\n  &redirect_uri=https://foodmandu.com/kharcha/callback\n  &state=random_csrf_token\n```",
+                parameters: [
+                    {
+                        name: "client_id",
+                        in: "query",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "The third-party app's client ID",
+                    },
+                    {
+                        name: "redirect_uri",
+                        in: "query",
+                        required: true,
+                        schema: { type: "string", format: "uri" },
+                        description: "Must exactly match one of the URIs registered for this client",
+                    },
+                    {
+                        name: "state",
+                        in: "query",
+                        required: false,
+                        schema: { type: "string" },
+                        description: "Opaque CSRF token generated by the third-party app. Kharcha echoes it back in the redirect.",
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Client is valid — render the consent screen with this data",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        client: {
+                                            type: "object",
+                                            properties: {
+                                                client_id: { type: "string", format: "uuid" },
+                                                name:      { type: "string", example: "Foodmandu" },
+                                            },
+                                        },
+                                        redirect_uri: { type: "string", format: "uri" },
+                                        state:        { type: "string", nullable: true },
+                                        permissions: {
+                                            type: "array",
+                                            items: { type: "string" },
+                                            example: [
+                                                "View your Kharcha wallet balance",
+                                                "Initiate payments from your Kharcha wallet (requires OTP confirmation every time)",
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing parameters or redirect_uri not registered for this client", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "Client is deactivated", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Unknown client_id", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/oauth/authorize/complete": {
+            post: {
+                tags: ["OAuth — Linking Flow"],
+                summary: "User confirms linking (generates auth code)",
+                description:
+                    "**Called by Kharcha's own frontend** when the user clicks **Allow** on the consent screen. The user must be logged in (JWT cookie).\n\n" +
+                    "Generates a one-time authorization `code` (10-minute TTL) and returns the full `redirect_url` the frontend should navigate the user to. The redirect carries `?code=AUTH_CODE&state=...` for the third party to consume.\n\n" +
+                    "The third party's backend must then exchange this code via `POST /api/oauth/token` within 10 minutes.",
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["client_id", "redirect_uri"],
+                                properties: {
+                                    client_id:    { type: "string", format: "uuid", example: "d1e2f3a4-0000-0000-0000-abcdef123456" },
+                                    redirect_uri: { type: "string", format: "uri",  example: "https://foodmandu.com/kharcha/callback" },
+                                    state:        { type: "string", example: "random_csrf_token", description: "Echo the state value received in the original redirect." },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Auth code generated — frontend should navigate to redirect_url",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:      { type: "boolean", example: true },
+                                        redirect_url: {
+                                            type: "string",
+                                            format: "uri",
+                                            example: "https://foodmandu.com/kharcha/callback?code=a1b2c3d4...&state=random_csrf_token",
+                                            description: "Navigate the browser to this URL.",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing fields or redirect_uri mismatch", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "User not logged in", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Unknown or inactive client", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        //  OAUTH — TOKEN EXCHANGE
+        // ═══════════════════════════════════════════════════════════════
+        "/api/oauth/token": {
+            post: {
+                tags: ["OAuth — Token Exchange"],
+                summary: "Exchange auth code for link_token",
+                description:
+                    "**Server-to-server** endpoint — call this from your backend, never from the browser.\n\n" +
+                    "Exchanges the one-time authorization `code` (received in the redirect from Kharcha) for a persistent `link_token`. Store the `link_token` securely in your database against the user record — you will need it every time you want to initiate a payment for that user.\n\n" +
+                    "**Security rules:**\n" +
+                    "- The code is single-use and expires after **10 minutes**.\n" +
+                    "- `client_id` in the body must match the client that originally initiated the auth flow.\n" +
+                    "- `client_secret` must be the raw secret shown at registration time.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["client_id", "client_secret", "code"],
+                                properties: {
+                                    client_id:     { type: "string", format: "uuid",  example: "d1e2f3a4-0000-0000-0000-abcdef123456" },
+                                    client_secret: { type: "string", example: "kh_cs_a1b2c3d4...", description: "The raw secret shown once at client registration." },
+                                    code:          { type: "string", example: "a1b2c3d4e5f6...", description: "The authorization code from the redirect query parameter." },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "link_token issued — store it for future payments",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:          { type: "boolean", example: true },
+                                        link_token:       { type: "string", example: "kh_link_a1b2c3...", description: "Persistent token. Store this against the user in your DB." },
+                                        authorization_id: { type: "string", format: "uuid" },
+                                        token_type:       { type: "string", example: "kharcha_link" },
+                                        message:          { type: "string" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing fields", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: {
+                        description: "Invalid client credentials, invalid/expired/already-used code, or client_id mismatch",
+                        content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+                    },
+                },
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        //  OAUTH — PAYMENTS
+        // ═══════════════════════════════════════════════════════════════
+        "/api/oauth/pay/initiate": {
+            post: {
+                tags: ["OAuth — Payments"],
+                summary: "Initiate a payment (sends OTP to user)",
+                description:
+                    "**Server-to-server** endpoint — call this from your backend whenever a user chooses to pay with their linked Kharcha wallet.\n\n" +
+                    "Kharcha verifies the `link_token`, sends a 6-digit OTP to the user's registered Kharcha email, and returns a `payment_id`. Show the OTP input to the user in your UI and pass both values to `POST /api/oauth/pay/confirm`.\n\n" +
+                    "**Headers required:** `X-Client-Id` and `X-Client-Secret` — authenticates your app.\n\n" +
+                    "**OTP rules:** expires in 15 minutes, max 5 incorrect attempts before the payment is invalidated.",
+                parameters: [
+                    {
+                        name: "X-Client-Id",
+                        in: "header",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "Your OAuth client_id",
+                    },
+                    {
+                        name: "X-Client-Secret",
+                        in: "header",
+                        required: true,
+                        schema: { type: "string" },
+                        description: "Your OAuth client_secret (kh_cs_...)",
+                    },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["link_token", "amount"],
+                                properties: {
+                                    link_token:   { type: "string", example: "kh_link_a1b2c3...", description: "The persistent token stored when the user linked their account." },
+                                    amount:       { type: "number", example: 500, description: "Amount in NPR (must be > 0)." },
+                                    note:         { type: "string", example: "Order #FD-8821 — 2x Chicken Momo", description: "Optional payment note shown in the user's Kharcha transaction history." },
+                                    callback_url: { type: "string", format: "uri", example: "https://foodmandu.com/webhooks/kharcha", description: "Optional webhook URL. Kharcha POSTs a `oauth_payment.success` event here after payment is confirmed." },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "OTP sent — show the OTP input to the user and proceed to confirm",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:      { type: "boolean", example: true },
+                                        payment_id:   { type: "string", example: "khpay_a1b2c3d4e5f6...", description: "Pass this to /pay/confirm along with the OTP." },
+                                        masked_email: { type: "string", example: "ra**@gmail.com", description: "Show this to the user so they know where the OTP was sent." },
+                                        amount:       { type: "number", example: 500 },
+                                        currency:     { type: "string", example: "NPR" },
+                                        expires_in:   { type: "integer", example: 900, description: "OTP validity in seconds." },
+                                        message:      { type: "string" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Missing fields or invalid amount", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: { description: "Invalid client credentials or link_token", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    403: { description: "link_token does not belong to this client", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Linked user account not found or inactive", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/oauth/pay/confirm": {
+            post: {
+                tags: ["OAuth — Payments"],
+                summary: "Confirm payment with OTP",
+                description:
+                    "Submits the OTP entered by the user to confirm and process the payment.\n\n" +
+                    "On success, funds are transferred from the user's Kharcha wallet to the merchant's Kharcha account. A webhook is fired to `callback_url` (if provided at initiate time) with event `oauth_payment.success`.\n\n" +
+                    "**Webhook payload:**\n" +
+                    "```json\n{\n  \"event\": \"oauth_payment.success\",\n  \"payment_id\": \"khpay_...\",\n  \"transaction_id\": \"uuid\",\n  \"amount\": 500,\n  \"currency\": \"NPR\",\n  \"timestamp\": \"2025-01-01T00:00:00.000Z\"\n}\n```",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["payment_id", "otp"],
+                                properties: {
+                                    payment_id: { type: "string", example: "khpay_a1b2c3d4e5f6...", description: "Returned by /pay/initiate." },
+                                    otp:        { type: "string", example: "482910", description: "6-digit OTP entered by the user." },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Payment completed successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Payment completed successfully." },
+                                        transaction: {
+                                            type: "object",
+                                            properties: {
+                                                transaction_id: { type: "string", format: "uuid" },
+                                                payment_id:     { type: "string", example: "khpay_a1b2c3..." },
+                                                amount:         { type: "number", example: 500 },
+                                                currency:       { type: "string", example: "NPR" },
+                                                status:         { type: "string", example: "completed" },
+                                                processed_at:   { type: "string", format: "date-time" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: "Insufficient balance or daily limit exceeded", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    401: {
+                        description: "Incorrect OTP, payment not found, or OTP expired",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success:            { type: "boolean", example: false },
+                                        message:            { type: "string", example: "Incorrect OTP. 4 attempt(s) remaining." },
+                                        attempts_remaining: { type: "integer", example: 4 },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    429: { description: "Too many incorrect OTP attempts — payment invalidated, initiate again", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        //  OAUTH — USER CONTROLS
+        // ═══════════════════════════════════════════════════════════════
+        "/api/oauth/my-linked-apps": {
+            get: {
+                tags: ["OAuth — User Controls"],
+                summary: "List apps linked to my Kharcha wallet",
+                description:
+                    "Returns every third-party application that the authenticated user has granted access to their Kharcha wallet. Users can use this to audit and revoke access.",
+                security: [{ BearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "List of linked apps",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        linked_apps: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    authorization_id: { type: "string", format: "uuid" },
+                                                    app_name:         { type: "string", example: "Foodmandu" },
+                                                    client_id:        { type: "string", format: "uuid" },
+                                                    linked_at:        { type: "string", format: "date-time" },
+                                                    last_used_at:     { type: "string", format: "date-time", nullable: true },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                },
+            },
+        },
+
+        "/api/oauth/my-linked-apps/{authorization_id}": {
+            delete: {
+                tags: ["OAuth — User Controls"],
+                summary: "Unlink a third-party app",
+                description:
+                    "Revokes the user's authorization for a specific third-party app. The app's `link_token` is immediately invalidated — any future payment attempt using it will fail with `401 Invalid or revoked link_token`.",
+                security: [{ BearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "authorization_id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string", format: "uuid" },
+                        description: "UUID of the authorization to revoke (from GET /api/oauth/my-linked-apps)",
+                    },
+                ],
+                responses: {
+                    200: { description: "App unlinked — link_token invalidated", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+                    401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+                    404: { description: "Authorization not found or not owned by this user", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
                 },
             },
         },

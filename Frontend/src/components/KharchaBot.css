@@ -1,0 +1,543 @@
+/* ═══════════════════════════════════════════════════════════
+   KharchaBot — AI Assistant Chat Panel
+   Desktop: slides in over the BalancePanel (right sidebar)
+   Mobile:  full-screen overlay
+═══════════════════════════════════════════════════════════ */
+
+/* ── Floating Action Button ──────────────────────────────── */
+.kbot-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 18px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--accent);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(26, 92, 57, 0.4);
+    z-index: 149;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: kbot-pulse 3s ease-in-out infinite;
+}
+
+.kbot-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25), 0 0 0 6px rgba(26, 92, 57, 0.12);
+    animation: none;
+}
+
+.kbot-fab--hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+}
+
+.kbot-fab-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    line-height: 1;
+}
+
+@keyframes kbot-pulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(26, 92, 57, 0.4); }
+    50%       { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 8px rgba(26, 92, 57, 0); }
+}
+
+/* ── Backdrop (mobile only) ──────────────────────────────── */
+.kbot-backdrop {
+    display: none;
+}
+
+/* ── Overlay & Panel ─────────────────────────────────────── */
+.kbot-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+}
+
+.kbot-panel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    height: 520px;
+    background: var(--card);
+    border: 1px solid var(--border-panel);
+    border-radius: 18px 18px 0 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: all;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
+    animation: kbot-pop-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+}
+
+@keyframes kbot-pop-in {
+    from { transform: scale(0.92) translateY(16px); opacity: 0; transform-origin: bottom right; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; transform-origin: bottom right; }
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.kbot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    background: var(--card);
+}
+
+.kbot-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.kbot-header-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.kbot-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.kbot-header-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+
+.kbot-header-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.kbot-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: kbot-blink 2s ease-in-out infinite;
+}
+
+@keyframes kbot-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
+.kbot-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.kbot-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    color: var(--text-sub);
+    transition: background 0.15s, color 0.15s;
+}
+
+.kbot-icon-btn:hover {
+    background: var(--shaded-background);
+    color: var(--text-color);
+}
+
+.kbot-icon-btn--close:hover {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+/* ── Messages Area ───────────────────────────────────────── */
+.kbot-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+}
+
+.kbot-messages::-webkit-scrollbar {
+    width: 4px;
+}
+.kbot-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+.kbot-messages::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+/* ── Welcome Screen ──────────────────────────────────────── */
+.kbot-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 8px 8px;
+    gap: 10px;
+}
+
+.kbot-welcome-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    margin-bottom: 2px;
+}
+
+.kbot-welcome-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.kbot-welcome-sub {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 240px;
+}
+
+.kbot-context-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    background: var(--shaded-background);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+}
+
+.kbot-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.kbot-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    text-align: left;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-color);
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.kbot-suggestion:hover {
+    border-color: var(--primary);
+    background: var(--shaded-background);
+    transform: translateX(2px);
+}
+
+.kbot-suggestion-icon {
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* ── Message Bubbles ─────────────────────────────────────── */
+.kbot-message {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    margin-bottom: 6px;
+}
+
+.kbot-message--user {
+    flex-direction: row-reverse;
+}
+
+.kbot-message--bot {
+    flex-direction: row;
+}
+
+.kbot-bot-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+}
+
+.kbot-bubble {
+    max-width: 85%;
+    border-radius: 16px;
+    padding: 10px 13px;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.kbot-bubble p {
+    margin: 0;
+}
+
+.kbot-bubble--user {
+    background: var(--primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.kbot-bubble--bot {
+    background: var(--shaded-background);
+    color: var(--text-color);
+    border: 1px solid var(--border-subtle);
+    border-bottom-left-radius: 4px;
+}
+
+/* Markdown elements inside bot bubbles */
+.kbot-bubble--bot p { margin: 0 0 4px; }
+.kbot-bubble--bot p:last-child { margin-bottom: 0; }
+
+.kbot-list {
+    margin: 4px 0;
+    padding-left: 18px;
+}
+
+.kbot-list li {
+    margin-bottom: 3px;
+    line-height: 1.5;
+}
+
+.kbot-list--ordered {
+    list-style: decimal;
+}
+
+.kbot-list--unordered {
+    list-style: disc;
+}
+
+.kbot-spacer {
+    height: 6px;
+}
+
+.kbot-bubble strong {
+    font-weight: 700;
+}
+
+.kbot-bubble code {
+    font-size: 11px;
+    background: var(--border-subtle);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: monospace;
+}
+
+/* ── Typing Indicator ────────────────────────────────────── */
+.kbot-typing-bubble {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 16px;
+    min-width: 56px;
+}
+
+.kbot-dot-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: kbot-bounce 1.2s ease-in-out infinite;
+}
+
+.kbot-dot-pulse:nth-child(2) { animation-delay: 0.18s; }
+.kbot-dot-pulse:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes kbot-bounce {
+    0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+    40%           { transform: translateY(-6px); opacity: 1;   }
+}
+
+/* ── Error state ─────────────────────────────────────────── */
+.kbot-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    font-size: 12px;
+    color: var(--error-text);
+    margin-top: 4px;
+}
+
+.kbot-error button {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--error-text);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+/* ── Input Area ──────────────────────────────────────────── */
+.kbot-input-area {
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    background: var(--card);
+}
+
+.kbot-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: var(--shaded-background);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 8px 8px 12px;
+    transition: border-color 0.15s;
+}
+
+.kbot-input-wrap:focus-within {
+    border-color: var(--primary);
+}
+
+.kbot-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-color);
+    line-height: 1.5;
+    max-height: 96px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.kbot-input::placeholder {
+    color: var(--text-muted);
+}
+
+.kbot-send-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: var(--accent);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.kbot-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.kbot-send-btn:not(:disabled):hover {
+    transform: scale(1.08);
+}
+
+.kbot-input-hint {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin: 5px 0 0;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile & Tablet (≤900px) — full-screen overlay
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .kbot-fab {
+        bottom: 80px; /* above mobile tab bar */
+        right: 16px;
+        z-index: 155;
+    }
+
+    .kbot-overlay {
+        z-index: 300;
+        pointer-events: all;
+    }
+
+    .kbot-backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .kbot-panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        border-left: none;
+        border-radius: 0;
+        animation: kbot-slide-up 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes kbot-slide-up {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);   opacity: 1; }
+    }
+}
+
+/* Tablet — no override needed; var(--sidebar-width) already applies */

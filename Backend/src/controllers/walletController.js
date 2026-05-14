@@ -1,6 +1,7 @@
 const supabase = require("../services/supabaseClient");
 const bcrypt = require("bcrypt");
 const { dispatchQRWebhook } = require("./qrCodeController");
+const { verifyBiometricTxToken } = require("../utils/jwtUtils");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -79,6 +80,7 @@ const transfer = async (req, res) => {
             remarks,
             mpin,
             qr_id,
+            biometric_token,
         } = req.body;
 
         // ── Verification gate ─────────────────────────────────
@@ -102,8 +104,10 @@ const transfer = async (req, res) => {
             });
         }
 
-        // ── MPIN gate ─────────────────────────────────────────
-        if (!mpin) {
+        // ── MPIN / biometric gate ─────────────────────────────
+        // Accept either a valid MPIN or a short-lived biometric_token
+        // issued by POST /api/auth/biometric/verify-transaction.
+        if (!mpin && !biometric_token) {
             return res.status(400).json({
                 success: false,
                 message: "mpin is required to authorise a transfer.",
@@ -118,15 +122,27 @@ const transfer = async (req, res) => {
             });
         }
 
-        const mpinValid = await bcrypt.compare(
-            mpin.toString(),
-            senderAccount.mpin_hash,
-        );
-        if (!mpinValid) {
-            return res.status(401).json({
-                success: false,
-                message: "Incorrect MPIN.",
-            });
+        if (biometric_token) {
+            // Verify the short-lived biometric transaction token
+            const payload = verifyBiometricTxToken(biometric_token);
+            if (!payload || payload.account_id !== sender_account_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Biometric verification failed or expired. Please try again.",
+                });
+            }
+            // Token is valid — skip MPIN check
+        } else {
+            const mpinValid = await bcrypt.compare(
+                mpin.toString(),
+                senderAccount.mpin_hash,
+            );
+            if (!mpinValid) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Incorrect MPIN.",
+                });
+            }
         }
 
         // ── Validation ────────────────────────────────────────
