@@ -3,6 +3,7 @@ const cors       = require("cors");
 const cookieParser = require("cookie-parser");
 
 const testRoutes        = require("./routes/testRoutes");
+const organizationRoutes = require("./routes/organizationRoutes");
 const authRoutes        = require("./routes/authRoutes");
 const biometricRoutes   = require("./routes/biometricRoutes");
 const walletRoutes      = require("./routes/walletRoutes");
@@ -131,14 +132,14 @@ app.get("/", (req, res) => res.redirect("/api/docs"));
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((req, res) => {
-    res.status(404).json({ success: false, message: "Route not found." });
+  res.status(404).json({ success: false, message: "Route not found." });
 });
 
 // ── Global Error Handler ──────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-    console.error("[GlobalError]", err);
-    res.status(500).json({ success: false, message: "Internal server error." });
+  console.error("[GlobalError]", err);
+  res.status(500).json({ success: false, message: "Internal server error." });
 });
 
 module.exports = app;
