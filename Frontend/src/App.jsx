@@ -30,6 +30,7 @@ import SetToken from "./pages/SetToken";
 import OrgQRCodes from "./pages/OrgQRCodes";
 import DynamicQRPayment from "./pages/DynamicQRPayment";
 import PaymentGateway from "./pages/PaymentGateway";
+import OAuthConsent from "./pages/OAuthConsent";
 import ApiDocs from "./pages/ApiDocs";
 import Services from "./pages/Services";
 import KharchaCard from "./pages/KharchaCard";
@@ -594,6 +595,11 @@ function App() {
                     <Route
                         path="/pay/:session_id"
                         element={<PaymentGateway />}
+                    />
+
+                    <Route
+                        path="/oauth-consent"
+                        element={<OAuthConsent />}
                     />
 
                     <Route
