@@ -12,14 +12,24 @@ const posRoutes         = require("./routes/posRoutes");
 const cardRoutes        = require("./routes/cardRoutes");
 const apiKeyRoutes      = require("./routes/apiKeyRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
-const { securityHeaders, apiRateLimiter, authRateLimiter } = require("./middleware/securityMiddleware");
+const {
+  securityHeaders,
+  apiRateLimiter,
+  authRateLimiter,
+} = require("./middleware/securityMiddleware");
+
 const { authenticate } = require("./middleware/authmiddleware");
 
-const khaltiRoutes   = require("./routes/khaltiRoutes");
-const adminRoutes    = require("./routes/adminRoutes");
+const esewaRoutes = require("./routes/esewaRoutes");
+const khaltiRoutes = require("./routes/khaltiRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
-const { publicRouter: qrPublicRoutes, orgRouter: qrOrgRoutes } = require("./routes/qrCodeRoutes");
+
+const {
+  publicRouter: qrPublicRoutes,
+  orgRouter: qrOrgRoutes,
+} = require("./routes/qrCodeRoutes");
 
 const expenseRoutes    = require("./routes/expenseRoutes");
 const incomeRoutes     = require("./routes/incomeRoutes");
@@ -86,6 +96,7 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOption
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/test",         testRoutes);
 app.use("/api/khalti",       khaltiRoutes);
+app.use("/api/esewa", esewaRoutes);
 app.use("/api/auth",         authRateLimiter, authRoutes);
 
 // Biometric routes are always called by a logged-in user.
