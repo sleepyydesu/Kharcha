@@ -1,10 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTransactions, getTransactionCategories } from "../services/api";
+import CategoryIcon from "../components/CategoryIcon";
 import giftcardIcon   from "../assets/giftcardIcon.png";
 import walletLoadIcon from "../assets/walletLoadIcon.svg";
 import walletSendIcon from "../assets/walletSendIcon.svg";
 import "./Statements.css";
+
+function detectIconType(url) {
+    if (!url) return "png";
+    return /\.svg(\?|$)/i.test(url) ? "svg" : "png";
+}
 
 function toISO(date) {
   const y = date.getFullYear();
@@ -279,7 +285,7 @@ export default function Statements() {
                 <option value="">All Categories</option>
                 {categories.map(c => (
                   <option key={c.category_id} value={c.category_id}>
-                    {c.icon ? c.icon + " " : ""}{c.name}
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -389,7 +395,19 @@ export default function Statements() {
                         <div className="stmt-row__body">
                           <span className="stmt-row__name">{getTxLabel(t)}</span>
                           <span className="stmt-row__meta">
-                            {t.category && <span className="stmt-row__tag">{t.category}</span>}
+                            {t.category && (
+                              <span className="stmt-row__tag">
+                                {t.category_icon && (
+                                  <CategoryIcon
+                                    iconUrl={t.category_icon}
+                                    iconType={detectIconType(t.category_icon)}
+                                    name={t.category}
+                                    size={13}
+                                  />
+                                )}
+                                {t.category}
+                              </span>
+                            )}
                             {t.remarks  && <span className="stmt-row__remarks">{t.remarks}</span>}
                             <span className="stmt-row__time">{fmtTime(t.created_at)}</span>
                           </span>

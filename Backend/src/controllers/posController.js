@@ -61,15 +61,18 @@ const posCharge = async (req, res) => {
         if (!amount || isNaN(parsedAmount) || parsedAmount < 1) {
             return res.status(400).json({ success: false, message: "amount must be a positive number (min NPR 1)." });
         }
+
+        // Look up by rfid_uid but also fetch the card's UUID primary key for the RPC call
         const { data: card, error: cardError } = await supabase
-            .from("physical_cards").select("card_id, account_id, status, daily_limit")
-            .eq("card_id", card_id.toUpperCase()).maybeSingle();
+            .from("cards").select("card_id, rfid_uid, account_id, status, daily_limit")
+            .eq("rfid_uid", card_id.toUpperCase()).maybeSingle();
         if (cardError) throw cardError;
         if (!card) return res.status(404).json({ success: false, message: "Card not found." });
         if (card.status !== "active") {
             const msgs = { pending: "Card not activated yet.", blocked: "Card is blocked.", expired: "Card has expired." };
             return res.status(403).json({ success: false, message: msgs[card.status] || "Card is not active." });
         }
+
         const { data: receiverAccount, error: receiverError } = await supabase
             .from("accounts").select("account_id, account_type, is_active")
             .eq("account_id", apiKey.account_id).maybeSingle();
@@ -80,8 +83,10 @@ const posCharge = async (req, res) => {
         if (card.account_id === receiverAccount.account_id) {
             return res.status(400).json({ success: false, message: "Cannot charge your own account." });
         }
+
+        // Pass card.card_id (UUID primary key), not the raw RFID UID string from the request
         const { data: result, error: chargeError } = await supabase.rpc("pos_charge_funds", {
-            p_card_id: card_id.toUpperCase(),
+            p_card_id: card.card_id,
             p_receiver_account_id: receiverAccount.account_id,
             p_amount: parsedAmount,
             p_remarks: remarks || null,
@@ -168,7 +173,7 @@ const createCheckout = async (req, res) => {
                 expires_at:   session.expires_at,
                 merchant:     org?.organization_name || "Merchant",
             },
-            qr_payload: JSON.stringify({ kharcha_checkout: session.session_id }),
+            qr_payload: JSON.stringify({ kharcha_qr_id: session.session_id }),
         });
     } catch (err) {
         console.error("[createCheckout]", err);

@@ -7,6 +7,23 @@
 .dashboard__title { font-size: 26px; font-weight: 800; margin: 0 0 6px; color: var(--text-color); letter-spacing: -0.4px; }
 .dashboard__sub   { font-size: 15px; color: var(--text-sub); margin: 0; }
 
+/* ── Icon wrapper ───────────────────────────────────────────── */
+/* Sets the color that SVG strokes inherit via currentColor.    */
+
+.db-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--category-icon-color);
+}
+
+.db-icon-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 /* ── Main Services ──────────────────────────────────────────── */
 
 .db-main {
@@ -40,7 +57,6 @@
 .db-main__icon {
     width: 40px;
     height: 40px;
-    object-fit: contain;
 }
 
 .db-main__label {
@@ -97,7 +113,6 @@
 .db-services__icon {
     width: 40px;
     height: 40px;
-    object-fit: contain;
 }
 
 .db-services__label {
@@ -200,6 +215,14 @@
     background: var(--shaded-background);
     padding: 4px;
     flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+/* SVG avatars are spans, not imgs — same size/padding but flex for centering */
+.db-recent__avatar--svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .db-recent__info {

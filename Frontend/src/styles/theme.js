@@ -90,6 +90,12 @@ export const theme = {
     kycBorder:         "#c6e8d4",
     kycIcon:           "#1a5c39",
 
+    // ── Category icon SVG color ──────────────────────────────
+    /** Color used for all SVG category icons via CSS mask.
+     *  Change this one value to recolor every default icon at once.
+     *  Per-category color from the DB overrides this per-icon. */
+    categoryIconColor:   "#1a5c39",
+
     // ── Skeleton shimmer ─────────────────────────────────────
     skelFrom:          "#f0eeea",
     skelTo:            "#e8e6e1",
@@ -155,6 +161,9 @@ export const theme = {
     kycBorder:         "#2e4f35",
     kycIcon:           "#4ade80",
 
+    // ── Category icon SVG color ──────────────────────────────
+    categoryIconColor:   "#e5e7eb",
+
     // ── Skeleton shimmer ─────────────────────────────────────
     skelFrom:          "#1a2e20",
     skelTo:            "#223528",
@@ -216,6 +225,8 @@ export const cssVarMap = {
   kycBg:             "--kyc-bg",
   kycBorder:         "--kyc-border",
   kycIcon:           "--kyc-icon",
+
+  categoryIconColor:   "--category-icon-color",
 
   skelFrom:          "--skel-from",
   skelTo:            "--skel-to",

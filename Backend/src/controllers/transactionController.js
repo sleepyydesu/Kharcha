@@ -308,7 +308,7 @@ const getCategories = async (req, res) => {
     try {
         const { data: categories, error } = await supabase
             .from("transaction_categories")
-            .select("category_id, name, icon, sort_order")
+            .select("category_id, name, icon_url, icon_type, color, sort_order")
             .eq("is_active", true)
             .order("sort_order", { ascending: true });
 

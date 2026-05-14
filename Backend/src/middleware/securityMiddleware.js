@@ -83,32 +83,43 @@ const securityHeaders = (req, res, next) => {
  * Suitable for single-process deployments.
  * For multi-process/multi-server deployments, swap the Map for Redis.
  *
- * @param {object} options
- * @param {number} options.windowMs   - Time window in ms (default: 15 minutes)
- * @param {number} options.max        - Max requests per window (default: 100)
- * @param {string} options.message    - Error message when limit exceeded
+ * @param {object}   options
+ * @param {number}   options.windowMs  - Time window in ms (default: 15 minutes)
+ * @param {number}   options.max       - Max requests per window (default: 100)
+ * @param {string}   options.message   - Error message when limit exceeded
+ * @param {Function} options.keyFn     - (req) => string — custom bucket key.
+ *                                       Defaults to req.ip when omitted.
+ *                                       Use this to key by email or user ID so
+ *                                       users behind the same IP/proxy don't
+ *                                       share each other's rate-limit bucket.
  */
 const rateLimiter = ({
     windowMs = 15 * 60 * 1000,
     max = 100,
     message = "Too many requests. Please try again later.",
+    keyFn = null,
 } = {}) => {
-    // Map<ip, { count, resetAt }>
+    // Map<key, { count, resetAt }>
     const store = new Map();
 
-    // Clean up expired entries every window to prevent memory leaks
+    // Clean up expired entries every window to prevent memory leaks.
+    // Note: the loop variable is named "key" here to avoid shadowing the
+    // "ip" variable that used to live in the middleware closure below.
     setInterval(() => {
         const now = Date.now();
-        for (const [ip, record] of store.entries()) {
-            if (record.resetAt <= now) store.delete(ip);
+        for (const [key, record] of store.entries()) {
+            if (record.resetAt <= now) store.delete(key);
         }
     }, windowMs);
 
     return (req, res, next) => {
+        // Resolve the bucket key. keyFn takes the full request so callers can
+        // inspect req.body, req.user, req.ip, or any combination they need.
         const ip = req.ip || req.socket?.remoteAddress || "unknown";
+        const key = keyFn ? keyFn(req, ip) : ip;
         const now = Date.now();
 
-        let record = store.get(ip);
+        let record = store.get(key);
 
         if (!record || record.resetAt <= now) {
             record = { count: 1, resetAt: now + windowMs };
@@ -116,7 +127,7 @@ const rateLimiter = ({
             record.count += 1;
         }
 
-        store.set(ip, record);
+        store.set(key, record);
 
         // Attach rate-limit info to headers (optional but helpful for clients)
         res.setHeader("X-RateLimit-Limit", max);
@@ -137,20 +148,38 @@ const rateLimiter = ({
 
 // ─── Preset limiters ─────────────────────────────────────────────────────────
 
-/** Strict limit for auth endpoints (OTP sending, signin attempts) */
+/**
+ * Strict limit for auth endpoints (signin attempts, OTP verification).
+ * Keys by userId when the user is already authenticated (req.user set by the
+ * authenticate middleware), falls back to email in the request body, then IP.
+ * This means users behind the same NAT/proxy don't share each other's bucket.
+ */
 const authRateLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 20,
     message:
         "Too many authentication attempts. Please wait 15 minutes before trying again.",
+    keyFn: (req, ip) => {
+        const userId = req.user?.id;
+        const email  = req.body?.email?.toLowerCase?.();
+        return `auth:${userId || email || ip}`;
+    },
 });
 
-/** Strict limit for OTP sending (prevent SMS/email flooding) */
+/**
+ * Strict limit for OTP-sending endpoints (prevent email flooding).
+ * Keys by email address so the limit is per-recipient, not per-IP.
+ * Falls back to IP if no email is present in the body.
+ */
 const otpRateLimiter = rateLimiter({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 5,
     message:
         "Too many OTP requests. Please wait 10 minutes before requesting a new code.",
+    keyFn: (req, ip) => {
+        const email = req.body?.email?.toLowerCase?.();
+        return `otp:${email || ip}`;
+    },
 });
 
 /** Standard limit for general API endpoints */

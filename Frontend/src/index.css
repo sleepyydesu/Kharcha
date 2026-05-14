@@ -1199,3 +1199,76 @@ body:not(.app-authenticated) #root {
     font-size: 18px;
   }
 }
+
+/* ── Biometric login button ─────────────────────────────────── */
+.btn-biometric {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             10px;
+    width:           100%;
+    padding:         13px 20px;
+    border:          2px solid var(--primary);
+    border-radius:   10px;
+    background:      transparent;
+    color:           var(--primary);
+    font-family:     var(--font-main);
+    font-size:       15px;
+    font-weight:     600;
+    cursor:          pointer;
+    transition:      background 0.18s, color 0.18s, box-shadow 0.18s;
+    margin-bottom:   4px;
+}
+
+.btn-biometric:hover:not(:disabled) {
+    background:  var(--primary);
+    color:       #fff;
+    box-shadow:  0 4px 14px rgba(26, 92, 57, 0.25);
+}
+
+.btn-biometric:active:not(:disabled) {
+    background:  var(--primary-dark);
+    color:       #fff;
+}
+
+.btn-biometric:disabled {
+    opacity: 0.6;
+    cursor:  not-allowed;
+}
+
+/* Spinner inside biometric button */
+.biometric-spinner {
+    display:       inline-block;
+    width:         20px;
+    height:        20px;
+    border:        2.5px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation:     biometric-spin 0.7s linear infinite;
+    flex-shrink:   0;
+}
+
+@keyframes biometric-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Divider between biometric and credentials */
+.biometric-divider {
+    display:         flex;
+    align-items:     center;
+    gap:             10px;
+    margin:          16px 0 12px;
+    color:           var(--text-light);
+    font-size:       12px;
+    font-weight:     500;
+    text-transform:  uppercase;
+    letter-spacing:  0.06em;
+}
+
+.biometric-divider::before,
+.biometric-divider::after {
+    content:    "";
+    flex:       1;
+    height:     1px;
+    background: var(--border);
+}

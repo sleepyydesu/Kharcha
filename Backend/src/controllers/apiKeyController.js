@@ -96,7 +96,7 @@ const listApiKeys = async (req, res) => {
 
         const { data: keys, error } = await supabase
             .from("api_keys")
-            .select("api_key_id, key_prefix, name, is_active, last_used_at, created_at, expires_at, default_category_id, transaction_categories(category_id, name, icon)")
+            .select("api_key_id, key_prefix, name, is_active, last_used_at, created_at, expires_at, default_category_id, transaction_categories(category_id, name, icon_url, icon_type, color)")
             .eq("account_id", account_id)
             .order("created_at", { ascending: false });
 

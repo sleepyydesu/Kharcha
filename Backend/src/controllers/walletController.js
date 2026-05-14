@@ -1,6 +1,7 @@
 const supabase = require("../services/supabaseClient");
 const bcrypt = require("bcrypt");
 const { dispatchQRWebhook } = require("./qrCodeController");
+const { verifyBiometricTxToken } = require("../utils/jwtUtils");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -79,6 +80,7 @@ const transfer = async (req, res) => {
             remarks,
             mpin,
             qr_id,
+            biometric_token,
         } = req.body;
 
         // ── Verification gate ─────────────────────────────────
@@ -102,8 +104,10 @@ const transfer = async (req, res) => {
             });
         }
 
-        // ── MPIN gate ─────────────────────────────────────────
-        if (!mpin) {
+        // ── MPIN / biometric gate ─────────────────────────────
+        // Accept either a valid MPIN or a short-lived biometric_token
+        // issued by POST /api/auth/biometric/verify-transaction.
+        if (!mpin && !biometric_token) {
             return res.status(400).json({
                 success: false,
                 message: "mpin is required to authorise a transfer.",
@@ -118,15 +122,27 @@ const transfer = async (req, res) => {
             });
         }
 
-        const mpinValid = await bcrypt.compare(
-            mpin.toString(),
-            senderAccount.mpin_hash,
-        );
-        if (!mpinValid) {
-            return res.status(401).json({
-                success: false,
-                message: "Incorrect MPIN.",
-            });
+        if (biometric_token) {
+            // Verify the short-lived biometric transaction token
+            const payload = verifyBiometricTxToken(biometric_token);
+            if (!payload || payload.account_id !== sender_account_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Biometric verification failed or expired. Please try again.",
+                });
+            }
+            // Token is valid — skip MPIN check
+        } else {
+            const mpinValid = await bcrypt.compare(
+                mpin.toString(),
+                senderAccount.mpin_hash,
+            );
+            if (!mpinValid) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Incorrect MPIN.",
+                });
+            }
         }
 
         // ── Validation ────────────────────────────────────────
@@ -299,14 +315,17 @@ const transfer = async (req, res) => {
 
         // Fire webhook + mark session complete if this came from a dynamic QR scan
         if (qr_id) {
-            // If qr_id matches a payment_sessions record, mark it as paid.
-            // This is what allows the merchant's screen to auto-detect payment.
-            // We guard with .eq("status", "pending") so a double-tap is a no-op.
+            // Mark ephemeral session QRs (created via createPaymentSession) as
+            // paid by setting is_active=false.  We only do this for session QRs
+            // (name = "Payment Session"); persistent org QR codes must stay active
+            // so they can accept multiple payments.
+            // Guard with .eq("is_active", true) so a double-tap is a no-op.
             await supabase
-                .from("payment_sessions")
-                .update({ status: "success" })
-                .eq("session_id", qr_id)
-                .eq("status", "pending");
+                .from("dynamic_qr_codes")
+                .update({ is_active: false })
+                .eq("qr_id", qr_id)
+                .eq("name", "Payment Session")
+                .eq("is_active", true);
 
             // Dispatch webhook (non-blocking — external URL can be slow)
             dispatchQRWebhook(qr_id, {
@@ -319,6 +338,34 @@ const transfer = async (req, res) => {
                 timestamp: new Date().toISOString(),
             });
         }
+
+        // Auto-log: expense for sender, income for receiver
+        const _today = new Date().toISOString().slice(0, 10);
+        const _note = remarks || "Wallet transfer";
+        supabase
+            .from("expenses")
+            .insert({
+                user_id: sender_account_id,
+                category_id: null,
+                amount: parsedAmount,
+                note: _note,
+                date: _today,
+                is_auto: true,
+            })
+            .then(() => {})
+            .catch((e) => console.error("[auto-expense]", e));
+        supabase
+            .from("income")
+            .insert({
+                user_id: receiverAccount.account_id,
+                amount: parsedAmount,
+                source: "Transfer",
+                note: _note,
+                date: _today,
+                is_auto: true,
+            })
+            .then(() => {})
+            .catch((e) => console.error("[auto-income]", e));
 
         return res.status(200).json(responsePayload);
     } catch (err) {

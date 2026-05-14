@@ -96,15 +96,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* dark surround, clear window */
+    /* dark surround — top/bottom edge fade only; square cutout is
+       handled by box-shadow on .qrs__reticle so it matches exactly */
     background:
         linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 20%),
-        linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 20%),
-        radial-gradient(
-            ellipse 260px 260px at 50% 48%,
-            transparent 46%,
-            rgba(0, 0, 0, 0.55) 48%
-        );
+        linear-gradient(to top,    rgba(0, 0, 0, 0.45) 0%, transparent 20%);
     pointer-events: none;
 }
 
@@ -114,6 +110,10 @@
     width: 240px;
     height: 240px;
     margin-bottom: 1.2rem;
+    /* Casts a huge square shadow outward — darkens everything outside
+       the scan area while keeping the reticle itself fully clear */
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    border-radius: 4px;
 }
 
 .qrs__corner {
