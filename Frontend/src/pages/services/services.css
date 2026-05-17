@@ -1,0 +1,509 @@
+/* ── services/services.css ─────────────────────────────────────
+   Shared styles for all individual service pages.
+   ───────────────────────────────────────────────────────────── */
+
+.sp-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.sp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 28px 32px 0;
+}
+.sp-header-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sp-header-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+/* ── Back button ─────────────────────────────────────────────── */
+.sp-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: var(--shaded-background);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-color);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.sp-back:hover {
+  background: var(--border);
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+.sp-body {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 520px;
+  width: 100%;
+  align-self: center;
+}
+
+/* ── Balance strip ───────────────────────────────────────────── */
+.sp-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: var(--shaded-background);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.sp-balance-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.sp-balance-val {
+  font-size: 0.93rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.sp-balance-na {
+  font-size: 0.8rem;
+  color: var(--error-text);
+}
+.sp-balance-skel {
+  width: 90px;
+  height: 13px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--skel-from) 25%,
+    var(--skel-to) 50%,
+    var(--skel-from) 75%
+  );
+  background-size: 200% 100%;
+  animation: sp-shimmer 1.2s infinite;
+}
+@keyframes sp-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Link button (inline) ────────────────────────────────────── */
+.sp-link-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+/* ── Section card ────────────────────────────────────────────── */
+.sp-section {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Field ───────────────────────────────────────────────────── */
+.sp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+.sp-label {
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  letter-spacing: 0.01em;
+}
+.sp-input,
+.sp-select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.93rem;
+  color: var(--text-color);
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  appearance: none;
+  font-family: inherit;
+}
+.sp-input:focus,
+.sp-select:focus {
+  border-color: var(--primary);
+}
+.sp-field-err {
+  font-size: 0.75rem;
+  color: var(--error-text);
+  margin: 0;
+}
+
+/* ── Amount field ────────────────────────────────────────────── */
+.sp-amount-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.sp-amount-wrap:focus-within {
+  border-color: var(--primary);
+}
+.sp-amount-wrap--err {
+  border-color: var(--error-text);
+}
+.sp-amount-curr {
+  padding: 0 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border);
+  height: 42px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.sp-amount-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.6rem 0.8rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--text-color);
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+.sp-amount-input::-webkit-outer-spin-button,
+.sp-amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* ── Preset chips ────────────────────────────────────────────── */
+.sp-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.sp-preset {
+  padding: 0.28rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+  font-family: inherit;
+}
+.sp-preset:hover {
+  background: var(--shaded-background);
+}
+.sp-preset--on {
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+/* ── Note ────────────────────────────────────────────────────── */
+.sp-note {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Submit ──────────────────────────────────────────────────── */
+.sp-submit {
+  width: 100%;
+  max-width: 520px;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--border);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
+  font-family: inherit;
+}
+.sp-submit:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.sp-submit:not(:disabled):hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+/* ── MPIN screen ─────────────────────────────────────────────── */
+.sp-mpin-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 24px 48px;
+  gap: 0.9rem;
+  position: relative;
+}
+.sp-mpin-wrap .sp-back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+}
+
+.sp-mpin-badge {
+  margin-top: 48px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--shaded-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sp-mpin-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0;
+}
+.sp-mpin-sub {
+  font-size: 0.84rem;
+  color: var(--text-sub);
+  text-align: center;
+  max-width: 290px;
+  margin: 0;
+  line-height: 1.5;
+}
+.sp-mpin-err {
+  font-size: 0.78rem;
+  color: var(--error-text);
+  margin: 0;
+}
+
+.sp-mpin-dots {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.4rem 0;
+}
+.sp-mpin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
+}
+.sp-mpin-dot--on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Numpad ──────────────────────────────────────────────────── */
+.sp-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  gap: 0.5rem;
+}
+.sp-numpad-key {
+  height: 60px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  font-family: inherit;
+}
+.sp-numpad-key:hover:not(:disabled):not(.sp-numpad-key--empty) {
+  background: var(--shaded-background);
+}
+.sp-numpad-key--empty {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+.sp-numpad-key--del {
+  color: var(--text-sub);
+}
+
+.sp-confirm-btn {
+  width: 100%;
+  max-width: 236px;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--border);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  font-family: inherit;
+  margin-top: 0.4rem;
+}
+.sp-confirm-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* ── Success / Error ─────────────────────────────────────────── */
+.sp-center-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  gap: 0.75rem;
+  text-align: center;
+}
+.sp-success-icon {
+  line-height: 1;
+}
+.sp-error-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--error-bg);
+  color: var(--error-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.sp-center-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0;
+}
+.sp-center-sub {
+  font-size: 0.86rem;
+  color: var(--text-sub);
+  margin: 0;
+}
+
+.sp-result-card {
+  width: 100%;
+  max-width: 320px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  text-align: left;
+  margin: 0.4rem 0;
+}
+.sp-result-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.sp-result-key {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.sp-result-val {
+  font-size: 0.83rem;
+  color: var(--text-color);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+.sp-result-mono {
+  font-family: monospace;
+  font-size: 0.77rem;
+}
+
+.sp-done-btn {
+  padding: 0.72rem 2.4rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  margin-top: 0.4rem;
+  min-width: 160px;
+}
+.sp-done-btn:hover {
+  opacity: 0.87;
+}
+.sp-done-btn--ghost {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-color);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .sp-header {
+    padding: 18px 16px 0;
+  }
+  .sp-body {
+    padding: 18px 16px 40px;
+    max-width: 100%;
+  }
+  .sp-numpad {
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    max-width: 280px;
+  }
+  .sp-numpad-key {
+    height: 54px;
+  }
+}

@@ -30,21 +30,29 @@ import SetToken from "./pages/SetToken";
 import OrgQRCodes from "./pages/OrgQRCodes";
 import DynamicQRPayment from "./pages/DynamicQRPayment";
 import PaymentGateway from "./pages/PaymentGateway";
+import OAuthConsent from "./pages/OAuthConsent";
 import ApiDocs from "./pages/ApiDocs";
 import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
+import Topup from "./pages/services/Topup";
+import Internet from "./pages/services/Internet";
+import Landline from "./pages/services/Landline";
+import Water from "./pages/services/Water";
+import Electricity from "./pages/services/Electricity";
+import Education from "./pages/services/Education";
 import KharchaCard from "./pages/KharchaCard";
 import AdminDashboard from "./pages/AdminDashboard";
 
 // ── Bubble Background (Auth only) ─────────────────────────────
 function BubblePortal() {
-    return createPortal(
-        <div className="bubble-layer" aria-hidden="true">
-            {[...Array(12)].map((_, i) => (
-                <div key={i} className={`bubble bubble-${i + 1}`} />
-            ))}
-        </div>,
-        document.body,
-    );
+  return createPortal(
+    <div className="bubble-layer" aria-hidden="true">
+      {[...Array(12)].map((_, i) => (
+        <div key={i} className={`bubble bubble-${i + 1}`} />
+      ))}
+    </div>,
+    document.body,
+  );
 }
 
 // ── Session Expired Modal ─────────────────────────────────────
@@ -452,66 +460,91 @@ function AuthApp({ onLogin }) {
 
 // ── App Shell ────────────────────────────────────────────────
 function AppShell({ qrOpen, setQrOpen }) {
-    const location = useLocation();
-    const isDashboard = location.pathname === "/";
+  const location = useLocation();
+  const isDashboard = location.pathname === "/";
 
-    const handleQrClose = useCallback(() => {
-        setQrOpen(false);
-    }, [setQrOpen]);
+  const handleQrClose = useCallback(() => {
+    setQrOpen(false);
+  }, [setQrOpen]);
 
-    return (
-        <>
-            <div className="app-shell">
-                <Sidebar onScanQR={() => setQrOpen(true)} />
-                <BalancePanel dashboardOnly={!isDashboard} />
-                <NotificationToast />
+return (
+    <>
+        <div className="app-shell">
+            <Sidebar onScanQR={() => setQrOpen(true)} />
+            <BalancePanel dashboardOnly={!isDashboard} />
+            <NotificationToast />
 
-                <main
-                    className={`app-content${
-                        isDashboard ? " app-content--has-panel" : ""
-                    }`}
-                >
-                    <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/load" element={<LoadMoney />} />
-                        <Route path="/send" element={<SendMoney />} />
-                        <Route
-                            path="/statements"
-                            element={<Statements />}
-                        />
-                        <Route
-                            path="/statements/:transaction_id"
-                            element={<StatementDetail />}
-                        />
-                        <Route path="/expenses" element={<Expenses />} />
-                        <Route path="/account" element={<Account />} />
-                        <Route path="/set-token" element={<SetToken />} />
-                        <Route
-                            path="/org/qr-codes"
-                            element={<OrgQRCodes />}
-                        />
-                        <Route
-                            path="/org/dynamic-qr"
-                            element={<DynamicQRPayment />}
-                        />
-                        <Route
-                            path="/developers"
-                            element={<ApiDocs />}
-                        />
-                        <Route path="/services" element={<Services />} />
-                        <Route path="/card" element={<KharchaCard />} />
-                        <Route
-                            path="/admin"
-                            element={<AdminDashboard />}
-                        />
-                    </Routes>
-                </main>
-            </div>
+            <main
+                className={`app-content${
+                    isDashboard ? " app-content--has-panel" : ""
+                }`}
+            >
+                <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/load" element={<LoadMoney />} />
+                    <Route path="/send" element={<SendMoney />} />
 
-            <QRScanner open={qrOpen} onClose={handleQrClose} />
-            <KharchaBot />
-        </>
-    );
+                    <Route
+                        path="/statements"
+                        element={<Statements />}
+                    />
+
+                    <Route
+                        path="/statements/:transaction_id"
+                        element={<StatementDetail />}
+                    />
+
+                    <Route path="/expenses" element={<Expenses />} />
+                    <Route path="/account" element={<Account />} />
+                    <Route path="/set-token" element={<SetToken />} />
+
+                    <Route
+                        path="/org/qr-codes"
+                        element={<OrgQRCodes />}
+                    />
+
+                    <Route
+                        path="/org/dynamic-qr"
+                        element={<DynamicQRPayment />}
+                    />
+
+                    <Route
+                        path="/developers"
+                        element={<ApiDocs />}
+                    />
+
+                    <Route path="/services" element={<Services />} />
+                    <Route
+                        path="/services/:type"
+                        element={<ServiceDetail />}
+                    />
+                    <Route path="/services/topup" element={<Topup />} />
+                    <Route path="/services/internet" element={<Internet />} />
+                    <Route path="/services/landline" element={<Landline />} />
+                    <Route path="/services/water" element={<Water />} />
+                    <Route
+                        path="/services/electricity"
+                        element={<Electricity />}
+                    />
+                    <Route
+                        path="/services/education"
+                        element={<Education />}
+                    />
+
+                    <Route path="/card" element={<KharchaCard />} />
+
+                    <Route
+                        path="/admin"
+                        element={<AdminDashboard />}
+                    />
+                </Routes>
+            </main>
+        </div>
+
+        <QRScanner open={qrOpen} onClose={handleQrClose} />
+        <KharchaBot />
+    </>
+);
 }
 
 // ── Root App ─────────────────────────────────────────────────
@@ -594,6 +627,11 @@ function App() {
                     <Route
                         path="/pay/:session_id"
                         element={<PaymentGateway />}
+                    />
+
+                    <Route
+                        path="/oauth-consent"
+                        element={<OAuthConsent />}
                     />
 
                     <Route

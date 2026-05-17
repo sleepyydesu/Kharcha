@@ -1,0 +1,306 @@
+/* ─────────────────────────────────────────────────────────────
+   ServicePaymentPage — shared shell for all service pages
+   ───────────────────────────────────────────────────────────── */
+
+.spp {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* ── Back button ────────────────────────────────────────────── */
+
+.spp__back {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-bottom: 1.8rem;
+  transition: color 0.15s;
+}
+.spp__back:hover {
+  color: var(--text-color);
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.spp__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+
+.spp__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--shaded-background);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.spp__icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.spp__title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.4px;
+}
+
+.spp__sub {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin: 0;
+}
+
+/* ── Result banners ─────────────────────────────────────────── */
+
+.spp__banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid;
+  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.spp__banner span:nth-child(2) {
+  flex: 1;
+}
+
+.spp__banner--success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+.spp__banner--error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.spp__banner-icon {
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.spp__banner-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.25rem;
+  border-radius: 5px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.spp__banner-close:hover {
+  opacity: 1;
+}
+
+/* ── Form ───────────────────────────────────────────────────── */
+
+.spp__form {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.spp__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Field group ────────────────────────────────────────────── */
+
+.spp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.spp-field__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-sub);
+}
+
+.spp-field__input,
+.spp-field__select {
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.18s;
+  font-family: inherit;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.spp-field__input:focus,
+.spp-field__select:focus {
+  border-color: var(--primary);
+}
+
+.spp-field__input.has-error,
+.spp-field__select.has-error {
+  border-color: var(--error-text);
+}
+
+/* Custom select arrow */
+.spp-field__select-wrap {
+  position: relative;
+}
+.spp-field__select-wrap::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-top: 5.5px solid var(--text-sub);
+}
+
+.spp-field__select {
+  padding-right: 2.2rem;
+  cursor: pointer;
+}
+
+/* Amount input prefix */
+.spp-field__amount-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  overflow: hidden;
+  transition: border-color 0.18s;
+}
+.spp-field__amount-wrap:focus-within {
+  border-color: var(--primary);
+}
+.spp-field__amount-wrap.has-error {
+  border-color: var(--error-text);
+}
+
+.spp-field__amount-prefix {
+  padding: 0 0.8rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-sub);
+  border-right: 1.5px solid var(--border);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.spp-field__amount-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.spp-field__error {
+  font-size: 0.78rem;
+  color: var(--error-text);
+  margin: 0;
+}
+
+/* ── Submit ─────────────────────────────────────────────────── */
+
+.spp__submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 11px;
+  padding: 0.9rem;
+  font-size: 0.97rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+  letter-spacing: 0.01em;
+}
+.spp__submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.spp__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.spp__spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spp-spin 0.7s linear infinite;
+}
+
+@keyframes spp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .spp {
+    padding: 1.2rem 1rem 2.5rem;
+  }
+  .spp__form {
+    padding: 1.1rem;
+  }
+  .spp__title {
+    font-size: 1.3rem;
+  }
+}

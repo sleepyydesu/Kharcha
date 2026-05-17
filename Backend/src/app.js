@@ -3,6 +3,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const testRoutes = require("./routes/testRoutes");
+const organizationRoutes = require("./routes/organizationRoutes");
 const authRoutes = require("./routes/authRoutes");
 const biometricRoutes = require("./routes/biometricRoutes");
 const walletRoutes = require("./routes/walletRoutes");
@@ -17,18 +18,21 @@ const {
   apiRateLimiter,
   authRateLimiter,
 } = require("./middleware/securityMiddleware");
+
 const { authenticate } = require("./middleware/authmiddleware");
 
+const esewaRoutes = require("./routes/esewaRoutes");
 const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+
 const {
   publicRouter: qrPublicRoutes,
   orgRouter: qrOrgRoutes,
 } = require("./routes/qrCodeRoutes");
-const kycRoutes = require("./routes/kycRoutes");
 
+const kycRoutes = require("./routes/kycRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
@@ -109,6 +113,7 @@ app.use(
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/test", testRoutes);
 app.use("/api/khalti", khaltiRoutes);
+app.use("/api/esewa", esewaRoutes);
 app.use("/api/auth", authRateLimiter, authRoutes);
 
 // Biometric routes are always called by a logged-in user.
