@@ -1,17 +1,17 @@
-const express    = require("express");
-const cors       = require("cors");
+const express = require("express");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
-const testRoutes        = require("./routes/testRoutes");
+const testRoutes = require("./routes/testRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
-const authRoutes        = require("./routes/authRoutes");
-const biometricRoutes   = require("./routes/biometricRoutes");
-const walletRoutes      = require("./routes/walletRoutes");
+const authRoutes = require("./routes/authRoutes");
+const biometricRoutes = require("./routes/biometricRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
-const profileRoutes     = require("./routes/profileRoutes");
-const posRoutes         = require("./routes/posRoutes");
-const cardRoutes        = require("./routes/cardRoutes");
-const apiKeyRoutes      = require("./routes/apiKeyRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const posRoutes = require("./routes/posRoutes");
+const cardRoutes = require("./routes/cardRoutes");
+const apiKeyRoutes = require("./routes/apiKeyRoutes");
 const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
   securityHeaders,
@@ -32,12 +32,13 @@ const {
   orgRouter: qrOrgRoutes,
 } = require("./routes/qrCodeRoutes");
 
-const expenseRoutes    = require("./routes/expenseRoutes");
-const incomeRoutes     = require("./routes/incomeRoutes");
-const budgetRoutes     = require("./routes/budgetRoutes");
-const paymentRoutes    = require("./routes/paymentRoutes");
-const payPortalRoutes  = require("./routes/payPortalRoutes");
-const oauthRoutes      = require("./routes/oauthRoutes");
+const kycRoutes = require("./routes/kycRoutes");
+const expenseRoutes = require("./routes/expenseRoutes");
+const incomeRoutes = require("./routes/incomeRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const payPortalRoutes = require("./routes/payPortalRoutes");
+const oauthRoutes = require("./routes/oauthRoutes");
 
 const app = express();
 
@@ -49,35 +50,46 @@ app.use(securityHeaders);
 // CORS_ORIGIN must be the exact frontend origin — wildcards ("*") are blocked by
 // browsers when credentials are included.
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
-    .split(",")
-    .map((o) => o.trim());
+  .split(",")
+  .map((o) => o.trim());
 
 // Matches VS Code / GitHub Codespaces / devtunnels forwarded ports, e.g.:
 //   https://2991dwht-5173.inc1.devtunnels.ms
 //   https://abc123-5173.preview.app.github.dev
-const DEV_TUNNEL_RE = /^https:\/\/[a-z0-9]+-\d+\.(inc\d+\.devtunnels\.ms|preview\.app\.github\.dev)$/i;
+const DEV_TUNNEL_RE =
+  /^https:\/\/[a-z0-9]+-\d+\.(inc\d+\.devtunnels\.ms|preview\.app\.github\.dev)$/i;
 
 function isOriginAllowed(origin) {
-    if (!origin) return true; // curl / Postman / same-host Swagger
-    if (allowedOrigins.includes(origin)) return true;
-    if (process.env.NODE_ENV !== "production" && DEV_TUNNEL_RE.test(origin)) return true;
-    return false;
+  if (!origin) return true; // curl / Postman / same-host Swagger
+  if (allowedOrigins.includes(origin)) return true;
+  if (process.env.NODE_ENV !== "production" && DEV_TUNNEL_RE.test(origin))
+    return true;
+  return false;
 }
 
 app.use(
-    cors({
-        origin: (origin, callback) => {
-            if (isOriginAllowed(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error(`CORS: origin '${origin}' is not allowed`));
-            }
-        },
-        credentials: true,   // <-- required for cookies
-        methods:     ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "X-Payment-Token"],
-        exposedHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
-    }),
+  cors({
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin '${origin}' is not allowed`));
+      }
+    },
+    credentials: true, // <-- required for cookies
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-API-Key",
+      "X-Payment-Token",
+    ],
+    exposedHeaders: [
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+  }),
 );
 
 // ── Cookie Parser ─────────────────────────────────────────────
@@ -92,36 +104,41 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api", apiRateLimiter);
 
 // ── API Docs (Swagger UI) ────────────────────────────────────
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOptions));
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, swaggerOptions),
+);
 
 // ── Routes ───────────────────────────────────────────────────
-app.use("/api/test",         testRoutes);
-app.use("/api/khalti",       khaltiRoutes);
+app.use("/api/test", testRoutes);
+app.use("/api/khalti", khaltiRoutes);
 app.use("/api/esewa", esewaRoutes);
-app.use("/api/auth",         authRateLimiter, authRoutes);
+app.use("/api/auth", authRateLimiter, authRoutes);
 
 // Biometric routes are always called by a logged-in user.
 // authenticate runs first so req.user.id is populated before authRateLimiter
 // evaluates its keyFn — this means the rate limit is per-user, not per-IP.
 app.use("/api/auth/biometric", authRateLimiter, biometricRoutes);
 
-app.use("/api/wallet",       walletRoutes);
+app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
-app.use("/api/profile",      profileRoutes);
-app.use("/api/pos",          posRoutes);
-app.use("/api/cards",        cardRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/pos", posRoutes);
+app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
-app.use("/api/admin",        adminRoutes);
-app.use("/api/gift-cards",   giftCardRoutes);
-app.use("/api/categories",   categoryRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/gift-cards", giftCardRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/org/qr-codes", qrOrgRoutes);
-app.use("/api/qr-codes",     qrPublicRoutes);
-app.use("/api/expenses",     expenseRoutes);
-app.use("/api/income",       incomeRoutes);
-app.use("/api/budgets",      budgetRoutes);
-app.use("/api/payment",      paymentRoutes);
-app.use("/api/pay-portal",   payPortalRoutes);
-app.use("/api/oauth",        oauthRoutes);
+app.use("/api/qr-codes", qrPublicRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/income", incomeRoutes);
+app.use("/api/budgets", budgetRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/pay-portal", payPortalRoutes);
+app.use("/api/oauth", oauthRoutes);
+app.use("/api/kyc", kycRoutes);
 
 // ── AI Assistant ──────────────────────────────────────────────
 const aiRoutes = require("./routes/aiRoutes");

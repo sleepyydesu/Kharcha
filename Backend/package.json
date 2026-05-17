@@ -13,9 +13,9 @@
     "type": "commonjs",
     "dependencies": {
         "@supabase/supabase-js": "^2.99.3",
-        "cbor": "^9.0.2",
         "axios": "^1.14.0",
         "bcrypt": "^5.1.1",
+        "cbor": "^9.0.2",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",
@@ -23,6 +23,7 @@
         "express-rate-limit": "^8.3.2",
         "jsonwebtoken": "^9.0.3",
         "mailtrap": "^3.4.0",
+        "multer": "^2.1.1",
         "swagger-ui-express": "^5.0.1",
         "uuid": "^13.0.0"
     },
