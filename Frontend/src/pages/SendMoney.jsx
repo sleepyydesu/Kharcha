@@ -464,13 +464,21 @@ export default function SendMoney() {
                         <input
                             className="sm__input"
                             type="tel"
+                            inputMode="numeric"
                             placeholder="98XXXXXXXX"
                             value={phone}
                             autoFocus
                             onChange={(e) => { setPhone(e.target.value); setLookupErr(""); }}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && !lookingUp && phone.trim() && doLookup()
-                            }
+                            onKeyDown={(e) => {
+                                // Allow control keys and + prefix for country codes
+                                const ctrl = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
+                                if (ctrl.includes(e.key)) return;
+                                if (e.key === "+" && e.target.selectionStart === 0) return;
+                                // Block anything that isn't a digit
+                                if (!/^\d$/.test(e.key)) e.preventDefault();
+                                // Also trigger lookup on Enter
+                                if (e.key === "Enter" && !lookingUp && phone.trim()) doLookup();
+                            }}
                         />
                     </div>
                     {lookupErr && <p className="sm__field-err">{lookupErr}</p>}
@@ -535,11 +543,16 @@ export default function SendMoney() {
                     <input
                         className={`sm__input sm__input--amount${amountLocked ? " sm__input--locked" : ""}`}
                         type="number"
+                        inputMode="decimal"
                         min="1"
                         placeholder="0.00"
                         value={amount}
                         autoFocus={!qrAmount}
                         readOnly={amountLocked}
+                        onKeyDown={(e) => {
+                            // type="number" allows e/E (scientific notation) and +/- by default — block them
+                            if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                        }}
                         onChange={(e) => {
                             if (amountLocked) return;
                             setAmount(e.target.value);

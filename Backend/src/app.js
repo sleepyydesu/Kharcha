@@ -16,7 +16,6 @@ const { swaggerUi, swaggerSpec, swaggerOptions } = require("./swagger");
 const {
   securityHeaders,
   apiRateLimiter,
-  authRateLimiter,
 } = require("./middleware/securityMiddleware");
 
 const { authenticate } = require("./middleware/authmiddleware");
@@ -114,12 +113,10 @@ app.use(
 app.use("/api/test", testRoutes);
 app.use("/api/khalti", khaltiRoutes);
 app.use("/api/esewa", esewaRoutes);
-app.use("/api/auth", authRateLimiter, authRoutes);
+app.use("/api/auth", authRoutes);
 
 // Biometric routes are always called by a logged-in user.
-// authenticate runs first so req.user.id is populated before authRateLimiter
-// evaluates its keyFn — this means the rate limit is per-user, not per-IP.
-app.use("/api/auth/biometric", authRateLimiter, biometricRoutes);
+app.use("/api/auth/biometric", biometricRoutes);
 
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);

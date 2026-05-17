@@ -63,7 +63,7 @@ function LoginForm({ onLogin, onShowReset }) {
             if (data.success) {
                 try {
                     const mpinStatus = await getMpinStatus();
-                    if (!mpinStatus?.mpin_configured) {
+                    if (!mpinStatus?.mpin_set) {
                         addNotification({
                             id:    "mpin_setup_prompt",
                             title: "Set up your MPIN",

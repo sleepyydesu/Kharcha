@@ -2,6 +2,7 @@ const supabase = require("../services/supabaseClient");
 const bcrypt = require("bcrypt");
 const { dispatchQRWebhook } = require("./qrCodeController");
 const { verifyBiometricTxToken } = require("../utils/jwtUtils");
+const { mpinLockout } = require("../middleware/securityMiddleware");
 
 // ─────────────────────────────────────────────────────────────
 //  GET WALLET
@@ -133,16 +134,39 @@ const transfer = async (req, res) => {
             }
             // Token is valid — skip MPIN check
         } else {
+            // ── MPIN lockout check ────────────────────────────
+            const mpinLockoutKey = `mpin:${sender_account_id}`;
+            const locked = mpinLockout.check(mpinLockoutKey);
+            if (locked) {
+                return res.status(423).json({
+                    success: false,
+                    message: `MPIN locked due to too many incorrect attempts. Please try again in ${Math.ceil(locked.retryAfterSeconds / 60)} minutes.`,
+                    retry_after_seconds: locked.retryAfterSeconds,
+                });
+            }
+
             const mpinValid = await bcrypt.compare(
                 mpin.toString(),
                 senderAccount.mpin_hash,
             );
             if (!mpinValid) {
+                const result = mpinLockout.failure(mpinLockoutKey);
+                if (result.locked) {
+                    return res.status(423).json({
+                        success: false,
+                        message: "MPIN locked due to too many incorrect attempts. Please try again in 15 minutes.",
+                        retry_after_seconds: result.retryAfterSeconds,
+                    });
+                }
+                const remaining = result.failuresRemaining;
                 return res.status(401).json({
                     success: false,
-                    message: "Incorrect MPIN.",
+                    message: `Incorrect MPIN. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before MPIN is locked.`,
                 });
             }
+
+            // MPIN correct — clear failure counter
+            mpinLockout.success(mpinLockoutKey);
         }
 
         // ── Validation ────────────────────────────────────────

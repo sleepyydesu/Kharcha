@@ -17,6 +17,7 @@ const {
     revokeAllUserTokens,
 } = require("../services/tokenService");
 const { setAuthCookies, clearAuthCookies, REFRESH_COOKIE } = require("../utils/cookieUtils");
+const { loginLockout, mpinLockout } = require("../middleware/securityMiddleware");
 
 const SALT_ROUNDS = 10;
 const OTP_EXPIRY_MINUTES = 15;
@@ -316,6 +317,19 @@ const signin = async (req, res) => {
         const lookupField = isEmail ? "email" : "phone_number";
         const lookupValue = isEmail ? identifier.toLowerCase().trim() : identifier.trim();
 
+        // ── Lockout check ─────────────────────────────────────
+        // Key by the normalised identifier so the lock is account-specific,
+        // not IP-specific (users behind NAT won't affect each other).
+        const lockoutKey = `signin:${lookupValue}`;
+        const locked = loginLockout.check(lockoutKey);
+        if (locked) {
+            return res.status(423).json({
+                success: false,
+                message: `Account temporarily locked due to too many failed sign-in attempts. Please try again in ${Math.ceil(locked.retryAfterSeconds / 60)} minutes.`,
+                retry_after_seconds: locked.retryAfterSeconds,
+            });
+        }
+
         const { data: account, error } = await supabase
             .from("accounts")
             .select("account_id, account_type, email, phone_number, password_hash, mpin_hash, is_active, is_verified")
@@ -324,7 +338,10 @@ const signin = async (req, res) => {
 
         if (error) throw error;
 
+        // Deliberately vague — don't reveal whether the account exists.
+        // Still record a failure to prevent enumeration via timing differences.
         if (!account) {
+            loginLockout.failure(lockoutKey);
             return res.status(401).json({ success: false, message: "Invalid credentials." });
         }
 
@@ -346,14 +363,37 @@ const signin = async (req, res) => {
 
         if (!authenticated) {
             if (!account.password_hash) {
+                const result = loginLockout.failure(lockoutKey);
+                if (result.locked) {
+                    return res.status(423).json({
+                        success: false,
+                        message: "Account locked due to too many failed sign-in attempts. Please try again in 15 minutes.",
+                        retry_after_seconds: result.retryAfterSeconds,
+                    });
+                }
                 return res.status(401).json({ success: false, message: "Invalid credentials." });
             }
             authenticated = await bcrypt.compare(credentialStr, account.password_hash);
         }
 
         if (!authenticated) {
-            return res.status(401).json({ success: false, message: "Invalid credentials." });
+            const result = loginLockout.failure(lockoutKey);
+            if (result.locked) {
+                return res.status(423).json({
+                    success: false,
+                    message: "Account locked due to too many failed sign-in attempts. Please try again in 15 minutes.",
+                    retry_after_seconds: result.retryAfterSeconds,
+                });
+            }
+            const remaining = result.failuresRemaining;
+            return res.status(401).json({
+                success: false,
+                message: `Invalid credentials. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before account is locked.`,
+            });
         }
+
+        // ── Success — clear failure counter ───────────────────
+        loginLockout.success(lockoutKey);
 
         // ── Issue tokens as httpOnly cookies ──────────────────
         await issueTokens(res, {
@@ -572,6 +612,17 @@ const changeMpin = async (req, res) => {
             return res.status(400).json({ success: false, message: "New MPIN must be different from the current one." });
         }
 
+        // ── Lockout check ─────────────────────────────────────
+        const lockoutKey = `mpin:${account_id}`;
+        const locked = mpinLockout.check(lockoutKey);
+        if (locked) {
+            return res.status(423).json({
+                success: false,
+                message: `MPIN locked due to too many incorrect attempts. Please try again in ${Math.ceil(locked.retryAfterSeconds / 60)} minutes.`,
+                retry_after_seconds: locked.retryAfterSeconds,
+            });
+        }
+
         const { data: account, error } = await supabase
             .from("accounts")
             .select("mpin_hash")
@@ -589,8 +640,22 @@ const changeMpin = async (req, res) => {
 
         const mpinMatch = await bcrypt.compare(current_mpin.toString(), account.mpin_hash);
         if (!mpinMatch) {
-            return res.status(401).json({ success: false, message: "Current MPIN is incorrect." });
+            const result = mpinLockout.failure(lockoutKey);
+            if (result.locked) {
+                return res.status(423).json({
+                    success: false,
+                    message: "MPIN locked due to too many incorrect attempts. Please try again in 15 minutes.",
+                    retry_after_seconds: result.retryAfterSeconds,
+                });
+            }
+            const remaining = result.failuresRemaining;
+            return res.status(401).json({
+                success: false,
+                message: `Current MPIN is incorrect. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before MPIN is locked.`,
+            });
         }
+
+        mpinLockout.success(lockoutKey);
 
         const new_mpin_hash = await bcrypt.hash(new_mpin.toString(), SALT_ROUNDS);
         const { error: updateError } = await supabase
@@ -790,6 +855,17 @@ const verifyMpin = async (req, res) => {
             return res.status(400).json({ success: false, message: "mpin is required." });
         }
 
+        // ── Lockout check ─────────────────────────────────────
+        const lockoutKey = `mpin:${account_id}`;
+        const locked = mpinLockout.check(lockoutKey);
+        if (locked) {
+            return res.status(423).json({
+                success: false,
+                message: `MPIN locked due to too many incorrect attempts. Please try again in ${Math.ceil(locked.retryAfterSeconds / 60)} minutes.`,
+                retry_after_seconds: locked.retryAfterSeconds,
+            });
+        }
+
         const { data: account, error } = await supabase
             .from("accounts")
             .select("mpin_hash")
@@ -807,9 +883,22 @@ const verifyMpin = async (req, res) => {
 
         const valid = await bcrypt.compare(mpin.toString(), account.mpin_hash);
         if (!valid) {
-            return res.status(401).json({ success: false, message: "Incorrect MPIN." });
+            const result = mpinLockout.failure(lockoutKey);
+            if (result.locked) {
+                return res.status(423).json({
+                    success: false,
+                    message: "MPIN locked due to too many incorrect attempts. Please try again in 15 minutes.",
+                    retry_after_seconds: result.retryAfterSeconds,
+                });
+            }
+            const remaining = result.failuresRemaining;
+            return res.status(401).json({
+                success: false,
+                message: `Incorrect MPIN. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before MPIN is locked.`,
+            });
         }
 
+        mpinLockout.success(lockoutKey);
         return res.status(200).json({ success: true, message: "MPIN verified." });
     } catch (err) {
         console.error("[verifyMpin]", err);
@@ -833,8 +922,6 @@ module.exports = {
     resetPassword,
     forgotMpinSendOTP,
     resetMpin,
-    // Exported for use by biometricController
     issueTokens,
-    // Lightweight MPIN check — used before sensitive setup flows (e.g. biometric enrollment)
     verifyMpin,
 };

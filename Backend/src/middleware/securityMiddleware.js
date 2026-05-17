@@ -196,6 +196,115 @@ const transferRateLimiter = rateLimiter({
     message: "Too many transfer requests. Please wait before trying again.",
 });
 
+// ─── 3. Account Lockout ───────────────────────────────────────────────────────
+/**
+ * Creates a per-key failure tracker that locks a key after too many failures.
+ *
+ * Usage pattern (inside a controller):
+ *
+ *   const status = loginLockout.check(key);
+ *   if (status) return res.status(423).json({ ... status ... });
+ *
+ *   // … attempt the credential check …
+ *
+ *   if (!valid) {
+ *     const result = loginLockout.failure(key);
+ *     return res.status(result.locked ? 423 : 401).json({ ... result ... });
+ *   }
+ *   loginLockout.success(key);   // clear on success
+ *
+ * @param {object} options
+ * @param {number} options.maxFailures    - Failures before lockout (default: 5)
+ * @param {number} options.lockDurationMs - Lock duration in ms (default: 15 min)
+ */
+const createLockoutStore = ({
+    maxFailures   = 5,
+    lockDurationMs = 15 * 60 * 1000,
+} = {}) => {
+    // Map<key, { failures: number, lockedUntil: number|null }>
+    const store = new Map();
+
+    // Prune entries whose lock window has fully expired.
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, record] of store.entries()) {
+            if (!record.lockedUntil || record.lockedUntil <= now) {
+                store.delete(key);
+            }
+        }
+    }, lockDurationMs);
+
+    return {
+        /**
+         * Check whether a key is currently locked.
+         * Returns null when clear, or { locked, retryAfterSeconds } when locked.
+         */
+        check(key) {
+            const record = store.get(key);
+            if (!record?.lockedUntil) return null;
+            const now = Date.now();
+            if (record.lockedUntil > now) {
+                return {
+                    locked: true,
+                    retryAfterSeconds: Math.ceil((record.lockedUntil - now) / 1000),
+                };
+            }
+            return null;
+        },
+
+        /**
+         * Record a failed attempt.
+         * Returns { locked, failuresRemaining, retryAfterSeconds }.
+         */
+        failure(key) {
+            const now = Date.now();
+            let record = store.get(key) || { failures: 0, lockedUntil: null };
+
+            // If a previous lock already expired, start fresh.
+            if (record.lockedUntil && record.lockedUntil <= now) {
+                record = { failures: 0, lockedUntil: null };
+            }
+
+            record.failures += 1;
+            const locked = record.failures >= maxFailures;
+            if (locked) record.lockedUntil = now + lockDurationMs;
+            store.set(key, record);
+
+            return {
+                locked,
+                failuresRemaining: Math.max(0, maxFailures - record.failures),
+                retryAfterSeconds: locked ? Math.ceil(lockDurationMs / 1000) : null,
+            };
+        },
+
+        /**
+         * Clear the failure record after a successful authentication.
+         */
+        success(key) {
+            store.delete(key);
+        },
+    };
+};
+
+/**
+ * Login lockout — keyed by the identifier the user supplies (email or phone).
+ * Locks after 5 consecutive failed sign-in attempts for 15 minutes.
+ */
+const loginLockout = createLockoutStore({
+    maxFailures:    5,
+    lockDurationMs: 15 * 60 * 1000,
+});
+
+/**
+ * MPIN lockout — keyed by account_id.
+ * Locks after 5 consecutive incorrect MPINs for 15 minutes.
+ * Applied to: wallet transfers, /mpin/verify, /mpin/change.
+ */
+const mpinLockout = createLockoutStore({
+    maxFailures:    5,
+    lockDurationMs: 15 * 60 * 1000,
+});
+
 module.exports = {
     securityHeaders,
     rateLimiter,
@@ -203,4 +312,7 @@ module.exports = {
     otpRateLimiter,
     apiRateLimiter,
     transferRateLimiter,
+    createLockoutStore,
+    loginLockout,
+    mpinLockout,
 };
