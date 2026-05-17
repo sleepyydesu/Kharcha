@@ -79,6 +79,7 @@ function StatusBadge({ status }) {
   const map = {
     pending: "adm-badge--warn",
     approved: "adm-badge--success",
+    verified: "adm-badge--success",
     rejected: "adm-badge--error",
     issued: "adm-badge--info",
     active: "adm-badge--success",
@@ -127,7 +128,7 @@ function VerificationSection({ toast }) {
     setLoading(true);
     try {
       const res = await adminListVerifications({ status: tab, limit: 50 });
-      setItems(res.data || []);
+      setItems(res.submissions || []);
     } catch (e) {
       toast(e.message || "Failed to load verifications.", "error");
     } finally {
@@ -144,8 +145,8 @@ function VerificationSection({ toast }) {
     setNotes("");
     setDL(true);
     try {
-      const res = await adminGetVerification(item.request_id);
-      setDetail(res.data);
+      const res = await adminGetVerification(item.id);
+      setDetail(res);
     } catch (e) {
       toast(e.message || "Failed to load details.", "error");
       setDetail(null);
@@ -164,7 +165,7 @@ function VerificationSection({ toast }) {
     if (!selected) return;
     setRL(true);
     try {
-      await adminReviewVerification(selected.request_id, {
+      await adminReviewVerification(selected.id, {
         action,
         admin_notes: notes,
       });
@@ -209,7 +210,7 @@ function VerificationSection({ toast }) {
           </div>
         </div>
         <div className="adm-tabs">
-          {["pending", "approved", "rejected"].map((t) => (
+          {["pending", "verified", "rejected"].map((t) => (
             <button
               key={t}
               className={`adm-tab ${tab === t ? "adm-tab--active" : ""}`}
@@ -254,11 +255,11 @@ function VerificationSection({ toast }) {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.request_id} className="adm-table-row">
-                  <td className="adm-td-name">{item.user?.full_name || "—"}</td>
-                  <td className="adm-td-sub">{item.user?.email || "—"}</td>
-                  <td className="adm-td-sub">{item.dob || "—"}</td>
-                  <td className="adm-td-sub">{fmtDate(item.created_at)}</td>
+                <tr key={item.id} className="adm-table-row">
+                  <td className="adm-td-name">{item.full_name || "—"}</td>
+                  <td className="adm-td-sub">{item.accounts?.email || "—"}</td>
+                  <td className="adm-td-sub">{item.nid_number || "—"}</td>
+                  <td className="adm-td-sub">{fmtDate(item.submitted_at)}</td>
                   <td>
                     <StatusBadge status={item.status} />
                   </td>
@@ -306,51 +307,46 @@ function VerificationSection({ toast }) {
               <div className="adm-modal-body">
                 <div className="adm-detail-grid">
                   <div className="adm-detail-row">
-                    <span className="adm-detail-label">Full Name</span>
+                    <span className="adm-detail-label">NID Number</span>
                     <span className="adm-detail-val">
-                      {detail.user?.full_name || "—"}
+                      {detail.nid_number || "—"}
                     </span>
                   </div>
                   <div className="adm-detail-row">
                     <span className="adm-detail-label">Email</span>
                     <span className="adm-detail-val">
-                      {detail.user?.email || "—"}
+                      {detail.accounts?.email || "—"}
                     </span>
                   </div>
                   <div className="adm-detail-row">
                     <span className="adm-detail-label">Phone</span>
                     <span className="adm-detail-val">
-                      {detail.user?.phone_number || "—"}
+                      {detail.accounts?.phone_number || "—"}
                     </span>
                   </div>
                   <div className="adm-detail-row">
-                    <span className="adm-detail-label">DOB (submitted)</span>
+                    <span className="adm-detail-label">NID Number</span>
+                    <span className="adm-detail-val">
+                      {detail.nid_number || "—"}
+                    </span>
+                  </div>
+                  <div className="adm-detail-row">
+                    <span className="adm-detail-label">Date of Birth</span>
                     <span className="adm-detail-val">{detail.dob || "—"}</span>
                   </div>
                   <div className="adm-detail-row">
-                    <span className="adm-detail-label">DOB (on profile)</span>
+                    <span className="adm-detail-label">Address</span>
                     <span className="adm-detail-val">
-                      {detail.user?.dob_on_profile || "—"}
+                      {detail.address || "—"}
                     </span>
                   </div>
                   <div className="adm-detail-row">
-                    <span className="adm-detail-label">Member Since</span>
+                    <span className="adm-detail-label">Grandfather's Name</span>
                     <span className="adm-detail-val">
-                      {fmtDate(detail.user?.account_created_at)}
+                      {detail.grandfathers_name || "—"}
                     </span>
                   </div>
-                  <div className="adm-detail-row">
-                    <span className="adm-detail-label">Wallet Balance</span>
-                    <span className="adm-detail-val adm-detail-val--highlight">
-                      {fmtNPR(detail.user?.wallet_balance)}
-                    </span>
-                  </div>
-                  <div className="adm-detail-row">
-                    <span className="adm-detail-label">Transactions</span>
-                    <span className="adm-detail-val">
-                      {detail.user?.transaction_count ?? "—"}
-                    </span>
-                  </div>
+
                   <div className="adm-detail-row">
                     <span className="adm-detail-label">Status</span>
                     <span className="adm-detail-val">
@@ -364,6 +360,68 @@ function VerificationSection({ toast }) {
                     </span>
                   </div>
                 </div>
+                {(detail.signed_urls?.doc_front ||
+                  detail.signed_urls?.doc_back) && (
+                  <div className="adm-detail-images">
+                    <p className="adm-label" style={{ marginBottom: 8 }}>
+                      NID Photos
+                    </p>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      {detail.signed_urls.doc_front && (
+                        <div>
+                          <p
+                            className="adm-label"
+                            style={{ fontSize: 11, marginBottom: 4 }}
+                          >
+                            Front
+                          </p>
+                          <a
+                            href={detail.signed_urls.doc_front}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <img
+                              src={detail.signed_urls.doc_front}
+                              alt="NID Front"
+                              style={{
+                                width: 180,
+                                borderRadius: 8,
+                                border: "1px solid var(--border)",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </a>
+                        </div>
+                      )}
+                      {detail.signed_urls.doc_back && (
+                        <div>
+                          <p
+                            className="adm-label"
+                            style={{ fontSize: 11, marginBottom: 4 }}
+                          >
+                            Back
+                          </p>
+                          <a
+                            href={detail.signed_urls.doc_back}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <img
+                              src={detail.signed_urls.doc_back}
+                              alt="NID Back"
+                              style={{
+                                width: 180,
+                                borderRadius: 8,
+                                border: "1px solid var(--border)",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {detail.status === "pending" && (
                   <div className="adm-review-area">
@@ -397,10 +455,10 @@ function VerificationSection({ toast }) {
                   </div>
                 )}
 
-                {detail.admin_notes && detail.status !== "pending" && (
+                {detail.rejection_reason && detail.status !== "pending" && (
                   <div className="adm-notes-display">
-                    <span className="adm-label">Admin Notes:</span>
-                    <p>{detail.admin_notes}</p>
+                    <span className="adm-label">Rejection Reason:</span>
+                    <p>{detail.rejection_reason}</p>
                   </div>
                 )}
               </div>
