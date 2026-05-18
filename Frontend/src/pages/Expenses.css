@@ -760,9 +760,9 @@
 
 /* ─── STATEMENT LIST ────────────────────────────────────────── */
 .stmt-list {
-    background: white;
+    background: var(--card);
     border-radius: 18px;
-    border: 1px solid #e0ece4;
+    border: 1px solid var(--border);
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.04);
 }
@@ -774,8 +774,8 @@
     border-bottom: 1px solid #f0f6f2;
     transition: background 0.15s;
 }
-.stmt-row:last-child { border-bottom: none; }
-.stmt-row:hover { background: #f6faf7; }
+.stmt-row:last-of-type { border-bottom: none; }
+.stmt-row:hover { background: var(--shaded-background); }
 .stmt-row-left {
     display: flex;
     align-items: center;
