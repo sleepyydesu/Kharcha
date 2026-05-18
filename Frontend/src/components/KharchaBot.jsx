@@ -327,7 +327,6 @@ export default function KharchaBot() {
                 aria-label="Open Kharcha AI assistant"
             >
                 <Sparkles size={20} />
-                <span className="kbot-fab-label">AI</span>
             </button>
 
             {/* ── Chat Overlay ── */}

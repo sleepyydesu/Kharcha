@@ -159,6 +159,11 @@
     border-radius: 50%;
 }
 
+[data-theme="dark"] .acct-avatar--initials {
+    background: #1a3a5c;
+    color: #93c5fd;
+}
+
 .acct-avatar--img {
     border: 2px solid var(--border);
 }
@@ -301,6 +306,10 @@
     color: var(--primary);
     flex-shrink: 0;
 }
+
+[data-theme="dark"] .acct-wallet-strip svg {
+    color: #60a5fa;
+}
 .acct-wallet-label {
     font-size: 0.8rem;
     color: var(--text-sub);
@@ -353,6 +362,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* In dark mode --primary == --card; use a distinct teal-ish swatch instead */
+[data-theme="dark"] .acct-kyc-icon {
+    background: #1a3a5c;
+    color: #60a5fa;
 }
 
 .acct-kyc-body {
@@ -613,6 +628,14 @@
     background: var(--primary-dark);
 }
 
+[data-theme="dark"] .acct-btn--primary {
+    background: #1a3a5c;
+    color: #e0f0ff;
+}
+[data-theme="dark"] .acct-btn--primary:hover:not(:disabled) {
+    background: #1e4570;
+}
+
 .acct-btn--ghost {
     background: var(--shaded-background);
     color: var(--text-sub);
@@ -730,6 +753,12 @@
 .acct-toast--success {
     background: var(--primary);
     color: #fff;
+}
+
+[data-theme="dark"] .acct-toast--success {
+    background: #1a3a5c;
+    color: #e0f0ff;
+    border: 1px solid #2d5080;
 }
 .acct-toast--error {
     background: var(--error-text);
