@@ -338,6 +338,11 @@
   color: #60a5fa;
 }
 
+/* Wallet load/send SVG icons: invert to white in dark mode */
+[data-theme="dark"] .stmt-avatar--wallet-icon {
+  filter: brightness(0) invert(1);
+}
+
 /* Row content */
 .stmt-row__body {
   flex: 1;
