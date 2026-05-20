@@ -1,3 +1,5 @@
+//Education
+
 import { useState } from "react";
 import ServicePage from "./ServicePage";
 

@@ -224,7 +224,7 @@ async function adminApproveSubmission(req, res) {
 
     const { error: accountError } = await supabase
       .from('accounts')
-      .update({ kyc_status: 'verified' })
+      .update({ kyc_status: 'verified', is_verified: true }) 
       .eq('account_id', submission.account_id);
 
     if (accountError) throw accountError;
@@ -273,7 +273,7 @@ async function adminRejectSubmission(req, res) {
 
     const { error: accountError } = await supabase
       .from('accounts')
-      .update({ kyc_status: 'rejected' })
+      .update({ kyc_status: 'rejected', is_verified: false })
       .eq('account_id', submission.account_id);
 
     if (accountError) throw accountError;
