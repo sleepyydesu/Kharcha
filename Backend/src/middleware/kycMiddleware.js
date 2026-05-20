@@ -13,9 +13,9 @@ async function requireKYC(req, res, next) {
     }
 
     const { data: user, error } = await supabase
-      .from('users')
+      .from('accounts')
       .select('kyc_status')
-      .eq('id', userId)
+      .eq('account_id', userId)
       .single();
 
     if (error) throw error;
