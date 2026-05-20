@@ -71,7 +71,7 @@
   font-size: .75rem;
   font-weight: 800;
   letter-spacing: .1em;
-  color: var(--primary);
+  color: var(--text-color);
   padding-bottom: .875rem;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -169,6 +169,15 @@
   border: none;
 }
 .stmt-btn--primary:hover:not(:disabled) { background: var(--primary-dark); }
+
+[data-theme="dark"] .stmt-btn--primary {
+  background: #1a3a5c;
+  color: #e0f0ff;
+  border: 1px solid #2d5080;
+}
+[data-theme="dark"] .stmt-btn--primary:hover:not(:disabled) {
+  background: #1e4570;
+}
 
 .stmt-btn--reset {
   background: var(--card);
@@ -322,6 +331,16 @@
   font-weight: 700;
   background: var(--success-bg);
   color: var(--primary);
+}
+
+/* Initials: --primary == --card in dark mode, use blue instead */
+[data-theme="dark"] .stmt-avatar--initials {
+  color: #60a5fa;
+}
+
+/* Wallet load/send SVG icons: invert to white in dark mode */
+[data-theme="dark"] .stmt-avatar--wallet-icon {
+  filter: brightness(0) invert(1);
 }
 
 /* Row content */

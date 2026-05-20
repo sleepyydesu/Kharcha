@@ -63,6 +63,11 @@
   object-fit: contain;
 }
 
+/* SVGs are hardcoded black — invert them in dark mode */
+[data-theme="dark"] .balance-panel__toggle-icon {
+  filter: invert(1);
+}
+
 /* Balance display */
 .balance-panel__balance {
   background: var(--primary);
@@ -72,6 +77,12 @@
   align-items: baseline;
   gap: 6px;
   margin-bottom: 10px;
+}
+
+/* In dark mode --primary == --card so the box disappears — give it a distinct bg */
+[data-theme="dark"] .balance-panel__balance {
+  background: #1a2535;
+  border: 1px solid #2d3a50;
 }
 .balance-panel__currency {
   font-size: 13px;

@@ -30,16 +30,14 @@ import "./Dashboard.css";
 
 function toCurrentColor(raw) {
     return raw
-        // Replace stroke colors
+        // Strip embedded <style> blocks (e.g. older SVGs with class-based fills)
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        // Replace explicit stroke / fill attributes (keep fill="none")
         .replace(/stroke="[^"]*"/g, 'stroke="currentColor"')
-
-        // Replace fill colors EXCEPT "none"
         .replace(/fill="(?!none)[^"]*"/g, 'fill="currentColor"')
-
-        // Remove inline styles (very important)
+        // Remove inline style="" attributes
         .replace(/style="[^"]*"/g, '')
-
-        // Force size to be responsive
+        // Force responsive sizing
         .replace(/width="[^"]*"/, 'width="100%"')
         .replace(/height="[^"]*"/, 'height="100%"');
 }

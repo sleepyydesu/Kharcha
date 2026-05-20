@@ -57,6 +57,11 @@
   user-select: none;
 }
 
+[data-theme="dark"] .cat-icon__placeholder {
+  background-color: #2a2f36;
+  color: #9ca3af;
+}
+
 /* ── Size variants ──────────────────────────────────────────── */
 .cat-icon--sm  { width: 20px; height: 20px; }
 .cat-icon--md  { width: 28px; height: 28px; }

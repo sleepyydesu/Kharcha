@@ -14,9 +14,14 @@ import KharchaLogo from "../components/KharchaLogo";
 // ─── toCurrentColor (same helper as Dashboard) ───────────────
 function toCurrentColor(raw) {
     return raw
+        // Strip embedded <style> blocks (e.g. older SVGs with class-based fills)
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        // Replace explicit stroke / fill attributes (keep fill="none")
         .replace(/stroke="[^"]*"/g, 'stroke="currentColor"')
         .replace(/fill="(?!none)[^"]*"/g, 'fill="currentColor"')
-        .replace(/style="[^"]*"/g, "")
+        // Remove inline style="" attributes
+        .replace(/style="[^"]*"/g, '')
+        // Force responsive sizing
         .replace(/width="[^"]*"/, 'width="100%"')
         .replace(/height="[^"]*"/, 'height="100%"');
 }
