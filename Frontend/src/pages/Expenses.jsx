@@ -367,19 +367,20 @@ function BudgetDonut({ totalExpenses, budgets, overview }) {
 }
 
 /* ── List Rows ────────────────────────────────────────────── */
-function CategoryRow({ cat, index, onClick }) {
+function CategoryRow({ cat, onClick }) {
+  const color = cat.color || "#6B7280";
   return (
     <div className="cat-row" onClick={onClick}>
       <div className="cat-row-left">
         <div
           className="cat-row-icon-wrap"
-          style={{ background: `${CAT_COLORS[index % CAT_COLORS.length]}18` }}
+          style={{ background: `${color}18` }}
         >
           <CategoryIcon
             iconUrl={cat.icon_url}
             iconType={cat.icon_type}
             name={cat.category_name}
-            color={CAT_COLORS[index % CAT_COLORS.length]}
+            color={color}
             size={28}
           />
         </div>
@@ -737,7 +738,26 @@ function CategoryDetailView({ cat, range, categories, onBack, onRefresh }) {
           <ChevronLeft size={18} /> Back
         </button>
         <div className="cat-detail-title">
-          <span>{cat.category_name}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              className="cat-row-icon-wrap"
+              style={{
+                background: `${cat.color || "#6B7280"}18`,
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+              }}
+            >
+              <CategoryIcon
+                iconUrl={cat.icon_url}
+                iconType={cat.icon_type}
+                name={cat.category_name}
+                color={cat.color || "#6B7280"}
+                size={20}
+              />
+            </div>
+            <span>{cat.category_name}</span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="cat-detail-total">
               NPR {parseFloat(cat.total_amount).toLocaleString()}
@@ -1226,8 +1246,9 @@ export default function Expenses() {
       });
       const ovArr = (ov.data || ov || []).map((cat) => ({
         ...cat,
-        icon_url: catMap[cat.category_id]?.icon_url ?? null,
+        icon_url:  catMap[cat.category_id]?.icon_url  ?? null,
         icon_type: catMap[cat.category_id]?.icon_type ?? "svg",
+        color:     catMap[cat.category_id]?.color     ?? "#6B7280",
       }));
       setOverview(ovArr);
       setCategories(catsArr);
@@ -1549,7 +1570,6 @@ export default function Expenses() {
                 <CategoryRow
                   key={cat.category_id}
                   cat={cat}
-                  index={i}
                   onClick={() => setSelectedCat(cat)}
                 />
               ))}
