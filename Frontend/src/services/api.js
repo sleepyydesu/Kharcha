@@ -482,7 +482,7 @@ export const adminListCardRequests = (status = "") => {
 };
 
 export const adminActivateCard = (body) =>
-  request("/cards/admin/activate", {
+  request("/cards/admin/activate-physical", {
     method: "POST",
     body: JSON.stringify(body),
   });

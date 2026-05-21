@@ -345,6 +345,15 @@ const verifyOTPAndPay = async (req, res) => {
             })
             .eq("session_id", session_id);
 
+        // Stamp the method so statements show "Kharcha Pay" instead of the
+        // generic "Kharcha Wallet" that transfer_funds defaults to.
+        if (result?.transaction_id) {
+            await supabase
+                .from("transactions")
+                .update({ method: "Kharcha Pay" })
+                .eq("transaction_id", result.transaction_id);
+        }
+
         otpStore.delete(session_id);
 
         // Fire-and-forget webhook

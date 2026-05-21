@@ -331,11 +331,21 @@ const transfer = async (req, res) => {
                         receiverAccount2?.profile_picture_url || null,
                 },
                 remarks: remarks || null,
-                method: "Kharcha Wallet",
+                method: qr_id ? "QR Code" : "Kharcha Wallet",
                 status: "completed",
                 ...(qr_id ? { qr_id } : {}),
             },
         };
+
+        // Stamp the correct method on the transaction record so statements
+        // show "QR Code" for QR-initiated payments vs "Kharcha Wallet" for
+        // direct transfers. transfer_funds defaults to "Kharcha Wallet".
+        if (result?.transaction_id && qr_id) {
+            await supabase
+                .from("transactions")
+                .update({ method: "QR Code" })
+                .eq("transaction_id", result.transaction_id);
+        }
 
         // Fire webhook + mark session complete if this came from a dynamic QR scan
         if (qr_id) {
