@@ -677,3 +677,21 @@
     .kpw-otp-row { gap: 5px; }
     .kpw-left-inner { padding: 12px 16px; }
 }
+
+/* ── Browser autofill override ────────────────────────────────
+   Chrome/Edge/Safari inject a green or yellow background on
+   autofilled inputs via the internal :-webkit-autofill pseudo.
+   We neutralise it by forcing a transparent box-shadow inset
+   that paints over the UA background without losing the value.
+   ─────────────────────────────────────────────────────────── */
+.kpw-input:-webkit-autofill,
+.kpw-input:-webkit-autofill:hover,
+.kpw-input:-webkit-autofill:focus,
+.kpw-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--input-bg, #faf9f6) inset !important;
+    box-shadow:         0 0 0 1000px var(--input-bg, #faf9f6) inset !important;
+    -webkit-text-fill-color: var(--text-color, #111) !important;
+    caret-color: var(--text-color, #111);
+    border-color: var(--border) !important;
+    transition: background-color 9999s ease-in-out 0s; /* delay UA colour change forever */
+}

@@ -83,11 +83,11 @@ function Spinner({ size = 18, color = "currentColor" }) {
 function PermissionRow({ text }) {
     return (
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6366f1)"
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)"
                 strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: "2px", flexShrink: 0 }}>
                 <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span style={{ fontSize: "13.5px", color: "var(--text-secondary, #555)", lineHeight: 1.45 }}>{text}</span>
+            <span style={{ fontSize: "13.5px", color: "var(--text-sub)", lineHeight: 1.45 }}>{text}</span>
         </div>
     );
 }
@@ -196,7 +196,7 @@ export default function OAuthConsent() {
 
                         {clientLoading && (
                             <div className="kpw-left-loading">
-                                <Spinner size={26} color="var(--primary, #6366f1)" />
+                                <Spinner size={26} color="var(--primary)" />
                             </div>
                         )}
 
@@ -213,7 +213,7 @@ export default function OAuthConsent() {
                                     <span className="kpw-billed-value">{clientInfo.client.name}</span>
                                 </div>
 
-                                <p style={{ fontSize: "13px", color: "var(--text-secondary, #666)", marginTop: "20px", marginBottom: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                                <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "20px", marginBottom: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                                     Permissions requested
                                 </p>
 
@@ -226,14 +226,15 @@ export default function OAuthConsent() {
                                 <div style={{
                                     marginTop: "24px",
                                     padding: "12px 14px",
-                                    background: "#f0f4ff",
+                                    background: "var(--shaded-background)",
+                                    border: "1px solid var(--border)",
                                     borderRadius: "10px",
                                     display: "flex",
                                     gap: "10px",
                                     alignItems: "flex-start",
                                 }}>
-                                    <span style={{ color: "var(--primary, #6366f1)", marginTop: "1px" }}><IconShield /></span>
-                                    <p style={{ fontSize: "12.5px", color: "#4a4f6a", margin: 0, lineHeight: 1.5 }}>
+                                    <span style={{ color: "var(--primary)", marginTop: "1px" }}><IconShield /></span>
+                                    <p style={{ fontSize: "12.5px", color: "var(--text-sub)", margin: 0, lineHeight: 1.5 }}>
                                         You can revoke this access at any time from your Kharcha account settings.
                                     </p>
                                 </div>
@@ -260,7 +261,7 @@ export default function OAuthConsent() {
                         {/* Loading client */}
                         {clientLoading && (
                             <div className="kpw-panel kpw-panel--result">
-                                <Spinner size={32} color="var(--primary, #6366f1)" />
+                                <Spinner size={32} color="var(--primary)" />
                             </div>
                         )}
 

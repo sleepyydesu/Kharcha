@@ -252,7 +252,12 @@
 .lm__pay-btn--gift   { background: var(--primary); color: #fff; }
 .lm__pay-btn--gift:hover:not(:disabled) { background: var(--primary-dark); }
 
-.lm__pay-btn:not(.lm__pay-btn--khalti):not(.lm__pay-btn--gift) {
+.lm__pay-btn--esewa { background: #60BB46; color: #fff; }
+.lm__pay-btn--esewa:hover:not(:disabled) { background: #4fa336; }
+
+.lm__method-icon--esewa { background: #edfae8; }
+
+.lm__pay-btn:not(.lm__pay-btn--khalti):not(.lm__pay-btn--gift):not(.lm__pay-btn--esewa) {
   background: var(--primary); color: #fff;
 }
 
@@ -298,4 +303,73 @@
 @media (max-width: 900px) {
   .lm { padding: 24px 16px; }
   .lm__form-wrap { padding: 20px 16px; }
+}
+/* ── Dark mode overrides ──────────────────────────────────── */
+[data-theme="dark"] .lm__back {
+  color: #a8a8a8;
+}
+[data-theme="dark"] .lm__back:hover {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .lm__method-card {
+  background: #1e2329;
+  border-color: #3a3f47;
+}
+[data-theme="dark"] .lm__method-card:hover {
+  border-color: #4ade80;
+  box-shadow: 0 6px 20px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .lm__method-icon--khalti {
+  background: #2d1f40;
+}
+[data-theme="dark"] .lm__method-arrow {
+  color: #4b4b4b;
+}
+
+[data-theme="dark"] .lm__preset {
+  background: #1e2329;
+  border-color: #3a3f47;
+  color: #a8a8a8;
+}
+[data-theme="dark"] .lm__preset:hover {
+  border-color: #4ade80;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.06);
+}
+[data-theme="dark"] .lm__preset--active {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #0c1014;
+}
+
+[data-theme="dark"] .lm__input-row:focus-within {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+[data-theme="dark"] .lm__input--code:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .lm__pay-btn--gift {
+  background: #4ade80;
+  color: #0c1014;
+}
+[data-theme="dark"] .lm__pay-btn--gift:hover:not(:disabled) {
+  background: #22c55e;
+  color: #0c1014;
+}
+
+[data-theme="dark"] .lm__pay-btn--esewa {
+  background: #60BB46;
+  color: #fff;
+}
+[data-theme="dark"] .lm__pay-btn--esewa:hover:not(:disabled) {
+  background: #4fa336;
+}
+
+[data-theme="dark"] .lm__method-icon--esewa {
+  background: #1a2e17;
 }
