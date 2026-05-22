@@ -341,7 +341,7 @@ function VerificationSection({ toast }) {
                     </span>
                   </div>
                   <div className="adm-detail-row">
-                    <span className="adm-detail-label">Grandfather's Name</span>
+                    <span className="adm-detail-label">Father's Name</span>
                     <span className="adm-detail-val">
                       {detail.grandfathers_name || "—"}
                     </span>
@@ -425,7 +425,7 @@ function VerificationSection({ toast }) {
 
                 {detail.status === "pending" && (
                   <div className="adm-review-area">
-                    <label className="adm-label">Admin Notes (optional)</label>
+                    <label className="adm-label">Admin Notes</label>
                     <textarea
                       className="adm-textarea"
                       placeholder="Add a note for this decision…"

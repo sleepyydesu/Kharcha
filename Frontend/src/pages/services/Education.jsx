@@ -1,7 +1,6 @@
-//Education
-
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Education() {
   const [studentId, setStudentId] = useState("");
@@ -14,6 +13,20 @@ export default function Education() {
   const fields = (
     <>
       <div className="sp-field">
+        <label className="sp-label">School / College Name</label>
+        <select
+          className="sp-select"
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value)}
+        >
+          <option value="">Select institution</option>
+          <option>Herald College Kathmandu</option>
+          <option>Islington College</option>
+          <option>Kavya College</option>
+          <option>Apex College</option>
+        </select>
+      </div>
+      <div className="sp-field">
         <label className="sp-label">Student ID / Roll No.</label>
         <input
           className="sp-input"
@@ -21,16 +34,6 @@ export default function Education() {
           placeholder="Enter student ID or roll number"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
-        />
-      </div>
-      <div className="sp-field">
-        <label className="sp-label">School / College Name</label>
-        <input
-          className="sp-input"
-          type="text"
-          placeholder="Enter institution name"
-          value={institution}
-          onChange={(e) => setInstitution(e.target.value)}
         />
       </div>
       <div className="sp-field">
@@ -64,6 +67,7 @@ export default function Education() {
       getRemarks={() =>
         `Education Fee – ${institution} – ${feeType} – ${studentId}`
       }
+      receiverIdentifier={() => getReceiver("EDUCATION", institution)}
     />
   );
 }

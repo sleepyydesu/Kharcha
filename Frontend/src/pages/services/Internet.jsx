@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Internet() {
   const [username, setUsername] = useState("");
@@ -48,6 +49,7 @@ export default function Internet() {
       fields={fields}
       fieldsValid={fieldsValid}
       getRemarks={() => `Internet Bill – ${provider} – ${username}`}
+      receiverIdentifier={() => getReceiver("INTERNET", provider)}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Topup() {
   const [phone, setPhone] = useState("");
@@ -47,6 +48,7 @@ export default function Topup() {
       fields={fields}
       fieldsValid={fieldsValid}
       getRemarks={() => `Mobile Topup – ${operator} – ${phone}`}
+      receiverIdentifier={() => getReceiver("TOPUP", operator)}
     />
   );
 }

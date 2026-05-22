@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Landline() {
   const [phone, setPhone] = useState("");
@@ -45,6 +46,7 @@ export default function Landline() {
       fields={fields}
       fieldsValid={fieldsValid}
       getRemarks={() => `Landline Bill – ${provider} – ${phone}`}
+      receiverIdentifier={() => getReceiver("LANDLINE", provider)}
     />
   );
 }

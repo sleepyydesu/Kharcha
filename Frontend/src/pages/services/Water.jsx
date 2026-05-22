@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Water() {
   const [customerId, setCustomerId] = useState("");
@@ -46,6 +47,7 @@ export default function Water() {
       fields={fields}
       fieldsValid={fieldsValid}
       getRemarks={() => `Water Bill – ${office} – ${customerId}`}
+      receiverIdentifier={() => getReceiver("WATER", office)}
     />
   );
 }
