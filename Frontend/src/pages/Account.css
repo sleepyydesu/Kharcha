@@ -135,6 +135,13 @@
     position: relative;
 }
 
+.acct-avatar-frame {
+    width: 84px;
+    height: 84px;
+    position: relative;
+    flex-shrink: 0;
+}
+
 .acct-avatar-wrap {
     border-radius: 50%;
     cursor: pointer;
@@ -187,11 +194,15 @@
 .acct-avatar-uploading {
     position: absolute;
     inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    pointer-events: none;
 }
 
 .acct-avatar-actions {
@@ -943,4 +954,31 @@
     color: var(--muted);
     line-height: 1.6;
     margin: 0 0 4px;
+}
+/* Dark mode input contrast fix: keep account verification/password fields visible when active */
+[data-theme="dark"] .acct-input {
+    background: #151a20;
+    border-color: #3a4653;
+    color: var(--text-color);
+    caret-color: var(--accent);
+}
+
+[data-theme="dark"] .acct-input::placeholder {
+    color: #8f9aa6;
+}
+
+[data-theme="dark"] .acct-input:focus,
+[data-theme="dark"] .acct-input:focus-visible {
+    background: #111820;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 200, 0, 0.16);
+}
+
+[data-theme="dark"] .acct-input:-webkit-autofill,
+[data-theme="dark"] .acct-input:-webkit-autofill:hover,
+[data-theme="dark"] .acct-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-color);
+    -webkit-box-shadow: 0 0 0 1000px #151a20 inset;
+    border-color: #3a4653;
+    caret-color: var(--accent);
 }

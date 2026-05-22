@@ -495,7 +495,7 @@ function SetupMpinCard({ onSuccess, toast }) {
             <button
               className="acct-btn acct-btn--primary"
               onClick={handle}
-              disabled={loading || !pw || next.length < 6 || !confirm}
+              disabled={loading || !pw || next.length !== 6 || confirm.length !== 6}
             >
               {loading ? <span className="acct-spinner" /> : null}
               {loading ? "Setting up…" : "Set Up MPIN"}
@@ -593,7 +593,7 @@ function ChangeMpinCard({ toast }) {
             <button
               className="acct-btn acct-btn--primary"
               onClick={handle}
-              disabled={loading || !cur || next.length < 6 || !confirm}
+              disabled={loading || cur.length !== 6 || next.length !== 6 || confirm.length !== 6}
             >
               {loading ? <span className="acct-spinner" /> : null}
               {loading ? "Saving…" : "Save New MPIN"}
@@ -648,7 +648,7 @@ function BiometricTransactionCard({ toast, profile }) {
   }
 
   async function handleConfirmMpin() {
-    if (mpin.length < 4) return toast("Enter your MPIN (4–6 digits).", "error");
+    if (mpin.length !== 6) return toast("Enter your 6-digit MPIN.", "error");
     setLoading(true);
     try {
       await verifyMpinApi({ mpin });
@@ -829,7 +829,7 @@ function BiometricTransactionCard({ toast, profile }) {
                 <button
                   className="acct-btn acct-btn--primary"
                   onClick={handleConfirmMpin}
-                  disabled={loading || mpin.length < 4}
+                  disabled={loading || mpin.length !== 6}
                 >
                   {loading ? <span className="acct-spinner" /> : null}
                   {loading ? "Verifying…" : "Verify MPIN"}
@@ -1529,19 +1529,21 @@ export default function Account() {
                     style={{ display: "none" }}
                     onChange={handleAvatarChange}
                   />
-                  <Avatar
-                    name={displayName}
-                    src={profile.profile_picture_url}
-                    size={84}
-                    onClick={
-                      uploading ? undefined : () => fileRef.current?.click()
-                    }
-                  />
-                  {uploading && (
-                    <div className="acct-avatar-uploading">
-                      <span className="acct-spinner acct-spinner--white" />
-                    </div>
-                  )}
+                  <div className="acct-avatar-frame">
+                    <Avatar
+                      name={displayName}
+                      src={profile.profile_picture_url}
+                      size={84}
+                      onClick={
+                        uploading ? undefined : () => fileRef.current?.click()
+                      }
+                    />
+                    {uploading && (
+                      <div className="acct-avatar-uploading">
+                        <span className="acct-spinner acct-spinner--white" />
+                      </div>
+                    )}
+                  </div>
                   <div className="acct-avatar-actions">
                     <button
                       className="acct-avatar-btn"

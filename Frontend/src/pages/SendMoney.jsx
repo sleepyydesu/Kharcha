@@ -179,7 +179,7 @@ function MpinOverlay({
         <button
           className="sm__btn sm__btn--primary sm__btn--send"
           onClick={() => onConfirm(mpin)}
-          disabled={submitting || mpin.length < 4}
+          disabled={submitting || mpin.length < DIGITS}
         >
           {submitting ? "Transferring…" : "Confirm Transfer"}
         </button>
@@ -312,8 +312,8 @@ export default function SendMoney() {
   }
 
   async function handleTransfer(mpin) {
-    if (mpin.length < 4) {
-      setSubmitErr("Enter your MPIN (4–6 digits).");
+    if (mpin.length !== 6) {
+      setSubmitErr("Enter your 6-digit MPIN.");
       return;
     }
     setSubmitting(true);

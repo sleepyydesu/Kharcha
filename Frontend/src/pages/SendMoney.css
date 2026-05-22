@@ -835,3 +835,63 @@
     margin:       0 0 10px;
     text-align:   center;
 }
+
+/* Dark mode payment confirmation contrast fix */
+[data-theme="dark"] .sm__input-row,
+[data-theme="dark"] .sm__field > .sm__input {
+    background: #151a20;
+    border-color: #3a4653;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .sm__input::placeholder {
+    color: #8f9aa6;
+}
+
+[data-theme="dark"] .sm__input-row:focus-within,
+[data-theme="dark"] .sm__field > .sm__input:focus,
+[data-theme="dark"] .sm__field > .sm__input:focus-visible {
+    background: #111820;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 200, 0, 0.16);
+}
+
+[data-theme="dark"] .sm__overlay {
+    background: #1b2027;
+    border: 1px solid #303946;
+    border-bottom: 0;
+}
+
+[data-theme="dark"] .sm__mpin-dot {
+    border-color: #5a6675;
+    background: #111820;
+}
+
+[data-theme="dark"] .sm__mpin-dot--filled {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+
+[data-theme="dark"] .sm__mpin-key {
+    background: #151a20;
+    border-color: #3a4653;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .sm__mpin-key:hover:not(:disabled),
+[data-theme="dark"] .sm__mpin-key:focus-visible:not(:disabled) {
+    background: #111820;
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 200, 0, 0.14);
+}
+
+/* Dark mode category selection contrast fix */
+[data-theme="dark"] .sm__cat-item--active {
+    background: rgba(245, 200, 0, 0.16);
+    border-color: var(--accent);
+}
+
+[data-theme="dark"] .sm__cat-item--active .sm__cat-name {
+    color: #f5f7fb;
+}

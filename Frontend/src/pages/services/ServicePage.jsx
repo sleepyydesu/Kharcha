@@ -166,7 +166,7 @@ export default function ServicePage({
   }
 
   async function confirm() {
-    if (mpin.length < 4 || busy) return;
+    if (mpin.length !== 6 || busy) return;
 
     // Get receiver identifier (can be a string or a function that returns a string)
     const receiver_identifier = typeof receiverIdentifier === 'function' 
@@ -343,10 +343,10 @@ export default function ServicePage({
           <button
             className="sp-confirm-btn"
             style={{
-              background: mpin.length >= 4 && !busy ? accent : undefined,
+              background: mpin.length === 6 && !busy ? accent : undefined,
             }}
             onClick={confirm}
-            disabled={mpin.length < 4 || busy}
+            disabled={mpin.length !== 6 || busy}
             type="button"
           >
             {busy ? "Processing…" : "Confirm Payment"}

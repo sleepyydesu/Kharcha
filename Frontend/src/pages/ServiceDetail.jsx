@@ -196,7 +196,7 @@ function MpinOverlay({ amount, label, onConfirm, onClose, submitting, error }) {
         <button
           className="sd__btn sd__btn--primary"
           onClick={() => onConfirm(mpin)}
-          disabled={submitting || mpin.length < 4}
+          disabled={submitting || mpin.length < DIGITS}
         >
           {submitting ? "Processing…" : "Confirm Payment"}
         </button>
@@ -265,8 +265,8 @@ export default function ServiceDetail() {
 
   // ── Transfer — identical logic to SendMoney.handleTransfer ─
   async function handleTransfer(mpin) {
-    if (mpin.length < 4) {
-      setMpinErr("Enter your MPIN (4–6 digits).");
+    if (mpin.length !== 6) {
+      setMpinErr("Enter your 6-digit MPIN.");
       return;
     }
 

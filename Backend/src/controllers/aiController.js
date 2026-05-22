@@ -60,7 +60,7 @@ Notes:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  LOAD MONEY (TOP-UP)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Two methods to add funds to your wallet:
+Three methods to add funds to your wallet:
  
 **Khalti**
 1. Sidebar → "Load Money" → tap Khalti
@@ -68,6 +68,21 @@ Two methods to add funds to your wallet:
 3. You are redirected to the Khalti payment gateway
 4. Complete payment in Khalti → instantly credited to your Kharcha wallet
 5. A success/failure banner confirms the result when you return
+Testing credentials only:
+- Test phone no: 9800000005
+- Test MPIN: 1111
+- Test OTP: 987654
+
+**eSewa**
+1. Sidebar → "Load Money" → tap eSewa
+2. Enter the amount in NPR
+3. You are redirected to the eSewa test payment gateway
+4. Complete payment in eSewa → instantly credited to your Kharcha wallet
+5. A success/failure banner confirms the result when you return
+Testing credentials only:
+- Test phone no: 9806800005
+- Test password: Nepal@123
+- Test token: 123456
  
 **Gift Card**
 1. Sidebar → "Load Money" → tap Gift Card

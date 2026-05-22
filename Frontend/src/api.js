@@ -14,7 +14,7 @@ import axios from "axios";
  *  1. POST /api/auth/refresh (sends kharcha_refresh cookie automatically).
  *  2. If the server issues new cookies, retry the original request once.
  *  3. If /refresh itself returns 401 (session expired / idle too long),
- *     fire an "auth:expired" event so the app can redirect to login.
+ *     fire a "kharcha:session-expired" event so the app can redirect to login.
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -50,11 +50,18 @@ function waitForRefresh() {
 
 // ── Response interceptor ──────────────────────────────────────
 api.interceptors.response.use(
-    // Pass through successful responses unchanged.
-    (response) => response,
+    // Pass through successful responses unchanged and reset the UI idle clock
+    // for real API activity. Do not count background refresh as user activity.
+    (response) => {
+        if (!response.config?.url?.includes("/auth/refresh")) {
+            sessionStorage.setItem("kharcha_last_activity_at", String(Date.now()));
+            window.dispatchEvent(new CustomEvent("kharcha:activity"));
+        }
+        return response;
+    },
 
     async (error) => {
-        const originalRequest = error.config;
+        const originalRequest = error.config || {};
 
         // Only intercept 401s that haven't already been retried.
         if (error.response?.status !== 401 || originalRequest._retried) {
@@ -64,7 +71,7 @@ api.interceptors.response.use(
         // Don't try to refresh if the 401 came FROM the refresh endpoint itself —
         // that means the session is genuinely expired.
         if (originalRequest.url?.includes("/auth/refresh")) {
-            window.dispatchEvent(new CustomEvent("auth:expired"));
+            window.dispatchEvent(new CustomEvent("kharcha:session-expired"));
             return Promise.reject(error);
         }
 
@@ -96,7 +103,7 @@ api.interceptors.response.use(
             onRefreshFailure(refreshError);
 
             // Session is gone — tell the app to redirect to login.
-            window.dispatchEvent(new CustomEvent("auth:expired"));
+            window.dispatchEvent(new CustomEvent("kharcha:session-expired"));
             return Promise.reject(refreshError);
         }
     },

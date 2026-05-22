@@ -46,6 +46,7 @@ const { setAuthCookies } = require("../utils/cookieUtils");
 const EXPECTED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:5173";
 const RP_ID           = process.env.RP_ID        || "localhost";
 const CHALLENGE_TTL   = 120_000; // 2 minutes in ms
+const BIOMETRIC_PURPOSES = new Set(["login", "transaction"]);
 
 // ── In-memory challenge store ─────────────────────────────────────────────────
 // Keyed by "reg:<account_id>", "auth:<credentialId>", or "tx:<credentialId>".
@@ -55,6 +56,24 @@ const pendingChallenges = new Map();
 
 function generateChallenge() {
     return crypto.randomBytes(32).toString("base64url");
+}
+
+function normalizeBiometricPurpose(purpose) {
+    return BIOMETRIC_PURPOSES.has(purpose) ? purpose : "login";
+}
+
+function registrationChallengeKey(accountId, purpose) {
+    return `reg:${accountId}:${normalizeBiometricPurpose(purpose)}`;
+}
+
+function webAuthnUserIdFor(accountId, purpose) {
+    // Keep login's original user handle for backward compatibility. Payment-only
+    // enrollment gets a distinct handle so mobile authenticators do not replace
+    // the login credential for the same RP/account.
+    const normalizedPurpose = normalizeBiometricPurpose(purpose);
+    return normalizedPurpose === "login"
+        ? accountId
+        : `${accountId}:${normalizedPurpose}`;
 }
 
 function storeChallenge(key, challenge) {
@@ -265,22 +284,25 @@ async function verifyAssertion({ credentialId, assertionResponse, expectedChalle
  */
 const registerBiometric = async (req, res) => {
     const { action, attestation } = req.body;
+    const purpose = normalizeBiometricPurpose(req.body.purpose);
     const account_id = req.account?.account_id;
 
     try {
         // ── Step 1: issue a registration challenge ────────────────────────────
         if (action === "challenge") {
             const challenge = generateChallenge();
-            // userId sent to the authenticator must be stable per account.
-            // We base64url-encode the account_id so it survives the round-trip.
-            const userId = Buffer.from(account_id).toString("base64url");
-            storeChallenge(`reg:${account_id}`, challenge);
+            // userId sent to the authenticator must be stable. Login keeps the
+            // original account_id handle; transaction-only enrollment uses a
+            // purpose-specific handle to avoid replacing the login credential on
+            // mobile platform authenticators.
+            const userId = Buffer.from(webAuthnUserIdFor(account_id, purpose)).toString("base64url");
+            storeChallenge(registrationChallengeKey(account_id, purpose), challenge);
             return res.status(200).json({ challenge, userId });
         }
 
         // ── Step 2: verify attestation and persist credential ─────────────────
         if (action === "register") {
-            const expectedChallenge = consumeChallenge(`reg:${account_id}`);
+            const expectedChallenge = consumeChallenge(registrationChallengeKey(account_id, purpose));
             if (!expectedChallenge) {
                 return res.status(400).json({ success: false, message: "Challenge expired or not found. Please try again." });
             }

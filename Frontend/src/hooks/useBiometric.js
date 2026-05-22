@@ -11,8 +11,13 @@
  *
  * Storage:
  *  localStorage["kharcha_biometric_user"] = { credentialId, email, displayName }
- *  The actual private key never leaves the device — only the credential
- *  ID is stored; the server holds the public key.
+ *  localStorage["kharcha_biometric_tx"]   = { credentialId, email, displayName }
+ *
+ *  Login and payment biometrics intentionally reuse the same WebAuthn
+ *  credential when one already exists for the account on this device. That
+ *  avoids mobile platform authenticators replacing the earlier credential
+ *  when a second one is created for the same RP/account. Separate localStorage
+ *  keys are only feature flags; the private key still never leaves the device.
  */
 
 const RP_ID   = window.location.hostname;       // e.g. "localhost" or "kharcha.app"
@@ -42,6 +47,26 @@ function randomChallenge() {
     const arr = new Uint8Array(32);
     crypto.getRandomValues(arr);
     return arr;
+}
+
+function emailsMatch(a, b) {
+    return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+}
+
+function buildSavedCredential({ credentialId, email, displayName }) {
+    return {
+        credentialId,
+        email,
+        displayName: displayName || email,
+    };
+}
+
+function saveLoginCredential(credential) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSavedCredential(credential)));
+}
+
+function saveTransactionCredential(credential) {
+    localStorage.setItem(TX_STORAGE_KEY, JSON.stringify(buildSavedCredential(credential)));
 }
 
 // ── Public API ───────────────────────────────────────────────
@@ -87,9 +112,19 @@ export function clearSavedBiometricUser() {
  * @param {Function} apiRegister - async fn that calls POST /auth/biometric/register
  */
 export async function registerBiometric(user, apiRegister) {
+    const savedTx = getSavedBiometricTxUser();
+    if (savedTx?.credentialId && emailsMatch(savedTx.email, user.email)) {
+        saveLoginCredential({
+            credentialId: savedTx.credentialId,
+            email: user.email,
+            displayName: user.display_name || savedTx.displayName || user.email,
+        });
+        return;
+    }
+
     // 1. Ask server for a registration challenge
     const { challenge: challengeB64, userId: userIdB64 } =
-        await apiRegister({ action: "challenge", email: user.email });
+        await apiRegister({ action: "challenge", email: user.email, purpose: "login" });
 
     const challenge = base64urlToBuffer(challengeB64);
     const userId    = base64urlToBuffer(userIdB64);
@@ -129,14 +164,14 @@ export async function registerBiometric(user, apiRegister) {
         },
     };
 
-    await apiRegister({ action: "register", email: user.email, attestation: attestationResponse });
+    await apiRegister({ action: "register", email: user.email, purpose: "login", attestation: attestationResponse });
 
     // 4. Persist the credential ID locally so the login screen knows to show the button
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        credentialId:  credential.id,
-        email:         user.email,
-        displayName:   user.display_name || user.email,
-    }));
+    saveLoginCredential({
+        credentialId: credential.id,
+        email: user.email,
+        displayName: user.display_name || user.email,
+    });
 }
 
 /**
@@ -189,9 +224,13 @@ export async function biometricLogin(apiVerify) {
 // ── Transaction biometric (separate enrollment) ──────────────
 
 /**
- * Register a biometric credential specifically for authorising transactions.
- * Stored under a separate localStorage key so login and tx biometrics are
- * independently configurable.
+ * Enable biometric authorisation for transactions.
+ *
+ * When fingerprint login already exists on this device, reuse that same
+ * WebAuthn credential and only store a tx feature flag locally. This prevents
+ * phones from replacing/invalidating the login credential when payment
+ * biometrics are enabled. If there is no login credential yet, create a
+ * transaction credential using a distinct server-side WebAuthn user handle.
  *
  * Caller must have already verified the user's MPIN before calling this.
  *
@@ -199,8 +238,18 @@ export async function biometricLogin(apiVerify) {
  * @param {Function} apiRegister - same biometricRegisterApi (same backend endpoint)
  */
 export async function registerBiometricTx(user, apiRegister) {
+    const savedLogin = getSavedBiometricUser();
+    if (savedLogin?.credentialId && emailsMatch(savedLogin.email, user.email)) {
+        saveTransactionCredential({
+            credentialId: savedLogin.credentialId,
+            email: user.email,
+            displayName: user.display_name || savedLogin.displayName || user.email,
+        });
+        return;
+    }
+
     const { challenge: challengeB64, userId: userIdB64 } =
-        await apiRegister({ action: "challenge", email: user.email });
+        await apiRegister({ action: "challenge", email: user.email, purpose: "transaction" });
 
     const challenge = base64urlToBuffer(challengeB64);
     const userId    = base64urlToBuffer(userIdB64);
@@ -210,8 +259,8 @@ export async function registerBiometricTx(user, apiRegister) {
             rp: { id: RP_ID, name: RP_NAME },
             user: {
                 id:          userId,
-                name:        user.email + ":tx",          // distinct user handle
-                displayName: (user.display_name || user.email) + " (Transactions)",
+                name:        user.email,
+                displayName: (user.display_name || user.email) + " (Payments)",
             },
             challenge,
             pubKeyCredParams: [
@@ -238,13 +287,13 @@ export async function registerBiometricTx(user, apiRegister) {
         },
     };
 
-    await apiRegister({ action: "register", email: user.email, attestation: attestationResponse });
+    await apiRegister({ action: "register", email: user.email, purpose: "transaction", attestation: attestationResponse });
 
-    localStorage.setItem(TX_STORAGE_KEY, JSON.stringify({
-        credentialId:  credential.id,
-        email:         user.email,
-        displayName:   user.display_name || user.email,
-    }));
+    saveTransactionCredential({
+        credentialId: credential.id,
+        email: user.email,
+        displayName: user.display_name || user.email,
+    });
 }
 
 /**
@@ -319,9 +368,18 @@ export async function biometricTxLogin(apiVerify) {
  * @param {string} type - "login" or "transaction" to know which localStorage to clear
  */
 export async function deleteBiometricCredential(credentialId, apiDelete, type = "login") {
-    await apiDelete({ credentialId });
+    const savedLogin = getSavedBiometricUser();
+    const savedTx = getSavedBiometricTxUser();
+    const sharedWithLogin = type === "transaction" && savedLogin?.credentialId === credentialId;
+    const sharedWithTx = type === "login" && savedTx?.credentialId === credentialId;
 
-    // Clear localStorage based on type
+    // When both login and payment toggles point at the same WebAuthn credential,
+    // removing only one feature must not delete the server credential needed by
+    // the other feature. Just clear that feature's local flag.
+    if (!sharedWithLogin && !sharedWithTx) {
+        await apiDelete({ credentialId });
+    }
+
     if (type === "transaction") {
         localStorage.removeItem(TX_STORAGE_KEY);
     } else {
