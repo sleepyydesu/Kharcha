@@ -982,3 +982,133 @@
     border-color: #3a4653;
     caret-color: var(--accent);
 }
+
+/* ── Password strength helper ───────────────────────────────── */
+.acct-password-strength {
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.acct-password-strength__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.45rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.acct-password-strength__top strong {
+    color: var(--text-color);
+    font-size: 0.8rem;
+}
+
+.acct-password-strength__bar {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.28);
+}
+
+.acct-password-strength__bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #ef4444;
+    transition: width 0.2s ease, background 0.2s ease;
+}
+
+.acct-password-strength--good .acct-password-strength__bar span {
+    background: #f59e0b;
+}
+
+.acct-password-strength--strong .acct-password-strength__bar span {
+    background: #22c55e;
+}
+
+.acct-password-rules {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 0.75rem;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.acct-password-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.acct-password-rule span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.acct-password-rule--pass {
+    color: #15803d;
+}
+
+.acct-password-rule--pass span {
+    background: rgba(34, 197, 94, 0.14);
+    color: #16a34a;
+}
+
+.acct-password-match {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.acct-password-match--error {
+    color: #dc2626;
+}
+
+.acct-password-match--ok {
+    color: #16a34a;
+}
+
+[data-theme="dark"] .acct-password-strength {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .acct-password-strength__bar {
+    background: rgba(71, 85, 105, 0.55);
+}
+
+[data-theme="dark"] .acct-password-rule--pass,
+[data-theme="dark"] .acct-password-match--ok {
+    color: #86efac;
+}
+
+[data-theme="dark"] .acct-password-rule--pass span {
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+}
+
+[data-theme="dark"] .acct-password-match--error {
+    color: #fca5a5;
+}
+
+@media (max-width: 520px) {
+    .acct-password-rules {
+        grid-template-columns: 1fr;
+    }
+}
