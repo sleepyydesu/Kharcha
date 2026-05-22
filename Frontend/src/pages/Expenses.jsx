@@ -532,6 +532,9 @@ function EditExpenseSheet({ exp, categories, open, onClose, onSaved }) {
             type="number"
             className="exp-input"
             value={form.amount}
+                        onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             placeholder="0.00"
           />
@@ -638,6 +641,9 @@ function EditIncomeSheet({ inc, open, onClose, onSaved }) {
             type="number"
             className="exp-input"
             value={form.amount}
+                        onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             placeholder="0.00"
           />
@@ -1069,7 +1075,10 @@ function BudgetCard({ budget: b, categories, onRefresh }) {
               className="exp-input"
               style={{ padding: "8px 12px", fontSize: 13 }}
               value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                          onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
           </FormField>
           <div style={{ display: "flex", gap: 8 }}>
@@ -1666,6 +1675,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={expForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setExpForm({ ...expForm, amount: e.target.value })
                 }
@@ -1725,6 +1737,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={incForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setIncForm({ ...incForm, amount: e.target.value })
                 }
@@ -1785,6 +1800,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={budForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setBudForm({ ...budForm, amount: e.target.value })
                 }

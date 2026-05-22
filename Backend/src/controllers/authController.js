@@ -740,6 +740,25 @@ const resetPassword = async (req, res) => {
 
         await supabase.from("otp_verifications").update({ is_used: true }).eq("id", otpRecord.id);
 
+        // Fetch current password hash to prevent reuse of the same password
+        const { data: currentAcct, error: fetchError } = await supabase
+            .from("accounts")
+            .select("account_id, password_hash")
+            .eq("email", normalizedEmail)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        if (currentAcct?.password_hash) {
+            const isSamePassword = await bcrypt.compare(new_password, currentAcct.password_hash);
+            if (isSamePassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: "New password must be different from your current password.",
+                });
+            }
+        }
+
         const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
         const { error: updateError } = await supabase
             .from("accounts")
