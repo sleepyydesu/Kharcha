@@ -222,6 +222,16 @@ const chargeCard = async (req, res) => {
             .eq("account_id", apiKey.account_id)
             .maybeSingle();
 
+        // ── 10. Stamp the correct method on the transaction ──
+        // transfer_funds defaults to "Kharcha Wallet"; override to "Credit Card"
+        // so statements show the right label for card-based payments.
+        if (result?.transaction_id) {
+            await supabase
+                .from("transactions")
+                .update({ method: "Credit Card" })
+                .eq("transaction_id", result.transaction_id);
+        }
+
         return res.status(200).json({
             success: true,
             message: "Payment processed successfully.",
@@ -236,7 +246,7 @@ const chargeCard = async (req, res) => {
                     display_name: org?.organization_name || "Merchant",
                 },
                 remarks:         remarks?.trim() || null,
-                method:          "Kharcha Card",
+                method:          "Credit Card",
                 status:          "completed",
                 processed_at:    new Date().toISOString(),
             },
@@ -309,4 +319,158 @@ const verifyCard = async (req, res) => {
     }
 };
 
-module.exports = { chargeCard, verifyCard };
+// ─────────────────────────────────────────────────────────────
+//  REFUND
+//  POST /api/payment/refund
+//  Header: X-API-Key: kh_live_...
+//  Body:   { transaction_id, reason? }
+//
+//  Flow:
+//    1. Validate org API key
+//    2. Look up the original transaction
+//    3. Verify the org was the receiver (can only refund payments made to you)
+//    4. Check the transaction hasn't already been refunded
+//    5. Reverse the funds: org wallet → original payer wallet
+//    6. Record the refund in the `refunds` table
+//    7. Stamp method as "Refund" and return receipt
+//
+//  Error codes:
+//    INVALID_API_KEY        — missing/bad key
+//    VALIDATION_ERROR       — missing fields
+//    TRANSACTION_NOT_FOUND  — transaction_id doesn't exist
+//    UNAUTHORIZED           — org was not the receiver of this transaction
+//    ALREADY_REFUNDED       — refund already issued for this transaction
+//    INSUFFICIENT_BALANCE   — org wallet doesn't have enough to refund
+// ─────────────────────────────────────────────────────────────
+const refundPayment = async (req, res) => {
+    try {
+        const rawKey = req.headers["x-api-key"];
+        const { transaction_id, reason } = req.body;
+
+        // ── 1. Validate API key ──────────────────────────────
+        const { apiKey, error: keyError } = await resolveApiKey(rawKey);
+        if (keyError) {
+            return res.status(401).json({ success: false, error_code: "INVALID_API_KEY", message: keyError });
+        }
+
+        // ── 2. Validate request body ─────────────────────────
+        if (!transaction_id) {
+            return res.status(400).json({
+                success: false,
+                error_code: "VALIDATION_ERROR",
+                message: "transaction_id is required.",
+            });
+        }
+
+        // ── 3. Look up the original transaction ───────────────
+        const { data: txn, error: txnErr } = await supabase
+            .from("transactions")
+            .select("transaction_id, sender_account_id, receiver_account_id, amount, status, method")
+            .eq("transaction_id", transaction_id)
+            .maybeSingle();
+
+        if (txnErr) throw txnErr;
+        if (!txn) {
+            return res.status(404).json({
+                success: false,
+                error_code: "TRANSACTION_NOT_FOUND",
+                message: "Transaction not found.",
+            });
+        }
+
+        // ── 4. Verify the org was the receiver ────────────────
+        if (txn.receiver_account_id !== apiKey.account_id) {
+            return res.status(403).json({
+                success: false,
+                error_code: "UNAUTHORIZED",
+                message: "You can only refund transactions where your organisation was the recipient.",
+            });
+        }
+
+        // ── 5. Check not already refunded ────────────────────
+        const { data: existingRefund } = await supabase
+            .from("refunds")
+            .select("refund_id")
+            .eq("original_transaction_id", transaction_id)
+            .maybeSingle();
+
+        if (existingRefund) {
+            return res.status(409).json({
+                success: false,
+                error_code: "ALREADY_REFUNDED",
+                message: "This transaction has already been refunded.",
+            });
+        }
+
+        // ── 6. Fetch org name for the remarks ─────────────────
+        const { data: org } = await supabase
+            .from("organizations")
+            .select("organization_name")
+            .eq("account_id", apiKey.account_id)
+            .maybeSingle();
+
+        const orgName   = org?.organization_name || "Merchant";
+        const refundNote = `Refunded from ${orgName}`;
+
+        // ── 7. Reverse the funds (org → original payer) ───────
+        const { data: result, error: transferErr } = await supabase.rpc("transfer_funds", {
+            p_sender_account_id:   apiKey.account_id,
+            p_receiver_account_id: txn.sender_account_id,
+            p_amount:              parseFloat(txn.amount),
+            p_remarks:             refundNote,
+        });
+
+        if (transferErr) {
+            const msg = transferErr.message || "";
+            if (msg.includes("INSUFFICIENT_BALANCE")) {
+                return res.status(400).json({
+                    success: false,
+                    error_code: "INSUFFICIENT_BALANCE",
+                    message: "Insufficient balance in your organisation wallet to issue this refund.",
+                });
+            }
+            throw transferErr;
+        }
+
+        // ── 8. Stamp both transactions with correct method ────
+        const refundTxnId = result?.transaction_id;
+
+        await Promise.all([
+            // Refund transaction: show as "Refund" in statements
+            refundTxnId
+                ? supabase.from("transactions")
+                    .update({ method: "Refund" })
+                    .eq("transaction_id", refundTxnId)
+                : Promise.resolve(),
+
+            // Record in refunds table for idempotency guard
+            supabase.from("refunds").insert({
+                original_transaction_id: transaction_id,
+                refund_transaction_id:   refundTxnId || null,
+                refunded_by_account_id:  apiKey.account_id,
+                amount:                  parseFloat(txn.amount),
+                reason:                  reason?.trim() || null,
+            }),
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: "Refund processed successfully.",
+            refund: {
+                refund_transaction_id:    refundTxnId,
+                original_transaction_id:  transaction_id,
+                amount:                   parseFloat(txn.amount),
+                currency:                 "NPR",
+                remarks:                  refundNote,
+                method:                   "Refund",
+                status:                   "completed",
+                processed_at:             new Date().toISOString(),
+            },
+        });
+    } catch (err) {
+        console.error("[refundPayment]", err);
+        return res.status(500).json({ success: false, error_code: "SERVER_ERROR", message: "Refund processing failed. Please try again." });
+    }
+};
+
+module.exports = { chargeCard, verifyCard, refundPayment };

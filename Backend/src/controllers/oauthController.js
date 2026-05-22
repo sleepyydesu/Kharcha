@@ -54,7 +54,6 @@ const AUTH_CODE_TTL_MS    = 10 * 60 * 1000;   // 10 minutes
 const PAYMENT_OTP_TTL_MS  = 15 * 60 * 1000;   // 15 minutes
 const PAYMENT_MAX_ATTEMPTS = 5;
 
-// ── In-memory stores (swap for Redis in production) ──────────
 // auth codes:  code → { client_id, account_id, redirect_uri, expires, used }
 const authCodeStore = new Map();
 
@@ -69,10 +68,7 @@ setInterval(() => {
     for (const [k, v] of paymentOtpStore) if (v.expires < now) paymentOtpStore.delete(k);
 }, 5 * 60 * 1000);
 
-// ─────────────────────────────────────────────────────────────
 //  INTERNAL HELPERS
-// ─────────────────────────────────────────────────────────────
-
 function generateClientSecret() {
     return `kh_cs_${crypto.randomBytes(32).toString("hex")}`;
 }
@@ -132,12 +128,10 @@ async function resolveLinkToken(rawToken) {
     return { authorization: matched };
 }
 
-// ─────────────────────────────────────────────────────────────
 //  1. REGISTER A CLIENT  (org API key)
 //  POST /api/oauth/clients
 //  Header: X-API-Key
 //  Body: { name, redirect_uris: string[] }
-// ─────────────────────────────────────────────────────────────
 const registerClient = async (req, res) => {
     try {
         const account_id = req.apiKeyAccount;
@@ -211,10 +205,8 @@ const registerClient = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  2. GET CLIENT INFO FOR CONSENT SCREEN  (public)
 //  GET /api/oauth/authorize?client_id=&redirect_uri=&state=
-// ─────────────────────────────────────────────────────────────
 const getAuthorizeInfo = async (req, res) => {
     try {
         const { client_id, redirect_uri, state } = req.query;
@@ -266,13 +258,11 @@ const getAuthorizeInfo = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  3. COMPLETE AUTHORIZATION  (user confirms on Kharcha site)
 //  POST /api/oauth/authorize/complete
 //  Auth: JWT (logged-in Kharcha user)
 //  Body: { client_id, redirect_uri, state? }
 //  → Redirects to redirect_uri?code=AUTH_CODE&state=...
-// ─────────────────────────────────────────────────────────────
 const completeAuthorization = async (req, res) => {
     try {
         const { account_id } = req.account;
@@ -322,12 +312,10 @@ const completeAuthorization = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  4. EXCHANGE AUTH CODE FOR LINK TOKEN  (third-party backend)
 //  POST /api/oauth/token
 //  Body: { client_id, client_secret, code }
 //  → { link_token }  (stored by the third party for future payments)
-// ─────────────────────────────────────────────────────────────
 const exchangeToken = async (req, res) => {
     try {
         const { client_id, client_secret, code } = req.body;
@@ -395,14 +383,12 @@ const exchangeToken = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  5. INITIATE PAYMENT  (third-party backend)
 //  POST /api/oauth/pay/initiate
 //  Header: X-Client-Id, X-Client-Secret
 //  Body: { link_token, amount, note?, callback_url? }
 //  → { payment_id, masked_email }
 //  (OTP is sent to the user's Kharcha email)
-// ─────────────────────────────────────────────────────────────
 const initiatePayment = async (req, res) => {
     try {
         const clientId     = req.headers["x-client-id"];
@@ -492,12 +478,10 @@ const initiatePayment = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  6. CONFIRM PAYMENT  (third-party backend, after user enters OTP)
 //  POST /api/oauth/pay/confirm
 //  Body: { payment_id, otp }
 //  → { transaction_id, amount, status }
-// ─────────────────────────────────────────────────────────────
 const confirmPayment = async (req, res) => {
     try {
         const { payment_id, otp } = req.body;
@@ -565,6 +549,15 @@ const confirmPayment = async (req, res) => {
         const transactionId = result?.transaction_id || null;
         const processedAt   = new Date().toISOString();
 
+        // Stamp the method so statements show "Linked Account" instead of the
+        // generic "Kharcha Wallet" that transfer_funds defaults to.
+        if (transactionId) {
+            await supabase
+                .from("transactions")
+                .update({ method: "Linked Account" })
+                .eq("transaction_id", transactionId);
+        }
+
         // Fire-and-forget webhook to the third party
         if (stored.callback_url) {
             fetch(stored.callback_url, {
@@ -593,9 +586,13 @@ const confirmPayment = async (req, res) => {
                 payment_id,
                 amount:         stored.amount,
                 currency:       "NPR",
+                method:         "Linked Account",
                 status:         "completed",
                 processed_at:   processedAt,
             },
+            // Store transaction_id — pass it to POST /api/payment/refund
+            // with your X-API-Key if you ever need to issue a refund.
+            refund_hint: "To refund this payment, call POST /api/payment/refund with this transaction_id and your X-API-Key.",
         });
     } catch (err) {
         console.error("[confirmPayment]", err);
@@ -603,11 +600,9 @@ const confirmPayment = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  7. LIST LINKED APPS  (Kharcha user — their own linked apps)
 //  GET /api/oauth/my-linked-apps
 //  Auth: JWT
-// ─────────────────────────────────────────────────────────────
 const listLinkedApps = async (req, res) => {
     try {
         const { account_id } = req.account;
@@ -640,11 +635,9 @@ const listLinkedApps = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  8. REVOKE A LINKED APP  (Kharcha user)
 //  DELETE /api/oauth/my-linked-apps/:authorization_id
 //  Auth: JWT
-// ─────────────────────────────────────────────────────────────
 const revokeLinkedApp = async (req, res) => {
     try {
         const { account_id } = req.account;
@@ -679,11 +672,9 @@ const revokeLinkedApp = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  9. LIST MY OAUTH CLIENTS  (org API key)
 //  GET /api/oauth/clients
 //  Header: X-API-Key
-// ─────────────────────────────────────────────────────────────
 const listClients = async (req, res) => {
     try {
         const account_id = req.apiKeyAccount;
@@ -716,11 +707,9 @@ const listClients = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
 //  10. REVOKE A CLIENT  (org API key)
 //  DELETE /api/oauth/clients/:client_id
 //  Header: X-API-Key
-// ─────────────────────────────────────────────────────────────
 const revokeClient = async (req, res) => {
     try {
         const account_id = req.apiKeyAccount;

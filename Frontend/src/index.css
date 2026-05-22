@@ -1144,8 +1144,8 @@ body:not(.app-authenticated) #root {
   .auth-container {
     max-width: 100%;
     width: 100%;
-    min-height: 100vh;
-    border-radius: 0;
+    min-height: 0;
+    border-radius: var(--radius-lg);;
     -webkit-box-shadow: none;
     box-shadow: none;
   }
@@ -1186,6 +1186,12 @@ body:not(.app-authenticated) #root {
   }
   .form-body {
     padding: 20px 16px 20px;
+    min-height: 0;
+  }
+
+  .footer-note {
+    margin-top: 12px;
+    padding-top: 0;
   }
 
   .otp-box {
@@ -1521,4 +1527,244 @@ body:not(.app-authenticated) #root {
 }
 [data-theme="dark"] .scroll-area::-webkit-scrollbar-thumb {
   background: rgba(42, 122, 78, 0.3);
+}
+
+/* ============================================================
+   LOGIN PAGE — DARK MODE OVERRIDES
+   index.css defines its own :root vars for the login/auth
+   pages (--bg, --bg-card, --bg-soft, --text-main, --text-muted,
+   --text-light, --border, --border-focus, --error, --success).
+   These are separate from the app's variables.css vars and are
+   never overridden for dark mode, causing invisible text and
+   borders.  The block below fixes that.
+   ============================================================ */
+[data-theme="dark"] body:not(.app-authenticated) {
+  background: #0c1014;
+}
+
+[data-theme="dark"] .form-panel {
+  background: #212328;
+}
+
+[data-theme="dark"] .tab-bar {
+  background: #181b1f;
+}
+
+[data-theme="dark"] .tab-btn {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .tab-btn.active {
+  background: #212328;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .form-body {
+  background: #212328;
+}
+
+[data-theme="dark"] .input-field {
+  background: #292929;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .input-field:focus {
+  background: #2e2e2e;
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .input-field::placeholder {
+  color: #666;
+}
+
+[data-theme="dark"] .input-field.error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+}
+
+[data-theme="dark"] .input-label {
+  color: #bebebe;
+}
+
+[data-theme="dark"] .input-icon {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .toggle-eye {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .footer-note,
+[data-theme="dark"] .footer-note a {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .footer-note a:hover {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .auth-container {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .otp-box,
+[data-theme="dark"] .mpin-box {
+  background: #292929;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .otp-box:focus,
+[data-theme="dark"] .mpin-box:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #1a5c39 0%, #154d30 100%);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #2a2f36;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+/* ── Register tab dark mode overrides ──────────────────────── */
+[data-theme="dark"] .step-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .step-subtitle {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .step-dot {
+  background: #2a2f36;
+  border-color: #4b4b4b;
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .step-dot.done {
+  background: #1a5c39;
+  border-color: #1a5c39;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .step-dot.active {
+  background: var(--accent);
+  border-color: var(--accent-dark);
+  color: var(--primary-dark);
+}
+
+[data-theme="dark"] .step-line {
+  background: #4b4b4b;
+}
+
+[data-theme="dark"] .step-line.done {
+  background: #1a5c39;
+}
+
+[data-theme="dark"] .type-card {
+  background: #2a2f36;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .type-card:hover {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.05);
+}
+
+[data-theme="dark"] .type-card.selected {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+  box-shadow: 0 0 0 1px #4ade80;
+}
+
+[data-theme="dark"] .type-card-text h4 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .type-card-text p {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .otp-info {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .otp-phone {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .resend-link {
+  color: var(--accent-dark);
+}
+
+[data-theme="dark"] .resend-link:hover {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .error-msg {
+  color: #f87171;
+}
+
+[data-theme="dark"] .success-msg {
+  color: #4ade80;
+}
+
+/* ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] .btn-biometric {
+  border-color: #4ade80;
+  color: #4ade80;
+  background: transparent;
+}
+
+[data-theme="dark"] .btn-biometric:hover:not(:disabled) {
+  background: #4ade80;
+  color: #0c1014;
+  box-shadow: 0 4px 14px rgba(74, 222, 128, 0.25);
+}
+
+[data-theme="dark"] .btn-biometric:active:not(:disabled) {
+  background: #22c55e;
+  color: #0c1014;
+}
+
+[data-theme="dark"] .biometric-divider {
+  color: #666;
+}
+
+[data-theme="dark"] .biometric-divider::before,
+[data-theme="dark"] .biometric-divider::after {
+  background: #4b4b4b;
+}
+
+/* ── Autofill override for login page inputs ─────────────────
+   Same technique as PaymentGateway.css — neutralise the UA's
+   green/yellow autofill background with an inset box-shadow.
+   ─────────────────────────────────────────────────────────── */
+.input-field:-webkit-autofill,
+.input-field:-webkit-autofill:hover,
+.input-field:-webkit-autofill:focus,
+.input-field:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-soft, #f3f6f3) inset !important;
+  box-shadow:         0 0 0 1000px var(--bg-soft, #f3f6f3) inset !important;
+  -webkit-text-fill-color: var(--text-main, #111827) !important;
+  caret-color: var(--text-main, #111827);
+  border-color: var(--border, #e0e7e1) !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+[data-theme="dark"] .input-field:-webkit-autofill,
+[data-theme="dark"] .input-field:-webkit-autofill:hover,
+[data-theme="dark"] .input-field:-webkit-autofill:focus,
+[data-theme="dark"] .input-field:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #292929 inset !important;
+  box-shadow:         0 0 0 1000px #292929 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  border-color: #4b4b4b !important;
 }

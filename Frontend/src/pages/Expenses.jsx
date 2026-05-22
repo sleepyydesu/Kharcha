@@ -36,6 +36,9 @@ import {
   BarChart2,
   Calendar,
   Download,
+  Tags,
+  Upload,
+  ImageOff,
 } from "lucide-react";
 import "./Expenses.css";
 import CategoryIcon from "../components/CategoryIcon";
@@ -54,8 +57,14 @@ import {
   updateBudget,
   deleteBudget,
   getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  uploadCategoryIcon,
+  deleteCategoryIcon,
 } from "../services/api";
 
+/* ── Constants ────────────────────────────────────────────── */
 const INCOME_SOURCES = [
   "Salary",
   "Freelance",
@@ -116,6 +125,7 @@ function getDaysBetween(start, end) {
   return Math.max(1, Math.round(diff) + 1);
 }
 
+/* ── Small shared helpers ─────────────────────────────────── */
 function AutoBadge() {
   return (
     <span className="auto-badge">
@@ -372,10 +382,7 @@ function CategoryRow({ cat, onClick }) {
   return (
     <div className="cat-row" onClick={onClick}>
       <div className="cat-row-left">
-        <div
-          className="cat-row-icon-wrap"
-          style={{ background: `${color}18` }}
-        >
+        <div className="cat-row-icon-wrap" style={{ background: `${color}18` }}>
           <CategoryIcon
             iconUrl={cat.icon_url}
             iconType={cat.icon_type}
@@ -459,6 +466,608 @@ function FormField({ label, children, required }) {
   );
 }
 
+/* ── Manage Categories Sheet ──────────────────────────────── */
+function ManageCategoriesSheet({ open, onClose, onRefresh }) {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addMode, setAddMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ name: "", color: "#6366F1" });
+  const [editForm, setEditForm] = useState({ name: "", color: "#6366F1" });
+  const [saving, setSaving] = useState(false);
+  const [iconUploading, setIconUploading] = useState(null); // category_id currently uploading
+  const [err, setErr] = useState("");
+
+  // Inject scoped styles for the new category UI elements once
+  useEffect(() => {
+    const id = "cat-mgr-extra-styles";
+    if (document.getElementById(id)) return;
+    const el = document.createElement("style");
+    el.id = id;
+    el.textContent = `
+      /* ── Category row action buttons ───────────────────────── */
+      .cat-mgr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+      }
+      .cat-mgr-btn--edit {
+        background: var(--color-surface-2, #f1f5f9);
+        color: var(--color-text-2, #475569);
+        border-color: var(--color-border, #e2e8f0);
+      }
+      .cat-mgr-btn--edit:hover {
+        background: var(--color-primary-light, #ede9fe);
+        color: var(--color-primary, #6366F1);
+        border-color: var(--color-primary, #6366F1);
+      }
+      .cat-mgr-btn--delete {
+        background: var(--color-surface-2, #f1f5f9);
+        color: var(--color-text-2, #475569);
+        border-color: var(--color-border, #e2e8f0);
+      }
+      .cat-mgr-btn--delete:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #fca5a5;
+      }
+
+      /* ── Color picker row ───────────────────────────────────── */
+      .cat-edit-color-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 10px;
+        border: 1.5px solid var(--color-border, #e2e8f0);
+        border-radius: 8px;
+        background: var(--color-surface-2, #f8fafc);
+        width: fit-content;
+      }
+      .cat-edit-color-swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(0,0,0,0.12);
+        flex-shrink: 0;
+        pointer-events: none;
+      }
+      .cat-edit-color-input {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: transparent;
+        outline: none;
+        -webkit-appearance: none;
+      }
+      .cat-edit-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+      .cat-edit-color-input::-webkit-color-swatch {
+        border: 1.5px solid rgba(0,0,0,0.15);
+        border-radius: 5px;
+      }
+      .cat-edit-color-hex {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-2, #64748b);
+        letter-spacing: 0.04em;
+        font-family: monospace;
+      }
+
+      /* ── Icon upload section ────────────────────────────────── */
+      .cat-edit-icon-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .cat-edit-icon-preview {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 10px;
+        flex-shrink: 0;
+      }
+      .cat-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 13px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+      }
+      .cat-icon-btn--upload {
+        background: var(--color-primary-light, #ede9fe);
+        color: var(--color-primary, #6366F1);
+        border-color: var(--color-primary, #6366F1);
+      }
+      .cat-icon-btn--upload:hover {
+        background: var(--color-primary, #6366F1);
+        color: #fff;
+      }
+      .cat-icon-btn--remove {
+        background: #fff0f0;
+        color: #dc2626;
+        border-color: #fca5a5;
+      }
+      .cat-icon-btn--remove:hover {
+        background: #fee2e2;
+        border-color: #dc2626;
+      }
+      .cat-icon-btn__uploading {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        opacity: 0.75;
+      }
+      .cat-icon-btn__spinner {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: cat-spin 0.7s linear infinite;
+      }
+      @keyframes cat-spin { to { transform: rotate(360deg); } }
+      .cat-icon-hint {
+        margin: 5px 0 0;
+        font-size: 11px;
+        color: var(--color-text-3, #94a3b8);
+      }
+    `;
+    document.head.appendChild(el);
+    return () => el.remove();
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getCategories();
+      setCategories(res.data || res.categories || res || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      load();
+      setAddMode(false);
+      setEditingId(null);
+      setErr("");
+      setForm({ name: "", color: "#6366F1" });
+    }
+  }, [open, load]);
+
+  /* ── CRUD ── */
+  const handleAdd = async () => {
+    setErr("");
+    if (!form.name.trim()) {
+      setErr("Name is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createCategory({
+        name: form.name.trim(),
+        color: form.color || "#6366F1",
+      });
+      setForm({ name: "", color: "#6366F1" });
+      setAddMode(false);
+      await load();
+      onRefresh();
+    } catch (e) {
+      setErr(e.message || "Failed to create category.");
+    }
+    setSaving(false);
+  };
+
+  const startEdit = (cat) => {
+    setEditingId(cat.category_id);
+    setEditForm({ name: cat.name, color: cat.color || "#6366F1" });
+    setErr("");
+    setAddMode(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setErr("");
+  };
+
+  const handleEdit = async (id) => {
+    setErr("");
+    if (!editForm.name.trim()) {
+      setErr("Name is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateCategory(id, {
+        name: editForm.name.trim(),
+        color: editForm.color || "#6366F1",
+      });
+      setEditingId(null);
+      await load();
+      onRefresh();
+    } catch (e) {
+      setErr(e.message || "Failed to update category.");
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (
+      !window.confirm(
+        'Delete this category?\n\nAll expenses in this category will be moved to "Others" — you can reassign them anytime.',
+      )
+    )
+      return;
+    try {
+      await deleteCategory(id);
+      await load();
+      onRefresh();
+    } catch (e) {
+      setErr(e.message || "Failed to delete category.");
+    }
+  };
+
+  /* ── Icon upload / delete ── */
+
+  const handleIconUpload = async (cat, file) => {
+    if (!file) return;
+
+    setIconUploading(cat.category_id);
+    setErr("");
+
+    const reader = new FileReader();
+
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result.split(",")[1];
+
+        await uploadCategoryIcon(cat.category_id, {
+          file_base64: base64String,
+          mime_type: file.type,
+        });
+
+        await load();
+        onRefresh();
+      } catch (e) {
+        setErr(e.message || "Failed to upload icon.");
+      } finally {
+        setIconUploading(null);
+      }
+    };
+
+    reader.readAsDataURL(file);
+  };
+  const handleIconDelete = async (cat) => {
+    if (!window.confirm("Remove the icon for this category?")) return;
+    setErr("");
+    try {
+      await deleteCategoryIcon(cat.category_id);
+      await load();
+      onRefresh();
+    } catch (e) {
+      setErr(e.message || "Failed to remove icon.");
+    }
+  };
+
+  const defaultCats = categories.filter((c) => c.is_default);
+  const customCats = categories.filter((c) => !c.is_default);
+
+  return (
+    <BottomSheet open={open} onClose={onClose}>
+      <div className="exp-modal-header">
+        <h3 className="exp-modal-title">Manage Categories</h3>
+        <button className="exp-modal-close" onClick={onClose}>
+          <X size={20} />
+        </button>
+      </div>
+
+      {err && <p className="exp-modal-err">{err}</p>}
+
+      <div className="exp-modal-body">
+        {/* ── Default categories (read-only) ── */}
+        {defaultCats.length > 0 && (
+          <div className="cat-mgr-section">
+            <p className="cat-mgr-section-label">Default categories</p>
+            <div className="cat-mgr-list">
+              {defaultCats.map((cat) => (
+                <div key={cat.category_id} className="cat-mgr-row">
+                  <div
+                    className="cat-row-icon-wrap"
+                    style={{
+                      background: `${cat.color || "#6B7280"}18`,
+                      width: 30,
+                      height: 30,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CategoryIcon
+                      iconUrl={cat.icon_url}
+                      iconType={cat.icon_type}
+                      name={cat.name}
+                      color={cat.color || "#6B7280"}
+                      size={16}
+                    />
+                  </div>
+                  <span className="cat-mgr-name">{cat.name}</span>
+                  <span className="cat-mgr-default-badge">Default</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Custom categories ── */}
+        <div className="cat-mgr-section">
+          <p className="cat-mgr-section-label">Custom categories</p>
+
+          {loading ? (
+            <div className="skeleton-list">
+              {[1, 2].map((i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : customCats.length === 0 && !addMode ? (
+            <div className="cat-mgr-empty">
+              <Tags size={28} strokeWidth={1.3} />
+              <p>No custom categories yet.</p>
+            </div>
+          ) : (
+            <div className="cat-mgr-list">
+              {customCats.map((cat) =>
+                editingId === cat.category_id ? (
+                  /* ── Inline edit card ── */
+                  <div key={cat.category_id} className="cat-mgr-edit-card">
+                    <FormField label="Name" required>
+                      <input
+                        type="text"
+                        className="exp-input"
+                        value={editForm.name}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
+                        placeholder="Category name"
+                        maxLength={40}
+                        autoFocus
+                      />
+                    </FormField>
+
+                    {/* Color picker */}
+                    <FormField label="Color">
+                      <div className="cat-edit-color-row">
+                        <div
+                          className="cat-edit-color-swatch"
+                          style={{ background: editForm.color || "#6366F1" }}
+                        />
+                        <input
+                          type="color"
+                          className="cat-edit-color-input"
+                          value={editForm.color || "#6366F1"}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, color: e.target.value })
+                          }
+                        />
+                        <span className="cat-edit-color-hex">
+                          {(editForm.color || "#6366F1").toUpperCase()}
+                        </span>
+                      </div>
+                    </FormField>
+
+                    {/* Icon controls inside edit card */}
+                    <FormField label="Icon">
+                      <div className="cat-edit-icon-row">
+                        {/* Current icon preview */}
+                        <div
+                          className="cat-row-icon-wrap cat-edit-icon-preview"
+                          style={{
+                            background: `${editForm.color || cat.color || "#6366F1"}18`,
+                          }}
+                        >
+                          <CategoryIcon
+                            iconUrl={cat.icon_url}
+                            iconType={cat.icon_type}
+                            name={cat.name}
+                            color={editForm.color || cat.color || "#6366F1"}
+                            size={20}
+                          />
+                        </div>
+
+                        {/* Upload button */}
+                        <label className="cat-icon-btn cat-icon-btn--upload">
+                          {iconUploading === cat.category_id ? (
+                            <span className="cat-icon-btn__uploading">
+                              <span className="cat-icon-btn__spinner" />{" "}
+                              Uploading…
+                            </span>
+                          ) : (
+                            <>
+                              <Upload size={13} />
+                              <span>
+                                {cat.icon_url ? "Replace icon" : "Upload icon"}
+                              </span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            style={{ display: "none" }}
+                            onChange={(e) =>
+                              handleIconUpload(cat, e.target.files[0])
+                            }
+                          />
+                        </label>
+
+                        {/* Remove icon — only when one exists */}
+                        {cat.icon_url && (
+                          <button
+                            className="cat-icon-btn cat-icon-btn--remove"
+                            onClick={() => handleIconDelete(cat)}
+                          >
+                            <ImageOff size={13} />
+                            <span>Remove icon</span>
+                          </button>
+                        )}
+                      </div>
+                      <p className="cat-icon-hint">
+                        PNG, JPG or WEBP · max 2 MB
+                      </p>
+                    </FormField>
+
+                    <div className="cat-mgr-edit-actions">
+                      <button
+                        className="edit-save-btn"
+                        onClick={() => handleEdit(cat.category_id)}
+                        disabled={saving}
+                        style={{ flex: 1 }}
+                      >
+                        {saving ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        className="edit-cancel-btn"
+                        onClick={cancelEdit}
+                        style={{ flex: 1 }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Normal row ── */
+                  <div key={cat.category_id} className="cat-mgr-row custom">
+                    {/* Icon preview */}
+                    <div
+                      className="cat-row-icon-wrap"
+                      style={{
+                        background: `${cat.color || "#6B7280"}18`,
+                        width: 30,
+                        height: 30,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CategoryIcon
+                        iconUrl={cat.icon_url}
+                        iconType={cat.icon_type}
+                        name={cat.name}
+                        color={cat.color || "#6B7280"}
+                        size={16}
+                      />
+                    </div>
+
+                    <span className="cat-mgr-name">{cat.name}</span>
+
+                    <div className="cat-mgr-actions">
+                      {/* Edit */}
+                      <button
+                        className="cat-mgr-btn cat-mgr-btn--edit"
+                        onClick={() => startEdit(cat)}
+                      >
+                        <Pencil size={13} /> Edit
+                      </button>
+
+                      {/* Delete category */}
+                      <button
+                        className="cat-mgr-btn cat-mgr-btn--delete"
+                        onClick={() => handleDelete(cat.category_id)}
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+
+          {/* ── Add new category form ── */}
+          {addMode ? (
+            <div className="cat-mgr-add-card">
+              <FormField label="Category name" required>
+                <input
+                  type="text"
+                  className="exp-input"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Pet care, Hobbies…"
+                  maxLength={40}
+                  autoFocus
+                />
+              </FormField>
+              <FormField label="Color">
+                <div className="cat-edit-color-row">
+                  <div
+                    className="cat-edit-color-swatch"
+                    style={{ background: form.color || "#6366F1" }}
+                  />
+                  <input
+                    type="color"
+                    className="cat-edit-color-input"
+                    value={form.color || "#6366F1"}
+                    onChange={(e) =>
+                      setForm({ ...form, color: e.target.value })
+                    }
+                  />
+                  <span className="cat-edit-color-hex">
+                    {(form.color || "#6366F1").toUpperCase()}
+                  </span>
+                </div>
+              </FormField>
+              <div className="cat-mgr-edit-actions">
+                <button
+                  className="exp-submit-btn expense"
+                  style={{ flex: 1, marginTop: 0 }}
+                  onClick={handleAdd}
+                  disabled={saving}
+                >
+                  {saving ? "Adding…" : "Add Category"}
+                </button>
+                <button
+                  className="edit-cancel-btn"
+                  onClick={() => {
+                    setAddMode(false);
+                    setErr("");
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="cat-mgr-add-btn"
+              onClick={() => {
+                setAddMode(true);
+                setEditingId(null);
+                setErr("");
+              }}
+            >
+              <Plus size={14} /> New Category
+            </button>
+          )}
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
 /* ── Edit Sheets ──────────────────────────────────────────── */
 function EditExpenseSheet({ exp, categories, open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -532,6 +1141,9 @@ function EditExpenseSheet({ exp, categories, open, onClose, onSaved }) {
             type="number"
             className="exp-input"
             value={form.amount}
+                        onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             placeholder="0.00"
           />
@@ -638,6 +1250,9 @@ function EditIncomeSheet({ inc, open, onClose, onSaved }) {
             type="number"
             className="exp-input"
             value={form.amount}
+                        onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             placeholder="0.00"
           />
@@ -1069,7 +1684,10 @@ function BudgetCard({ budget: b, categories, onRefresh }) {
               className="exp-input"
               style={{ padding: "8px 12px", fontSize: 13 }}
               value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                          onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
           </FormField>
           <div style={{ display: "flex", gap: 8 }}>
@@ -1137,7 +1755,13 @@ function BudgetCard({ budget: b, categories, onRefresh }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span
-                className={`exp-budget-pct ${b.utilization_pct >= 90 ? "danger" : b.utilization_pct >= 70 ? "warn" : ""}`}
+                className={`exp-budget-pct ${
+                  b.utilization_pct >= 90
+                    ? "danger"
+                    : b.utilization_pct >= 70
+                      ? "warn"
+                      : ""
+                }`}
               >
                 {b.utilization_pct}%
               </span>
@@ -1189,12 +1813,11 @@ export default function Expenses() {
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const [apiErr, setApiErr] = useState("");
-
-  // ── BUG FIX: separate state for date range validation error ──
   const [dateRangeErr, setDateRangeErr] = useState("");
-
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedSource, setSelectedSource] = useState(null);
+
   const [expForm, setExpForm] = useState({
     category_id: "",
     amount: "",
@@ -1222,15 +1845,11 @@ export default function Expenses() {
   const fetchAll = useCallback(async () => {
     if (!range?.start || !range?.end) return;
 
-    // ── BUG FIX: validate that end date is not before start date ──
     if (new Date(range.end) < new Date(range.start)) {
       setDateRangeErr("End date cannot be before start date.");
       return;
     }
-
-    // Clear any previous date range error if dates are now valid
     setDateRangeErr("");
-
     setLoading(true);
     try {
       const [ov, inc, bud, cats] = await Promise.all([
@@ -1246,9 +1865,9 @@ export default function Expenses() {
       });
       const ovArr = (ov.data || ov || []).map((cat) => ({
         ...cat,
-        icon_url:  catMap[cat.category_id]?.icon_url  ?? null,
+        icon_url: catMap[cat.category_id]?.icon_url ?? null,
         icon_type: catMap[cat.category_id]?.icon_type ?? "svg",
-        color:     catMap[cat.category_id]?.color     ?? "#6B7280",
+        color: catMap[cat.category_id]?.color ?? "#6B7280",
       }));
       setOverview(ovArr);
       setCategories(catsArr);
@@ -1367,6 +1986,7 @@ export default function Expenses() {
     setSaving(false);
   };
 
+  /* ── Detail view routing ── */
   if (selectedSource && range) {
     return (
       <div className="expenses-page">
@@ -1393,9 +2013,10 @@ export default function Expenses() {
     );
   }
 
+  /* ── Main render ── */
   return (
     <div className="expenses-page">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="exp-header">
         <div>
           <h2 className="exp-title">Expenses</h2>
@@ -1420,10 +2041,16 @@ export default function Expenses() {
           >
             <Target size={15} /> Budget
           </button>
+          <button
+            className="exp-btn categories"
+            onClick={() => setCatSheetOpen(true)}
+          >
+            <Tags size={15} /> Categories
+          </button>
         </div>
       </div>
 
-      {/* Date Filters */}
+      {/* ── Date Filters ── */}
       <div className="exp-filters">
         {["today", "thismonth", "90days", "custom"].map((f) => (
           <button
@@ -1445,7 +2072,7 @@ export default function Expenses() {
         ))}
       </div>
 
-      {/* Custom date range inputs */}
+      {/* ── Custom date range ── */}
       {dateFilter === "custom" && (
         <div>
           <div className="exp-custom-range">
@@ -1469,7 +2096,6 @@ export default function Expenses() {
               className="exp-date-input"
             />
           </div>
-          {/* ── BUG FIX: show error message below date inputs ── */}
           {dateRangeErr && (
             <p
               className="exp-modal-err"
@@ -1487,7 +2113,7 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* Hero + Charts */}
+      {/* ── Hero + Charts ── */}
       {loading ? (
         <div className="skeleton-list">
           {[1, 2, 3].map((i) => (
@@ -1522,7 +2148,7 @@ export default function Expenses() {
         </>
       )}
 
-      {/* Budgets */}
+      {/* ── Budgets ── */}
       {budgets.length > 0 && (
         <div className="exp-budget-section">
           <h3 className="exp-section-heading">
@@ -1539,7 +2165,7 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* Expenses List */}
+      {/* ── Expenses by Category ── */}
       <div className="exp-list-section">
         <h3 className="exp-section-heading">
           <TrendingDown size={15} /> Expenses by Category
@@ -1566,7 +2192,7 @@ export default function Expenses() {
           <div className="cat-list">
             {overview
               .filter((c) => parseFloat(c.total_amount) > 0)
-              .map((cat, i) => (
+              .map((cat) => (
                 <CategoryRow
                   key={cat.category_id}
                   cat={cat}
@@ -1577,7 +2203,7 @@ export default function Expenses() {
         )}
       </div>
 
-      {/* Income List */}
+      {/* ── Income by Source ── */}
       <div className="exp-list-section income-section">
         <h3 className="exp-section-heading income-heading">
           <TrendingUp size={15} /> Income by Source
@@ -1614,7 +2240,7 @@ export default function Expenses() {
         )}
       </div>
 
-      {/* Add Modal */}
+      {/* ── Add Expense / Income / Budget modal ── */}
       <BottomSheet open={!!modal} onClose={() => setModal(null)}>
         <div className="exp-modal-header">
           <div className="exp-modal-tabs">
@@ -1666,6 +2292,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={expForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setExpForm({ ...expForm, amount: e.target.value })
                 }
@@ -1703,6 +2332,7 @@ export default function Expenses() {
             </button>
           </div>
         )}
+
         {modal === "income" && (
           <div className="exp-modal-body">
             <FormField label="Source" required>
@@ -1725,6 +2355,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={incForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setIncForm({ ...incForm, amount: e.target.value })
                 }
@@ -1762,6 +2395,7 @@ export default function Expenses() {
             </button>
           </div>
         )}
+
         {modal === "budget" && (
           <div className="exp-modal-body">
             <FormField label="Category (leave empty for overall)">
@@ -1785,6 +2419,9 @@ export default function Expenses() {
                 type="number"
                 placeholder="0.00"
                 value={budForm.amount}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) =>
                   setBudForm({ ...budForm, amount: e.target.value })
                 }
@@ -1823,6 +2460,13 @@ export default function Expenses() {
           </div>
         )}
       </BottomSheet>
+
+      {/* ── Manage Categories Sheet ── */}
+      <ManageCategoriesSheet
+        open={catSheetOpen}
+        onClose={() => setCatSheetOpen(false)}
+        onRefresh={fetchAll}
+      />
     </div>
   );
 }

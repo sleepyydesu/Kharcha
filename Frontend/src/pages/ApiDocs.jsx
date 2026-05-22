@@ -86,6 +86,7 @@ const NAV = [
     { id: "flow-hosted",        label: "Hosted Page",             indent: true },
     { id: "flow-card",          label: "Kharcha Card (RFID)",     indent: true },
     { id: "flow-credit",        label: "Card Number + CVV",       indent: true },
+    { id: "flow-refund",        label: "Refunds",                 indent: true },
     { id: "flow-oauth",         label: "Linked Account (OAuth)",  indent: true },
     { id: "oauth-client-mgmt",  label: "OAuth Client Management", indent: true },
     { id: "oauth-user-mgmt",    label: "OAuth User Controls",     indent: true },
@@ -682,6 +683,87 @@ if data["success"]: print("Paid!", data["transaction"]["transaction_id"])`}</Cod
                                     ["VALIDATION_ERROR",     "400", "Missing or invalid request fields."],
                                     ["RATE_LIMITED",         "429", "More than 20 requests/min from this IP."],
                                     ["SERVER_ERROR",         "500", "Internal error — contact support."],
+                                ].map(([code, http, desc]) => (
+                                    <tr key={code}>
+                                        <td><code className="docs__inline-code">{code}</code></td>
+                                        <td><code className="docs__inline-code">{http}</code></td>
+                                        <td>{desc}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Section>
+
+
+                {/* ══ REFUND ═════════════════════════════════════ */}
+                <Section id="flow-refund">
+                    <h2 className="docs__h2">Refunds</h2>
+                    <p className="docs__p">
+                        Reverse a payment that was made to your organisation’s wallet. The
+                        funds are transferred back from your org wallet to the original payer.
+                        Only transactions where your organisation was the <strong>receiver</strong> can
+                        be refunded, and each transaction can only be refunded once.
+                    </p>
+                    <div className="docs__callout docs__callout--info">
+                        <strong>Server-side only.</strong> Your API key must be included in the
+                        request header. Never call this endpoint from the browser.
+                    </div>
+
+                    <h3 className="docs__h3"><Badge method="POST" />{" "}<code>/api/payment/refund</code></h3>
+                    <ParamTable params={[
+                        { name: "X-API-Key",       type: "header", required: true,  desc: "Your organisation API key (kh_live_...)." },
+                        { name: "transaction_id",  type: "string", required: true,  desc: "The ID of the original transaction to refund." },
+                        { name: "reason",          type: "string", required: false, desc: "Optional note explaining the reason for the refund." },
+                    ]} />
+                    <Tabs tabs={["Node.js", "Python", "cURL"]}>
+                        <Code lang="javascript">{`const res = await fetch("${BASE_URL}/api/payment/refund", {
+  method: "POST",
+  headers: { "X-API-Key": process.env.KHARCHA_API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ transaction_id: "txn_abc123", reason: "Customer requested refund" }),
+});
+const data = await res.json();
+if (data.success) console.log("Refunded!", data.refund.refund_transaction_id);`}</Code>
+                        <Code lang="python">{`resp = requests.post("${BASE_URL}/api/payment/refund",
+    headers={"X-API-Key": os.environ["KHARCHA_API_KEY"], "Content-Type": "application/json"},
+    json={"transaction_id": "txn_abc123", "reason": "Customer requested refund"})
+data = resp.json()
+if data["success"]: print("Refunded!", data["refund"]["refund_transaction_id"])`}</Code>
+                        <Code lang="bash">{`curl -X POST ${BASE_URL}/api/payment/refund \\
+  -H "X-API-Key: kh_live_xxxxxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{"transaction_id":"txn_abc123","reason":"Customer requested refund"}'`}</Code>
+                    </Tabs>
+
+                    <h3 className="docs__h3">Success response</h3>
+                    <Code lang="json">{`{
+  "success": true,
+  "message": "Refund processed successfully.",
+  "refund": {
+    "refund_transaction_id": "txn_xyz789",
+    "original_transaction_id": "txn_abc123",
+    "amount": 1250,
+    "currency": "NPR",
+    "remarks": "Refunded from Acme Store",
+    "method": "Refund",
+    "status": "completed",
+    "processed_at": "2025-05-21T10:30:00.000Z"
+  }
+}`}</Code>
+
+                    <h3 className="docs__h3">Refund error codes</h3>
+                    <div className="docs__error-table-wrap">
+                        <table className="docs__param-table">
+                            <thead><tr><th>error_code</th><th>HTTP</th><th>Meaning</th></tr></thead>
+                            <tbody>
+                                {[
+                                    ["INVALID_API_KEY",       "401", "Missing, revoked, or expired API key."],
+                                    ["VALIDATION_ERROR",      "400", "transaction_id was not provided."],
+                                    ["TRANSACTION_NOT_FOUND", "404", "No transaction found with the given ID."],
+                                    ["UNAUTHORIZED",          "403", "Your organisation was not the receiver of this transaction."],
+                                    ["ALREADY_REFUNDED",      "409", "A refund has already been issued for this transaction."],
+                                    ["INSUFFICIENT_BALANCE",  "400", "Your organisation wallet doesn’t have enough funds to cover the refund."],
+                                    ["SERVER_ERROR",          "500", "Internal error — contact support."],
                                 ].map(([code, http, desc]) => (
                                     <tr key={code}>
                                         <td><code className="docs__inline-code">{code}</code></td>

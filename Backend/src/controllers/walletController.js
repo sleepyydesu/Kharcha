@@ -331,11 +331,21 @@ const transfer = async (req, res) => {
                         receiverAccount2?.profile_picture_url || null,
                 },
                 remarks: remarks || null,
-                method: "Kharcha Wallet",
+                method: qr_id ? "QR Code" : "Kharcha Wallet",
                 status: "completed",
                 ...(qr_id ? { qr_id } : {}),
             },
         };
+
+        // Stamp the correct method on the transaction record so statements
+        // show "QR Code" for QR-initiated payments vs "Kharcha Wallet" for
+        // direct transfers. transfer_funds defaults to "Kharcha Wallet".
+        if (result?.transaction_id && qr_id) {
+            await supabase
+                .from("transactions")
+                .update({ method: "QR Code" })
+                .eq("transaction_id", result.transaction_id);
+        }
 
         // Fire webhook + mark session complete if this came from a dynamic QR scan
         if (qr_id) {
@@ -362,35 +372,7 @@ const transfer = async (req, res) => {
                 timestamp: new Date().toISOString(),
             });
         }
-
-        // Auto-log: expense for sender, income for receiver
-        const _today = new Date().toISOString().slice(0, 10);
-        const _note = remarks || "Wallet transfer";
-        supabase
-            .from("expenses")
-            .insert({
-                user_id: sender_account_id,
-                category_id: null,
-                amount: parsedAmount,
-                note: _note,
-                date: _today,
-                is_auto: true,
-            })
-            .then(() => {})
-            .catch((e) => console.error("[auto-expense]", e));
-        supabase
-            .from("income")
-            .insert({
-                user_id: receiverAccount.account_id,
-                amount: parsedAmount,
-                source: "Transfer",
-                note: _note,
-                date: _today,
-                is_auto: true,
-            })
-            .then(() => {})
-            .catch((e) => console.error("[auto-income]", e));
-
+        
         return res.status(200).json(responsePayload);
     } catch (err) {
         console.error("[transfer]", err);
