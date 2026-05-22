@@ -95,6 +95,7 @@ function Numpad({ onPress, disabled }) {
  * @param {React.ReactNode} props.fields
  * @param {boolean}  props.fieldsValid
  * @param {Function} props.getRemarks   - () => string — called at submit time
+ * @param {string|Function} props.receiverIdentifier - Phone/email of receiver, or function that returns it
  */
 export default function ServicePage({
   title,
@@ -105,6 +106,7 @@ export default function ServicePage({
   fields,
   fieldsValid,
   getRemarks,
+  receiverIdentifier,
 }) {
   const navigate = useNavigate();
   const [amount, setAmount] = useState("");
@@ -166,11 +168,13 @@ export default function ServicePage({
   async function confirm() {
     if (mpin.length < 4 || busy) return;
 
-    const receiver_identifier = import.meta.env.VITE_SERVICE_RECEIVER_ID;
+    // Get receiver identifier (can be a string or a function that returns a string)
+    const receiver_identifier = typeof receiverIdentifier === 'function' 
+      ? receiverIdentifier() 
+      : receiverIdentifier;
+
     if (!receiver_identifier) {
-      setMpinErr(
-        "Service account not configured (VITE_SERVICE_RECEIVER_ID missing).",
-      );
+      setMpinErr("Service receiver not configured.");
       return;
     }
 

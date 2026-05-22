@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ServicePage from "./ServicePage";
+import { getReceiver } from "./receiverMapping";
 
 export default function Electricity() {
   const [scNo, setScNo] = useState("");
@@ -49,6 +50,7 @@ export default function Electricity() {
       fields={fields}
       fieldsValid={fieldsValid}
       getRemarks={() => `Electricity Bill – NEA ${office} – SC ${scNo}`}
+      receiverIdentifier={() => getReceiver("ELECTRICITY", office)}
     />
   );
 }
