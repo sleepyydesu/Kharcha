@@ -145,6 +145,7 @@ export const signIn = (body) =>
   request("/auth/signin", {
     method: "POST",
     body: JSON.stringify(body),
+    skipSessionRefresh: true,
   });
 
 export const signupCheck = (body) =>
