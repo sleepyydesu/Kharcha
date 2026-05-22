@@ -1,8 +1,8 @@
 /**
  * useSessionWarning.js
  *
- * Fires a warning toast when the user has been idle for 25 minutes —
- * 5 minutes before the server's 30-minute inactivity window closes on
+ * Fires a warning toast when the user has been idle for 10 minutes —
+ * 5 minutes before the server's 15-minute inactivity window closes on
  * the refresh token (INACTIVITY_WINDOW_MS in tokenService.js).
  *
  * HOW THE SESSION ACTUALLY WORKS:
@@ -11,7 +11,7 @@
  *   - When the access token expires, api.js silently calls /auth/refresh and
  *     retries the original request — the user never sees this.
  *   - The user is only forced to log in if they make NO API calls for the
- *     full 30-minute inactivity window.
+ *     full 15-minute inactivity window.
  *
  * WHAT WE TRACK:
  *   We do NOT track when the token was issued (that's reset every 15 min
@@ -20,8 +20,8 @@
  *   successful response. This is the true proxy for "is the user still
  *   actively using the app?"
  *
- *   Warning fires when:  Date.now() - lastActivityAt >= WARN_AT_MS (25 min)
- *   Session truly dies:  server rejects refresh after 30 min of no refreshes
+ *   Warning fires when:  Date.now() - lastActivityAt >= WARN_AT_MS (10 min)
+ *   Session truly dies:  server rejects refresh after 15 min of no refreshes
  *
  * ZERO extra API requests — purely timer-based.
  */
@@ -30,10 +30,10 @@ import { useEffect, useRef } from "react";
 import { useNotifications } from "../context/NotificationContext";
 
 /** Must match INACTIVITY_WINDOW_MS in tokenService.js */
-const SESSION_TTL_MS  = 30 * 60 * 1000;  // 30 min
+const SESSION_TTL_MS  = 15 * 60 * 1000;  // 15 min
 /** Warn this far before the window closes */
 const WARN_BEFORE_MS  =  5 * 60 * 1000;  //  5 min
-const WARN_AT_MS      = SESSION_TTL_MS - WARN_BEFORE_MS; // 25 min
+const WARN_AT_MS      = SESSION_TTL_MS - WARN_BEFORE_MS; // 10 min
 
 /** How often to check the clock */
 const CHECK_INTERVAL_MS = 30_000; // 30 s
@@ -82,7 +82,7 @@ export default function useSessionWarning() {
                     id:    "session-expiring",
                     type:  "warning",
                     title: "Session expiring soon",
-                    body:  "You'll be signed out in 5 minutes due to inactivity. Make any request to stay signed in.",
+                    body:  "You'll be signed out in 5 minutes due to inactivity. Continue using the app to stay signed in.",
                 });
             }
         }, CHECK_INTERVAL_MS);

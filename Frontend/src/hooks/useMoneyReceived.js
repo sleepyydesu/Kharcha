@@ -44,7 +44,7 @@ export default function useMoneyReceived() {
         checkingRef.current = true;
 
         try {
-            const data = await getWallet();
+            const data = await getWallet({ trackActivity: false, skipSessionRefresh: true });
             const newBalance = parseFloat(data?.wallet?.balance ?? data?.balance);
             if (isNaN(newBalance)) return;
 

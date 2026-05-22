@@ -10,7 +10,7 @@ const SIGNUP_TOKEN_SECRET = process.env.SIGNUP_TOKEN_SECRET || process.env.JWT_S
  * Expires in 15 minutes.
  */
 const generateSignupToken = (payload) => {
-    return jwt.sign(payload, SIGNUP_TOKEN_SECRET, { expiresIn: "30m" });
+    return jwt.sign(payload, SIGNUP_TOKEN_SECRET, { expiresIn: "15m" });
 };
 
 const verifySignupToken = (token) => {

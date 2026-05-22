@@ -2,7 +2,7 @@ const supabase = require("./supabaseClient");
 
 // How long a session can be idle before the refresh token stops working.
 // After INACTIVITY_WINDOW_MS of no API activity, the user must log in again.
-const INACTIVITY_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 // Absolute lifetime of a refresh token regardless of activity.
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 
@@ -57,123 +57,6 @@ function BubblePortal() {
       {[...Array(12)].map((_, i) => (
         <div key={i} className={`bubble bubble-${i + 1}`} />
       ))}
-    </div>,
-    document.body,
-  );
-}
-
-// ── Session Timeout Warning Modal ─────────────────────────────
-const INACTIVITY_WARN_MS = 15 * 60 * 1000; // 15 min → show warning
-const INACTIVITY_LOGOUT_MS = 5 * 60 * 1000; //  5 min after warning → logout
-
-function SessionTimeoutWarning({ onStayLoggedIn, onLogout, secondsLeft }) {
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9998,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-        animation: "fadeIn 0.2s ease",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--card)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius)",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
-          padding: "36px 32px 28px",
-          maxWidth: "380px",
-          width: "90%",
-          textAlign: "center",
-          animation: "slideUp 0.25s ease",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: "var(--warning-bg)",
-            border: "1.5px solid var(--warning-border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 26,
-            margin: "0 auto 18px",
-          }}
-        >
-          ⏱
-        </div>
-        <h2
-          style={{
-            fontSize: "18px",
-            fontWeight: 700,
-            color: "var(--text-color)",
-            margin: "0 0 8px",
-          }}
-        >
-          Session Expiring Soon
-        </h2>
-        <p
-          style={{
-            fontSize: "14px",
-            color: "var(--text-sub)",
-            margin: "0 0 6px",
-            lineHeight: 1.6,
-          }}
-        >
-          Your session will expire in 5 minutes due to inactivity.
-        </p>
-        <p
-          style={{
-            fontSize: "13px",
-            color: "var(--text-muted)",
-            margin: "0 0 24px",
-          }}
-        >
-          Auto-logout in <strong>{secondsLeft}s</strong>
-        </p>
-        <button
-          onClick={onStayLoggedIn}
-          style={{
-            width: "100%",
-            padding: "12px",
-            background: "var(--primary)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "15px",
-            fontWeight: 600,
-            cursor: "pointer",
-            letterSpacing: "0.01em",
-            marginBottom: "10px",
-          }}
-        >
-          Stay Logged In
-        </button>
-        <button
-          onClick={onLogout}
-          style={{
-            width: "100%",
-            padding: "10px",
-            background: "transparent",
-            color: "var(--text-sub)",
-            border: "1px solid var(--border)",
-            borderRadius: "10px",
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
-        >
-          Log Out Now
-        </button>
-      </div>
     </div>,
     document.body,
   );
@@ -668,81 +551,13 @@ function App() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
 
-  // Inactivity timeout state
-  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
-  const [timeoutSecondsLeft, setTimeoutSecondsLeft] = useState(300);
-
-  // Refs so callbacks always have fresh values without re-registering listeners
-  const warnTimerRef = useRef(null);
-  const logoutTimerRef = useRef(null);
-  const countdownRef = useRef(null);
-
   const doLogout = useCallback(() => {
-    clearTimeout(warnTimerRef.current);
-    clearTimeout(logoutTimerRef.current);
-    clearInterval(countdownRef.current);
-    setShowTimeoutWarning(false);
     localStorage.removeItem("kharcha_session");
+    sessionStorage.removeItem("kharcha_last_activity_at");
     setIsAuthenticated(false);
     setSessionExpired(false);
   }, []);
 
-  const resetInactivityTimer = useCallback(() => {
-    if (!isAuthenticated) return;
-    clearTimeout(warnTimerRef.current);
-    clearTimeout(logoutTimerRef.current);
-    clearInterval(countdownRef.current);
-    setShowTimeoutWarning(false);
-
-    warnTimerRef.current = setTimeout(() => {
-      setTimeoutSecondsLeft(300);
-      setShowTimeoutWarning(true);
-      // Countdown ticker
-      countdownRef.current = setInterval(() => {
-        setTimeoutSecondsLeft((s) => {
-          if (s <= 1) {
-            clearInterval(countdownRef.current);
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
-      // Auto-logout after 5 min
-      logoutTimerRef.current = setTimeout(() => {
-        doLogout();
-      }, INACTIVITY_LOGOUT_MS);
-    }, INACTIVITY_WARN_MS);
-  }, [isAuthenticated, doLogout]);
-
-  // Start/stop inactivity tracking based on auth state
-  useEffect(() => {
-    if (!isAuthenticated) {
-      clearTimeout(warnTimerRef.current);
-      clearTimeout(logoutTimerRef.current);
-      clearInterval(countdownRef.current);
-      setShowTimeoutWarning(false);
-      return;
-    }
-    const events = [
-      "mousemove",
-      "mousedown",
-      "keydown",
-      "touchstart",
-      "scroll",
-      "click",
-    ];
-    const handler = () => resetInactivityTimer();
-    events.forEach((ev) =>
-      window.addEventListener(ev, handler, { passive: true }),
-    );
-    resetInactivityTimer(); // kick off the first timer
-    return () => {
-      events.forEach((ev) => window.removeEventListener(ev, handler));
-      clearTimeout(warnTimerRef.current);
-      clearTimeout(logoutTimerRef.current);
-      clearInterval(countdownRef.current);
-    };
-  }, [isAuthenticated, resetInactivityTimer]);
 
   useEffect(() => {
     const handleExpired = () => {
@@ -788,14 +603,6 @@ function App() {
   return (
     <NotificationProvider>
       <BrowserRouter>
-        {showTimeoutWarning && !sessionExpired && (
-          <SessionTimeoutWarning
-            secondsLeft={timeoutSecondsLeft}
-            onStayLoggedIn={resetInactivityTimer}
-            onLogout={doLogout}
-          />
-        )}
-
         {sessionExpired && (
           <SessionExpiredModal onDismiss={handleSessionDismiss} />
         )}

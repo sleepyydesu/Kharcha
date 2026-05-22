@@ -1103,6 +1103,7 @@ function ChangePasswordCard({ email, toast }) {
   const [loading, setLoad] = useState(false);
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const reset = () => {
     setStep(0);
@@ -1110,6 +1111,8 @@ function ChangePasswordCard({ email, toast }) {
     setNewPw("");
     setConf("");
     setOpen(false);
+    setShowPw(false);
+    setShowConfirm(false);
   };
 
   const sendOTP = async () => {
@@ -1260,13 +1263,47 @@ function ChangePasswordCard({ email, toast }) {
               </div>
               <div className="acct-field">
                 <label className="acct-label">Confirm New Password</label>
-                <input
-                  className="acct-input"
-                  type="password"
-                  placeholder="Repeat new password"
-                  value={confirm}
-                  onChange={(e) => setConf(e.target.value)}
-                />
+                <div className="acct-input-wrap">
+                  <input
+                    className="acct-input"
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Repeat new password"
+                    value={confirm}
+                    onChange={(e) => setConf(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="acct-toggle-eye"
+                    onClick={() => setShowConfirm((s) => !s)}
+                    tabIndex={-1}
+                  >
+                    {showConfirm ? (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="acct-action-btns">
                 <button

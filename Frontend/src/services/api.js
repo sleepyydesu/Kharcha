@@ -35,23 +35,34 @@ function waitForRefresh() {
 
 // ── Core fetch wrapper ────────────────────────────────────────
 async function request(path, options = {}, _isRetry = false) {
+  const {
+    trackActivity = true,
+    skipSessionRefresh = false,
+    ...fetchOptions
+  } = options;
+
   const isFormData =
-    typeof FormData !== "undefined" && options.body instanceof FormData;
+    typeof FormData !== "undefined" && fetchOptions.body instanceof FormData;
 
   const res = await fetch(`${BASE}${path}`, {
-    ...options,
+    ...fetchOptions,
     credentials: "include",
     headers: {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...options.headers,
+      ...fetchOptions.headers,
     },
   });
 
   // ── Success ───────────────────────────────────────────────
   if (res.ok) {
-    // Reset the idle clock for useSessionWarning (zero cost — no extra request)
-    sessionStorage.setItem("kharcha_last_activity_at", String(Date.now()));
-    window.dispatchEvent(new CustomEvent("kharcha:activity"));
+    // Reset the idle clock for useSessionWarning, but NOT for the silent
+    // /auth/refresh call — that's a background token rotation, not user
+    // activity. If we reset here, the 25-min warning never fires because
+    // the refresh keeps the clock fresh every 15 min even when idle.
+    if (trackActivity && path !== "/auth/refresh") {
+      sessionStorage.setItem("kharcha_last_activity_at", String(Date.now()));
+      window.dispatchEvent(new CustomEvent("kharcha:activity"));
+    }
 
     const contentType = res.headers.get("content-type") || "";
 
@@ -67,7 +78,7 @@ async function request(path, options = {}, _isRetry = false) {
   }
 
   // ── 401 handling ──────────────────────────────────────────
-  if (res.status === 401 && !_isRetry) {
+  if (res.status === 401 && !_isRetry && !skipSessionRefresh) {
     // Don't refresh if refresh itself failed
     if (path === "/auth/refresh") {
       window.dispatchEvent(new CustomEvent("kharcha:session-expired"));
@@ -170,8 +181,14 @@ export const signOutAll = () =>
     method: "POST",
   });
 
+export const keepSessionAlive = () =>
+  request("/auth/refresh", {
+    method: "POST",
+    trackActivity: false,
+  });
+
 // ── Wallet ────────────────────────────────────────────────────
-export const getWallet = () => request("/wallet");
+export const getWallet = (options = {}) => request("/wallet", options);
 
 export const transfer = (body) =>
   request("/wallet/transfer", {
@@ -191,11 +208,10 @@ export const updateProfile = (body) =>
     body: JSON.stringify(body),
   });
 
-// ✅ FIXED: file uploads should use FormData
-export const uploadProfilePicture = (formData) =>
+export const uploadProfilePicture = (body) =>
   request("/profile/picture", {
     method: "POST",
-    body: formData,
+    body: JSON.stringify(body),
   });
 
 export const deleteProfilePicture = () =>
