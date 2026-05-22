@@ -151,6 +151,23 @@ const deleteCategory = async (req, res) => {
             return res.status(404).json({ success: false, message: "Category not found or not owned by you." });
         }
 
+        // Find the "Others" default category to reassign expenses to
+        const { data: othersCategory } = await supabase
+            .from("categories")
+            .select("category_id")
+            .eq("name", "Other")
+            .is("user_id", null)       // default categories have no user_id
+            .eq("is_default", true)
+            .maybeSingle();
+
+        if (othersCategory) {
+            // Reassign all expenses using this category to "Others"
+            await supabase
+                .from("expenses")
+                .update({ category_id: othersCategory.category_id })
+                .eq("category_id", categoryId);
+        }
+
         // Clean up storage file if one was uploaded
         if (existing.icon_url && existing.icon_type === "png") {
             const storagePath = _extractStoragePath(existing.icon_url, CATEGORY_ICON_BUCKET);
@@ -166,7 +183,13 @@ const deleteCategory = async (req, res) => {
             .eq("user_id", userId);
 
         if (error) throw error;
-        return res.status(200).json({ success: true, message: "Category deleted successfully." });
+
+        return res.status(200).json({
+            success: true,
+            message: othersCategory
+                ? `Category deleted. Its expenses have been moved to "Others".`
+                : "Category deleted successfully.",
+        });
     } catch (err) {
         console.error("[deleteCategory]", err);
         return res.status(500).json({ success: false, message: "Internal server error." });

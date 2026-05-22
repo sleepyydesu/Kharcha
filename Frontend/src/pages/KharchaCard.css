@@ -685,3 +685,186 @@
         justify-content: center;
     }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Tab bar
+   ───────────────────────────────────────────────────────────── */
+
+.kc-tabbar {
+    display: flex;
+    gap: 6px;
+    background: var(--shaded-background);
+    border-radius: 12px;
+    padding: 5px;
+    border: 1.5px solid var(--border);
+}
+
+.kc-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 9px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+}
+.kc-tab:hover {
+    color: var(--text-color);
+    background: var(--card);
+}
+.kc-tab--active {
+    background: var(--card);
+    color: var(--primary);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+[data-theme="dark"] .kc-tab--active {
+    color: #4ade80;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Virtual card visual
+   ───────────────────────────────────────────────────────────── */
+
+.kc-card-visual--virtual {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 18px 20px 16px;
+    gap: 0;
+}
+
+.kc-card-visual--preview {
+    opacity: 0.7;
+}
+
+.kc-cv-top {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.kc-logo-wrap--sm {
+    flex-direction: row;
+    gap: 0.4rem;
+}
+
+.kc-card-brand--sm {
+    font-size: 0.9rem;
+}
+
+.kc-cv-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 2px 7px;
+}
+
+.kc-cv-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    align-self: center;
+    font-family: "Courier New", monospace;
+}
+.kc-cv-number--placeholder {
+    color: rgba(255,255,255,0.55);
+}
+
+.kc-cv-bottom {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    width: 100%;
+}
+
+.kc-cv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.kc-cv-field-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+}
+.kc-cv-field-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    font-family: "Courier New", monospace;
+    letter-spacing: 0.05em;
+}
+.kc-cv-cvv {
+    letter-spacing: 0.18em;
+}
+
+.kc-cv-network {
+    margin-left: auto;
+}
+.kc-cv-network-text {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.65);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 4px;
+    padding: 3px 8px;
+}
+
+/* Card number on physical card */
+.kc-phys-number {
+    position: absolute;
+    bottom: 52px;
+    left: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.75);
+    font-family: "Courier New", monospace;
+}
+
+/* ── CVV reveal row ───────────────────────────────────────────── */
+
+.kc-cvv-row {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.kc-btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--primary);
+    padding: 4px 0;
+    transition: opacity 0.15s;
+}
+.kc-btn-link:hover { opacity: 0.75; }
+[data-theme="dark"] .kc-btn-link { color: #4ade80; }
+
+/* Mono detail value (for RFID UID) */
+.kc-detail-value--mono {
+    font-family: "Courier New", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+}

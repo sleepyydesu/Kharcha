@@ -174,7 +174,8 @@ function InputField({
   placeholder,
   value,
   onChange,
-  onBlur, // NEW: optional blur handler (used for confirm password validation)
+  onBlur,
+  onKeyDown,
   icon,
   error,
   success,
@@ -197,7 +198,8 @@ function InputField({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          onBlur={onBlur} // forward the blur event
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
           maxLength={maxLength}
           autoComplete="off"
         />

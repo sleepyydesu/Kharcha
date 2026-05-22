@@ -1,0 +1,140 @@
+/* ── NotificationToast ─────────────────────────────────────────
+   A slide-in banner that appears at the top of the app shell.
+   Fully clickable when a link is provided.
+──────────────────────────────────────────────────────────────── */
+
+.nt-toast {
+    position: fixed;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-110%);
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    width: min(480px, calc(100vw - 2rem));
+    padding: 0.85rem 1rem 0.85rem 0;
+
+    background: var(--nt-bg, var(--card));
+    border: 1.5px solid var(--nt-border, var(--border));
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13), 0 2px 8px rgba(0, 0, 0, 0.07);
+
+    opacity: 0;
+    transition:
+        transform 0.38s cubic-bezier(0.34, 1.4, 0.64, 1),
+        opacity 0.28s ease;
+
+    /* Don't let it get selected like text */
+    user-select: none;
+}
+
+.nt-toast--visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Pointer cursor + hover lift when it's tappable */
+.nt-toast--clickable {
+    cursor: pointer;
+}
+
+.nt-toast--clickable:hover {
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.09);
+}
+
+.nt-toast--clickable:active {
+    transform: translateX(-50%) translateY(0px) scale(0.98);
+}
+
+/* Left coloured accent bar */
+.nt-accent-bar {
+    flex-shrink: 0;
+    width: 4px;
+    align-self: stretch;
+    border-radius: 0 3px 3px 0;
+    background: var(--nt-accent, var(--primary));
+    margin-right: 0.25rem;
+}
+
+/* Emoji / icon */
+.nt-icon {
+    font-size: 1.35rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* Text block */
+.nt-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.nt-title {
+    margin: 0 0 0.15rem;
+    font-size: 0.875rem;
+    font-weight: 650;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nt-text {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-sub);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Chevron arrow for clickable toasts */
+.nt-cta {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: var(--nt-accent, var(--primary));
+    opacity: 0.8;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.nt-toast--clickable:hover .nt-cta {
+    opacity: 1;
+    transform: translateX(2px);
+}
+
+/* Dismiss × button */
+.nt-dismiss {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.1rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nt-dismiss:hover {
+    background: var(--shaded-background);
+    color: var(--text-color);
+}
+
+/* ── Dark mode ─────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+    .nt-toast {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+}

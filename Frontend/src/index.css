@@ -1144,8 +1144,8 @@ body:not(.app-authenticated) #root {
   .auth-container {
     max-width: 100%;
     width: 100%;
-    min-height: 100vh;
-    border-radius: 0;
+    min-height: 0;
+    border-radius: var(--radius-lg);;
     -webkit-box-shadow: none;
     box-shadow: none;
   }
@@ -1186,6 +1186,12 @@ body:not(.app-authenticated) #root {
   }
   .form-body {
     padding: 20px 16px 20px;
+    min-height: 0;
+  }
+
+  .footer-note {
+    margin-top: 12px;
+    padding-top: 0;
   }
 
   .otp-box {
@@ -1198,4 +1204,567 @@ body:not(.app-authenticated) #root {
     height: 48px;
     font-size: 18px;
   }
+}
+
+/* ── Biometric login button ─────────────────────────────────── */
+.btn-biometric {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  border: 2px solid var(--primary);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  font-family: var(--font-main);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    box-shadow 0.18s;
+  margin-bottom: 4px;
+}
+
+.btn-biometric:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(26, 92, 57, 0.25);
+}
+
+.btn-biometric:active:not(:disabled) {
+  background: var(--primary-dark);
+  color: #fff;
+}
+
+.btn-biometric:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Spinner inside biometric button */
+.biometric-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: biometric-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes biometric-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Divider between biometric and credentials */
+.biometric-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 12px;
+  color: var(--text-light);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.biometric-divider::before,
+.biometric-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ============================================================
+   DARK MODE OVERRIDES — Auth pages (index.css variables)
+   Only affects [data-theme="dark"], light mode unchanged.
+   ============================================================ */
+[data-theme="dark"] {
+  /* ── Core palette overrides ─────────────────────────────── */
+  --primary: #2a7a4e; /* brighter green so it reads on dark bg   */
+  --primary-light: #34a063;
+  --primary-dark: #1a5c39;
+  --bg: #0c1014;
+  --bg-soft: #1a1f24;
+  --bg-card: #212328;
+  --text-main: #f0f0f0;
+  --text-muted: #a8a8a8;
+  --text-light: #6b7280;
+  --border: #3a3f46;
+  --border-focus: #2a7a4e;
+  --error: #f87171;
+  --success: #4ade80;
+
+  /* ── Auth background ────────────────────────────────────── */
+  /* Keep the green background but slightly deeper */
+}
+
+/* Auth page body background in dark mode */
+[data-theme="dark"] body:not(.app-authenticated) {
+  background: #0d2b1a;
+}
+
+/* ── Form panel (white card → dark card) ────────────────── */
+[data-theme="dark"] .form-panel {
+  background: #212328;
+}
+
+/* ── Tab bar ────────────────────────────────────────────── */
+[data-theme="dark"] .tab-bar {
+  background: #1a1f24;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .tab-btn {
+  color: #a8a8a8;
+}
+[data-theme="dark"] .tab-btn.active {
+  background: #2a7a4e;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(42, 122, 78, 0.4);
+}
+
+/* ── Input fields ───────────────────────────────────────── */
+[data-theme="dark"] .input-label {
+  color: #a8a8a8;
+}
+[data-theme="dark"] .input-field {
+  background: #1a1f24;
+  border-color: #3a3f46;
+  color: #f0f0f0;
+}
+[data-theme="dark"] .input-field::placeholder {
+  color: #4b5563;
+}
+[data-theme="dark"] .input-field:focus {
+  background: #1e2530;
+  border-color: #2a7a4e;
+  box-shadow: 0 0 0 3px rgba(42, 122, 78, 0.18);
+}
+[data-theme="dark"] .input-field.error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+[data-theme="dark"] .input-icon {
+  color: #6b7280;
+}
+[data-theme="dark"] .toggle-eye {
+  color: #6b7280;
+}
+[data-theme="dark"] .toggle-eye:hover {
+  color: #d1d5db;
+}
+
+/* ── OTP & MPIN boxes ───────────────────────────────────── */
+[data-theme="dark"] .otp-box,
+[data-theme="dark"] .mpin-box {
+  background: #1a1f24;
+  border-color: #3a3f46;
+  color: #4ade80;
+}
+[data-theme="dark"] .otp-box:focus,
+[data-theme="dark"] .mpin-box:focus {
+  border-color: #2a7a4e;
+  box-shadow: 0 0 0 3px rgba(42, 122, 78, 0.2);
+  background: #1e2530;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+[data-theme="dark"] .btn-primary {
+  background: #2a7a4e;
+}
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: #34a063;
+  box-shadow: 0 4px 16px rgba(42, 122, 78, 0.4);
+}
+[data-theme="dark"] .btn-primary:disabled {
+  background: #374151;
+  color: #6b7280;
+}
+[data-theme="dark"] .btn-secondary {
+  color: #4ade80;
+  border-color: #2a7a4e;
+}
+[data-theme="dark"] .btn-secondary:hover {
+  background: rgba(42, 122, 78, 0.12);
+}
+[data-theme="dark"] .btn-biometric {
+  border-color: #2a7a4e;
+  color: #4ade80;
+}
+[data-theme="dark"] .btn-biometric:hover:not(:disabled) {
+  background: #2a7a4e;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(42, 122, 78, 0.35);
+}
+
+/* ── Progress bar / step dots ───────────────────────────── */
+[data-theme="dark"] .step-dot {
+  background: #1a1f24;
+  border-color: #3a3f46;
+  color: #6b7280;
+}
+[data-theme="dark"] .step-dot.done {
+  background: #2a7a4e;
+  border-color: #2a7a4e;
+  color: #fff;
+}
+[data-theme="dark"] .step-dot.active {
+  background: #f5c800;
+  border-color: #d4ac00;
+  color: #1a1a00;
+  box-shadow: 0 0 0 4px rgba(245, 200, 0, 0.2);
+}
+[data-theme="dark"] .step-line {
+  background: #3a3f46;
+}
+[data-theme="dark"] .step-line.done {
+  background: #2a7a4e;
+}
+
+/* ── Type cards (account selector) ─────────────────────── */
+[data-theme="dark"] .type-card {
+  background: #1a1f24;
+  border-color: #3a3f46;
+}
+[data-theme="dark"] .type-card:hover {
+  border-color: #2a7a4e;
+  background: rgba(42, 122, 78, 0.08);
+}
+[data-theme="dark"] .type-card.selected {
+  border-color: #2a7a4e;
+  background: rgba(42, 122, 78, 0.12);
+  box-shadow: 0 0 0 1px #2a7a4e;
+}
+[data-theme="dark"] .type-card-icon {
+  background: #2a7a4e;
+}
+[data-theme="dark"] .type-card.selected .type-card-icon {
+  background: #d4ac00;
+}
+[data-theme="dark"] .type-card-text h4 {
+  color: #f0f0f0;
+}
+[data-theme="dark"] .type-card-text p {
+  color: #a8a8a8;
+}
+
+/* ── Step titles & subtitles ────────────────────────────── */
+[data-theme="dark"] .step-title {
+  color: #f0f0f0;
+}
+[data-theme="dark"] .step-subtitle {
+  color: #a8a8a8;
+}
+
+/* ── OTP info text ──────────────────────────────────────── */
+[data-theme="dark"] .otp-info {
+  color: #a8a8a8;
+}
+[data-theme="dark"] .otp-phone {
+  color: #4ade80;
+}
+[data-theme="dark"] .resend-link {
+  color: #f5c800;
+}
+[data-theme="dark"] .resend-link:hover {
+  color: #ffe040;
+}
+
+/* ── Footer note & links ────────────────────────────────── */
+[data-theme="dark"] .footer-note {
+  color: #a8a8a8;
+}
+[data-theme="dark"] .footer-note a {
+  color: #4ade80;
+}
+
+/* ── Error / success messages ───────────────────────────── */
+[data-theme="dark"] .error-msg {
+  color: #f87171;
+}
+[data-theme="dark"] .success-msg {
+  color: #4ade80;
+}
+
+/* ── Toast ──────────────────────────────────────────────── */
+[data-theme="dark"] .toast.success {
+  background: #1a3325;
+  color: #4ade80;
+  border-color: #2e5040;
+}
+[data-theme="dark"] .toast.error {
+  background: #2a1010;
+  color: #f87171;
+  border-color: #5a2020;
+}
+
+/* ── Biometric divider ──────────────────────────────────── */
+[data-theme="dark"] .biometric-divider {
+  color: #4b5563;
+}
+[data-theme="dark"] .biometric-divider::before,
+[data-theme="dark"] .biometric-divider::after {
+  background: #3a3f46;
+}
+
+/* ── Brand panel reset-header mini logo ─────────────────── */
+[data-theme="dark"] .brand-name-sm {
+  color: #f0f0f0;
+}
+
+/* ── Reset form scrollbar in dark ───────────────────────── */
+[data-theme="dark"] .scroll-area {
+  scrollbar-color: rgba(42, 122, 78, 0.3) transparent;
+}
+[data-theme="dark"] .scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(42, 122, 78, 0.3);
+}
+
+/* ============================================================
+   LOGIN PAGE — DARK MODE OVERRIDES
+   index.css defines its own :root vars for the login/auth
+   pages (--bg, --bg-card, --bg-soft, --text-main, --text-muted,
+   --text-light, --border, --border-focus, --error, --success).
+   These are separate from the app's variables.css vars and are
+   never overridden for dark mode, causing invisible text and
+   borders.  The block below fixes that.
+   ============================================================ */
+[data-theme="dark"] body:not(.app-authenticated) {
+  background: #0c1014;
+}
+
+[data-theme="dark"] .form-panel {
+  background: #212328;
+}
+
+[data-theme="dark"] .tab-bar {
+  background: #181b1f;
+}
+
+[data-theme="dark"] .tab-btn {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .tab-btn.active {
+  background: #212328;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .form-body {
+  background: #212328;
+}
+
+[data-theme="dark"] .input-field {
+  background: #292929;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .input-field:focus {
+  background: #2e2e2e;
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .input-field::placeholder {
+  color: #666;
+}
+
+[data-theme="dark"] .input-field.error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+}
+
+[data-theme="dark"] .input-label {
+  color: #bebebe;
+}
+
+[data-theme="dark"] .input-icon {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .toggle-eye {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .footer-note,
+[data-theme="dark"] .footer-note a {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .footer-note a:hover {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .auth-container {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .otp-box,
+[data-theme="dark"] .mpin-box {
+  background: #292929;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .otp-box:focus,
+[data-theme="dark"] .mpin-box:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #1a5c39 0%, #154d30 100%);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #2a2f36;
+  color: #ffffff;
+  border-color: #4b4b4b;
+}
+
+/* ── Register tab dark mode overrides ──────────────────────── */
+[data-theme="dark"] .step-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .step-subtitle {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .step-dot {
+  background: #2a2f36;
+  border-color: #4b4b4b;
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .step-dot.done {
+  background: #1a5c39;
+  border-color: #1a5c39;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .step-dot.active {
+  background: var(--accent);
+  border-color: var(--accent-dark);
+  color: var(--primary-dark);
+}
+
+[data-theme="dark"] .step-line {
+  background: #4b4b4b;
+}
+
+[data-theme="dark"] .step-line.done {
+  background: #1a5c39;
+}
+
+[data-theme="dark"] .type-card {
+  background: #2a2f36;
+  border-color: #4b4b4b;
+}
+
+[data-theme="dark"] .type-card:hover {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.05);
+}
+
+[data-theme="dark"] .type-card.selected {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+  box-shadow: 0 0 0 1px #4ade80;
+}
+
+[data-theme="dark"] .type-card-text h4 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .type-card-text p {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .otp-info {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .otp-phone {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .resend-link {
+  color: var(--accent-dark);
+}
+
+[data-theme="dark"] .resend-link:hover {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .error-msg {
+  color: #f87171;
+}
+
+[data-theme="dark"] .success-msg {
+  color: #4ade80;
+}
+
+/* ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] .btn-biometric {
+  border-color: #4ade80;
+  color: #4ade80;
+  background: transparent;
+}
+
+[data-theme="dark"] .btn-biometric:hover:not(:disabled) {
+  background: #4ade80;
+  color: #0c1014;
+  box-shadow: 0 4px 14px rgba(74, 222, 128, 0.25);
+}
+
+[data-theme="dark"] .btn-biometric:active:not(:disabled) {
+  background: #22c55e;
+  color: #0c1014;
+}
+
+[data-theme="dark"] .biometric-divider {
+  color: #666;
+}
+
+[data-theme="dark"] .biometric-divider::before,
+[data-theme="dark"] .biometric-divider::after {
+  background: #4b4b4b;
+}
+
+/* ── Autofill override for login page inputs ─────────────────
+   Same technique as PaymentGateway.css — neutralise the UA's
+   green/yellow autofill background with an inset box-shadow.
+   ─────────────────────────────────────────────────────────── */
+.input-field:-webkit-autofill,
+.input-field:-webkit-autofill:hover,
+.input-field:-webkit-autofill:focus,
+.input-field:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-soft, #f3f6f3) inset !important;
+  box-shadow:         0 0 0 1000px var(--bg-soft, #f3f6f3) inset !important;
+  -webkit-text-fill-color: var(--text-main, #111827) !important;
+  caret-color: var(--text-main, #111827);
+  border-color: var(--border, #e0e7e1) !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+[data-theme="dark"] .input-field:-webkit-autofill,
+[data-theme="dark"] .input-field:-webkit-autofill:hover,
+[data-theme="dark"] .input-field:-webkit-autofill:focus,
+[data-theme="dark"] .input-field:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #292929 inset !important;
+  box-shadow:         0 0 0 1000px #292929 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  border-color: #4b4b4b !important;
 }

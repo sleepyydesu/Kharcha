@@ -1,8 +1,9 @@
 const express = require("express");
+const { requireKYC } = require("../middleware/kycMiddleware");
 const {
-    getWallet,
-    transfer,
-    lookupReceiver,
+  getWallet,
+  transfer,
+  lookupReceiver,
 } = require("../controllers/walletController");
 const { authenticate } = require("../middleware/authmiddleware");
 const { transferRateLimiter } = require("../middleware/securityMiddleware");
@@ -19,6 +20,6 @@ router.get("/", getWallet);
 router.get("/lookup", lookupReceiver);
 
 // POST /api/wallet/transfer — send money (used for ALL in-app transactions)
-router.post("/transfer", transferRateLimiter, transfer);
+router.post("/transfer", requireKYC, transferRateLimiter, transfer);
 
 module.exports = router;

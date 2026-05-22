@@ -100,6 +100,10 @@ export const theme = {
     skelFrom:          "#f0eeea",
     skelTo:            "#e8e6e1",
 
+    // ── Soft/card bg (legacy index.css vars) ─────────────────
+    bgSoft:            "#f3f6f3",
+    bgCard:            "#ffffff",
+
     // ── Shadows / radius ─────────────────────────────────────
     shadow:            "0 2px 8px rgba(0,0,0,0.1)",
     shadowCard:        "0 2px 12px rgba(0,0,0,0.07)",
@@ -165,8 +169,13 @@ export const theme = {
     categoryIconColor:   "#e5e7eb",
 
     // ── Skeleton shimmer ─────────────────────────────────────
-    skelFrom:          "#1a2e20",
-    skelTo:            "#223528",
+    skelFrom:          "#1e2227",
+    skelTo:            "#2a2f36",
+
+    // ── Soft/card bg (legacy index.css vars) ─────────────────
+    /** Used by index.css surfaces — must stay in sync with card/shaded */
+    bgSoft:            "#0c1014",
+    bgCard:            "#212328",
 
     // ── Shadows / radius ─────────────────────────────────────
     shadow:            "0 2px 8px rgba(0,0,0,0.35)",
@@ -230,6 +239,9 @@ export const cssVarMap = {
 
   skelFrom:          "--skel-from",
   skelTo:            "--skel-to",
+
+  bgSoft:            "--bg-soft",
+  bgCard:            "--bg-card",
 
   shadow:            "--shadow",
   shadowCard:        "--shadow-card",

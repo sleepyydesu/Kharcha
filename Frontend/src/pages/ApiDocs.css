@@ -361,6 +361,14 @@
     background: rgba(99, 102, 241, 0.12);
     color: #4f46e5;
 }
+.docs__badge--delete {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+.docs__badge--patch {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
 
 /* ── Flow badge ──────────────────────────────────────────────── */
 .docs__flow-badge {
@@ -530,4 +538,41 @@
     .docs__content {
         padding: 0 16px 60px;
     }
+}
+
+/* ── Endpoint list (portal API reference) ─────────────────────── */
+.docs__endpoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 4px 0 20px;
+}
+.docs__endpoint-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--color-surface-raised, #f9fafb);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+.docs__endpoint-row .docs__badge {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.docs__endpoint-row .docs__inline-code {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.docs__endpoint-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary, #6b7280);
+    line-height: 1.5;
+}
+
+/* ── Flow badge colour for flow 3 ──────────────────────────────── */
+.docs__flow-badge--3 {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
 }

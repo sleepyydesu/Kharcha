@@ -69,17 +69,21 @@ function getTxAvatar(t) {
   // Gift card → gift card logo
   if (isSystem) return { src: giftcardIcon, name: "Gift Card" };
   // Org sending to user (user received from org) → org profile picture
-  if (isOrg && t.type === "received") return { src: cp.profile_picture || walletLoadIcon, name: cp.display_name };
+  if (isOrg && t.type === "received") return { src: cp.profile_picture || walletLoadIcon, name: cp.display_name, isWallet: !cp.profile_picture };
   // Org receiving from user (user sent to org) → load money icon
-  if (isOrg && t.type === "sent") return { src: cp.profile_picture || walletSendIcon, name: "Load" };
+  if (isOrg && t.type === "sent") return { src: cp.profile_picture || walletSendIcon, name: "Load", isWallet: !cp.profile_picture };
   // User → user sent → send icon; received → load icon
-  if (t.type === "sent") return { src: walletSendIcon, name: "Send" };
-  return { src: walletLoadIcon, name: "Load" };
+  if (t.type === "sent") return { src: walletSendIcon, name: "Send", isWallet: true };
+  return { src: walletLoadIcon, name: "Load", isWallet: true };
 }
 
 function Avatar({ t }) {
-  const { src, name } = getTxAvatar(t);
-  return <img className="stmt-avatar stmt-avatar--img" src={src} alt={name} />;
+  const { src, name, isWallet } = getTxAvatar(t);
+  return <img
+    className={`stmt-avatar stmt-avatar--img${isWallet ? " stmt-avatar--wallet-icon" : ""}`}
+    src={src}
+    alt={name}
+  />;
 }
 
 // Load SheetJS from CDN and export xlsx

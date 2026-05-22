@@ -1,509 +1,697 @@
-/* ── Root layout ──────────────────────────────────────────────── */
-.pgw__root {
+/* ─────────────────────────────────────────────────────────────
+   Kharcha Payment Portal
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&display=swap');
+
+@keyframes kpw-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes kpw-fadein {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kpw-pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    70%  { transform: scale(1.06); }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes kpw-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ── Root ─────────────────────────────────────────────────── */
+.kpw-root {
+    display: flex;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg, #f5f6fa);
-    font-family:
-        system-ui,
-        -apple-system,
-        sans-serif;
-}
-
-/* ── Header ───────────────────────────────────────────────────── */
-.pgw__header {
-    display: flex;
+    background: #edeef2;
+    font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
-    background: #fff;
-    border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-.pgw__logo-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.pgw__logo-name {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--color-text-primary, #111);
-    letter-spacing: -0.3px;
-}
-.pgw__secure-badge {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.75rem;
-    color: var(--color-text-secondary, #6b7280);
-    background: var(--color-surface-raised, #f3f4f6);
-    padding: 4px 10px;
-    border-radius: 20px;
-}
-
-/* ── Main ─────────────────────────────────────────────────────── */
-.pgw__main {
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
     justify-content: center;
-    padding: 32px 16px 48px;
+    padding: 48px 32px;
+    box-sizing: border-box;
 }
 
-/* ── Loading ─────────────────────────────────────────────────── */
-.pgw__loading {
+/* ── Central container ────────────────────────────────────── */
+.kpw-container {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    color: var(--color-text-secondary, #6b7280);
-    font-size: 0.9rem;
-    margin-top: 60px;
-}
-.pgw__spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--color-border, #e5e7eb);
-    border-top-color: var(--color-primary, #6366f1);
-    border-radius: 50%;
-    animation: pgw-spin 0.7s linear infinite;
-}
-@keyframes pgw-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* ── Error screen ─────────────────────────────────────────────── */
-.pgw__error-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    text-align: center;
-    max-width: 340px;
-}
-.pgw__error-icon {
-    color: var(--color-danger, #ef4444);
-}
-.pgw__error-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--color-text-primary, #111);
-    margin: 0;
-}
-.pgw__error-msg {
-    font-size: 0.85rem;
-    color: var(--color-text-secondary, #6b7280);
-    margin: 0;
-}
-
-/* ── Result screen ────────────────────────────────────────────── */
-.pgw__result {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    text-align: center;
-    max-width: 360px;
-    animation: pgw-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes pgw-pop {
-    from {
-        opacity: 0;
-        transform: scale(0.85);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-.pgw__result--success .pgw__result-icon {
-    color: var(--color-success, #22c55e);
-    filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.3));
-}
-.pgw__result--failed .pgw__result-icon {
-    color: var(--color-danger, #ef4444);
-}
-.pgw__result-title {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--color-text-primary, #111);
-    margin: 0;
-}
-.pgw__result-amount {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--color-success, #22c55e);
-    letter-spacing: -0.5px;
-    margin: 0;
-}
-.pgw__result-redirect {
-    font-size: 0.82rem;
-    color: var(--color-text-secondary, #6b7280);
-    margin: 0;
-}
-
-/* ── Card ─────────────────────────────────────────────────────── */
-.pgw__card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.09);
-    padding: 0;
+    align-items: stretch;
+    gap: 150px;
     width: 100%;
-    max-width: 420px;
-    overflow: hidden;
+    max-width: 1250px;
+    min-height: 85vh;
 }
 
-/* ── Merchant card ────────────────────────────────────────────── */
-.pgw__merchant-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 20px 24px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    color: #fff;
-}
-.pgw__merchant-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.pgw__merchant-info {
+/* ── Left panel — payment details ────────────────────────── */
+.kpw-left {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
-.pgw__merchant-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+.kpw-left-inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 8px 0;
 }
-.pgw__merchant-note {
-    font-size: 0.78rem;
-    opacity: 0.8;
-    margin: 2px 0 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+/* Wordmark */
+.kpw-wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 48px;
 }
-.pgw__merchant-amount {
-    text-align: right;
-    flex-shrink: 0;
+.kpw-wordmark-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
 }
-.pgw__amount-currency {
-    font-size: 0.75rem;
-    opacity: 0.8;
-    display: block;
-}
-.pgw__amount-value {
-    font-size: 1.3rem;
+.kpw-wordmark span {
+    font-size: 21px;
     font-weight: 800;
+    color: var(--primary);
     letter-spacing: -0.5px;
 }
 
-/* ── Steps ────────────────────────────────────────────────────── */
-.pgw__steps {
+/* Page heading */
+.kpw-left-heading {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-color);
+    margin: 0 0 24px;
+    letter-spacing: -0.6px;
+}
+
+/* Loading state */
+.kpw-left-loading {
     display: flex;
-    align-items: center;
     justify-content: center;
-    padding: 16px 24px 0;
-    gap: 0;
+    margin-top: 60px;
 }
-.pgw__step-item {
+
+/* Expiry banner */
+.kpw-expiry-banner {
     display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.pgw__step-dot {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--color-surface-raised, #f3f4f6);
-    color: var(--color-text-tertiary, #9ca3af);
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition:
-        background 0.2s,
-        color 0.2s;
-}
-.pgw__step-dot--active {
-    background: var(--color-primary, #6366f1);
-    color: #fff;
-}
-.pgw__step-dot--done {
-    background: var(--color-success, #22c55e);
-    color: #fff;
-}
-.pgw__step-label {
-    font-size: 0.75rem;
-    color: var(--color-text-tertiary, #9ca3af);
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: var(--warning-text);
     font-weight: 500;
+    animation: kpw-fadein 0.35s ease both;
+    line-height: 1.5;
 }
-.pgw__step-label--active {
-    color: var(--color-primary, #6366f1);
-    font-weight: 600;
-}
-.pgw__step-line {
-    width: 32px;
-    height: 2px;
-    background: var(--color-border, #e5e7eb);
-    margin: 0 6px;
-    transition: background 0.2s;
-    flex-shrink: 0;
-}
-.pgw__step-line--done {
-    background: var(--color-success, #22c55e);
-}
+.kpw-expiry-banner svg { flex-shrink: 0; margin-top: 1px; }
+.kpw-expiry-banner strong { color: var(--warning-text); font-weight: 700; }
 
-/* ── Form ─────────────────────────────────────────────────────── */
-.pgw__form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 20px 24px 24px;
-}
-.pgw__form-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--color-text-primary, #111);
-    margin: 0 0 4px;
-}
-
-.pgw__field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.pgw__label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-secondary, #374151);
-}
-.pgw__req {
-    color: var(--color-danger, #ef4444);
-    margin-left: 2px;
-}
-.pgw__optional {
-    font-weight: 400;
-    color: var(--color-text-tertiary, #9ca3af);
-}
-
-.pgw__input {
-    border: 1.5px solid var(--color-border, #d1d5db);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 0.9rem;
-    color: var(--color-text-primary, #111);
-    outline: none;
-    transition:
-        border-color 0.15s,
-        box-shadow 0.15s;
-    background: #fff;
-}
-.pgw__input:focus {
-    border-color: var(--color-primary, #6366f1);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-}
-.pgw__input--err {
-    border-color: var(--color-danger, #ef4444);
-}
-.pgw__field-err {
-    font-size: 0.78rem;
-    color: var(--color-danger, #ef4444);
-    margin: 0;
-}
-.pgw__field-err--center {
-    text-align: center;
-}
-
-/* ── Categories ───────────────────────────────────────────────── */
-.pgw__cats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.pgw__cat {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1.5px solid var(--color-border, #d1d5db);
-    background: #fff;
-    font-size: 0.8rem;
-    color: var(--color-text-secondary, #6b7280);
-    cursor: pointer;
-    transition:
-        border-color 0.15s,
-        background 0.15s,
-        color 0.15s;
-}
-.pgw__cat--active {
-    border-color: var(--color-primary, #6366f1);
-    background: rgba(99, 102, 241, 0.08);
-    color: var(--color-primary, #6366f1);
-    font-weight: 600;
-}
-.pgw__cat-icon {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    object-fit: cover;
-}
-
-/* ── Confirm summary ──────────────────────────────────────────── */
-.pgw__confirm-summary {
-    background: var(--color-surface-raised, #f9fafb);
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.pgw__confirm-row {
+/* Billed to row */
+.kpw-billed-row {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 20px;
+    animation: kpw-fadein 0.4s ease both;
+    animation-delay: 0.04s;
 }
-.pgw__confirm-key {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary, #6b7280);
-    flex-shrink: 0;
-}
-.pgw__confirm-val {
-    font-size: 0.85rem;
+.kpw-billed-label {
+    font-size: 14px;
     font-weight: 600;
-    color: var(--color-text-primary, #111);
-    text-align: right;
+    color: var(--text-sub);
 }
-.pgw__confirm-val--amount {
-    color: var(--color-primary, #6366f1);
+.kpw-billed-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
 }
 
-/* ── MPIN ─────────────────────────────────────────────────────── */
-.pgw__mpin {
+/* Amount summary */
+.kpw-amount-summary-heading {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    animation: kpw-fadein 0.42s ease both;
+    animation-delay: 0.07s;
+}
+.kpw-amount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    animation: kpw-fadein 0.45s ease both;
+    animation-delay: 0.09s;
+}
+.kpw-amount-row-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+.kpw-amount-row-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Session details */
+.kpw-details-block {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    margin-top: 18px;
+    animation: kpw-fadein 0.5s ease both;
+    animation-delay: 0.11s;
 }
-.pgw__mpin-dots {
+.kpw-detail-row {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
 }
-.pgw__mpin-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid var(--color-border, #d1d5db);
-    background: transparent;
-    transition:
-        background 0.15s,
-        border-color 0.15s;
-}
-.pgw__mpin-dot--on {
-    background: var(--color-primary, #6366f1);
-    border-color: var(--color-primary, #6366f1);
-}
-.pgw__mpin-pad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    width: 100%;
-}
-.pgw__mpin-key {
-    height: 52px;
+.kpw-detail-label { font-size: 13px; color: var(--text-muted); }
+.kpw-detail-value { font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+
+/* Error state */
+.kpw-left-err-text {
+    color: var(--error-text);
+    font-size: 14px;
+    margin-top: 24px;
+    line-height: 1.6;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
     border-radius: 10px;
-    border: 1.5px solid var(--color-border, #e5e7eb);
-    background: var(--color-surface-raised, #f9fafb);
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--color-text-primary, #111);
-    cursor: pointer;
-    transition: background 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.pgw__mpin-key:not(:disabled):active {
-    background: var(--color-border, #e5e7eb);
-}
-.pgw__mpin-key--empty {
-    border: none;
-    background: transparent;
-    cursor: default;
-}
-.pgw__mpin-key--del {
-    font-size: 1rem;
-    color: var(--color-text-secondary, #6b7280);
-}
-.pgw__mpin-key:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    padding: 14px 18px;
 }
 
-/* ── Buttons ──────────────────────────────────────────────────── */
-.pgw__btn {
+/* Footer */
+.kpw-left-footer {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 6px;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-        opacity 0.15s,
-        background 0.15s;
-    width: 100%;
+    margin-top: auto;
+    padding-top: 40px;
+    animation: kpw-fadein 0.5s ease both;
 }
-.pgw__btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.kpw-powered-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
 }
-.pgw__btn--primary {
-    background: var(--color-primary, #6366f1);
-    color: #fff;
-}
-.pgw__btn--primary:not(:disabled):hover {
-    opacity: 0.88;
-}
-.pgw__btn--primary.pgw__btn--pay {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    font-size: 0.95rem;
-    padding: 14px 20px;
-}
-.pgw__btn--ghost {
-    background: transparent;
-    color: var(--color-text-secondary, #6b7280);
-    border: 1.5px solid var(--color-border, #d1d5db);
-}
-.pgw__btn--ghost:hover {
-    background: var(--color-surface-raised, #f3f4f6);
+.kpw-powered-brand { display: flex; align-items: center; gap: 8px; }
+.kpw-powered-logo { width: 24px; height: 24px; object-fit: contain; }
+.kpw-powered-brand span { font-size: 17px; font-weight: 800; color: var(--primary); letter-spacing: -0.3px; }
+
+/* ── Right panel — floating card ─────────────────────────── */
+.kpw-right {
+    width: 420px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border-radius: 18px;
+    box-shadow: 0 6px 40px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.05);
+    overflow: hidden;
+    animation: kpw-fadein 0.3s ease both;
+    /* Always occupy the full container height so it never jumps */
+    align-self: stretch;
+    min-height: 85vh;
 }
 
-/* ── Footer ───────────────────────────────────────────────────── */
-.pgw__footer {
-    text-align: center;
-    padding: 16px;
-    font-size: 0.75rem;
-    color: var(--color-text-tertiary, #9ca3af);
+.kpw-right-inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
-.pgw__footer strong {
-    color: var(--color-text-secondary, #6b7280);
+
+/* ── Panel ────────────────────────────────────────────────── */
+.kpw-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    animation: kpw-fadein 0.3s ease both;
+}
+
+.kpw-panel--result {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 56px 40px;
+    gap: 14px;
+    flex: 1;
+}
+
+/* Panel top bar */
+.kpw-panel-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 32px 22px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.kpw-panel-topbar h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    letter-spacing: -0.3px;
+}
+.kpw-panel-body {
+    padding: 28px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+}
+
+/* OTP enter label */
+.kpw-otp-enter-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 2px;
+}
+
+/* ── OTP section label ────────────────────────────────────── */
+.kpw-otp-section-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* ── Form + fields ────────────────────────────────────────── */
+.kpw-form { display: flex; flex-direction: column; gap: 18px; }
+.kpw-field { display: flex; flex-direction: column; gap: 7px; }
+.kpw-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+.kpw-optional {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Standard input */
+.kpw-input {
+    height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0 16px;
+    font-size: 15px;
+    color: var(--text-color);
+    background: var(--input-bg);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    font-weight: 500;
+    width: 100%;
+    box-sizing: border-box;
+}
+.kpw-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,92,57,0.10);
+    background: var(--card);
+}
+.kpw-input--err { border-color: var(--error-text); background: var(--error-bg); }
+.kpw-input--readonly { background: var(--shaded-background); color: var(--text-sub); cursor: default; }
+.kpw-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+/* Error text */
+.kpw-err-text {
+    font-size: 13px;
+    color: var(--error-text);
+    margin: 0;
+    font-weight: 500;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: 8px;
+    padding: 11px 15px;
+}
+.kpw-err-text--center { text-align: center; }
+
+/* ── Password field with eye ──────────────────────────────── */
+.kpw-input-wrap { position: relative; display: flex; align-items: center; }
+.kpw-input--icon-right { padding-right: 46px; width: 100%; }
+.kpw-eye-btn {
+    position: absolute;
+    right: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+    z-index: 1;
+}
+.kpw-eye-btn:hover { color: var(--primary); }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.kpw-btn {
+    height: 52px;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.15s, opacity 0.15s, box-shadow 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.1px;
+    width: 100%;
+    margin-top: 4px;
+}
+.kpw-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+.kpw-btn:not(:disabled):hover { transform: translateY(-1px); }
+.kpw-btn:not(:disabled):active { transform: translateY(0); }
+
+/* Continue / Sign-in button — Kharcha green */
+.kpw-btn--primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(26,92,57,0.28);
+}
+.kpw-btn--primary:not(:disabled):hover { box-shadow: 0 6px 22px rgba(26,92,57,0.38); }
+
+/* Pay button — Kharcha green */
+.kpw-btn--pay {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 18px rgba(26,92,57,0.32);
+    height: 56px;
+    font-size: 16px;
+    font-weight: 800;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-top: 2px;
+}
+.kpw-btn--pay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: kpw-shimmer 2.5s infinite;
+}
+.kpw-btn--pay:not(:disabled):hover { box-shadow: 0 6px 24px rgba(26,92,57,0.44); }
+
+.kpw-btn--ghost {
+    background: var(--shaded-background);
+    color: var(--primary);
+    border: 1.5px solid var(--border);
+}
+.kpw-btn--ghost:not(:disabled):hover { background: var(--background); }
+
+/* Back button */
+.kpw-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.15s;
+}
+.kpw-back-btn:hover { opacity: 0.7; }
+
+/* Cancel link */
+.kpw-cancel-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s;
+    font-weight: 500;
+    padding: 0;
+}
+.kpw-cancel-link:hover { color: var(--primary); }
+
+/* Panel cancel row */
+.kpw-panel-cancel-row {
+    text-align: center;
+    padding: 16px 32px 26px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: auto;
+}
+
+/* ── OTP Input ────────────────────────────────────────────── */
+.kpw-otp-row {
+    display: flex;
+    gap: 9px;
+    justify-content: center;
+    padding: 2px 0;
+}
+.kpw-otp-cell {
+    width: 48px;
+    height: 58px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-color);
+    background: var(--card);
+    outline: none;
+    cursor: text;
+    transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    caret-color: transparent;
+    font-family: 'DM Mono','Fira Mono',monospace;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.kpw-otp-cell:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,92,57,0.12);
+}
+.kpw-otp-cell--filled {
+    border-color: var(--primary);
+    background: var(--success-bg);
+    color: var(--primary);
+}
+.kpw-otp-cell:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Resend row */
+.kpw-resend-row { text-align: center; font-size: 13px; }
+.kpw-resend-timer { color: var(--text-muted); }
+.kpw-resend-timer strong { color: var(--primary); font-variant-numeric: tabular-nums; }
+.kpw-resend-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s;
+}
+.kpw-resend-btn:hover { opacity: 0.75; }
+.kpw-resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Forgot password */
+.kpw-forgot-row { text-align: center; font-size: 13px; color: var(--text-muted); }
+.kpw-forgot-row button {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+    transition: opacity 0.15s;
+}
+.kpw-forgot-row button:hover { opacity: 0.75; }
+
+/* Remarks */
+.kpw-remarks-field { margin-top: -4px; }
+
+/* ── Panel head ───────────────────────────────────────────── */
+.kpw-panel-head { display: flex; flex-direction: column; gap: 4px; }
+.kpw-panel-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--success-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+.kpw-panel-head p {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ── Result screen ────────────────────────────────────────── */
+.kpw-result-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+    animation: kpw-pop 0.45s cubic-bezier(0.175,0.885,0.32,1.275) both;
+}
+.kpw-result-icon--success { background: var(--success-bg); color: var(--primary); box-shadow: 0 0 0 12px rgba(26,92,57,0.09); }
+.kpw-result-icon--fail { background: var(--error-bg); color: var(--error-text); box-shadow: 0 0 0 12px rgba(192,57,43,0.08); }
+.kpw-result-title { font-size: 22px; font-weight: 800; color: var(--text-color); margin: 0; letter-spacing: -0.4px; }
+.kpw-result-amount { font-size: 36px; font-weight: 800; color: var(--primary); letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; }
+.kpw-result-sub { font-size: 14px; color: var(--text-sub); margin: 0; line-height: 1.5; }
+.kpw-result-sub strong { color: var(--text-color); }
+.kpw-result-txn { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; margin: 0; font-family: 'DM Mono','Fira Mono',monospace; background: var(--shaded-background); padding: 6px 12px; border-radius: 6px; }
+.kpw-result-redirect { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE — single-column, no scroll, switches at 900px
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .kpw-root {
+        min-height: 100dvh;
+        height: 100dvh;
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .kpw-container {
+        flex-direction: column;
+        gap: 0;
+        max-width: 100%;
+        width: 100%;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /* ── Top bar: wordmark + amount pill ── */
+    .kpw-left {
+        background: var(--card);
+        border-bottom: 1px solid var(--border-subtle);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .kpw-left-inner {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+    }
+
+    .kpw-wordmark { margin-bottom: 0; flex-shrink: 0; gap: 7px; }
+    .kpw-wordmark-logo { width: 26px; height: 26px; }
+    .kpw-wordmark span { font-size: 16px; }
+
+    /* Hide everything except amount in top bar */
+    .kpw-left-heading,
+    .kpw-amount-summary-heading,
+    .kpw-billed-row,
+    .kpw-expiry-banner,
+    .kpw-details-block,
+    .kpw-left-footer,
+    .kpw-left-loading,
+    .kpw-left-err-text { display: none; }
+
+    .kpw-amount-row {
+        flex: 1;
+        background: var(--success-bg);
+        border-color: transparent;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 0;
+    }
+    .kpw-amount-row-label { font-size: 11px; }
+    .kpw-amount-row-value { font-size: 15px; }
+
+    /* ── Auth panel fills remaining height ── */
+    .kpw-right {
+        width: 100%;
+        flex: 1;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kpw-right-inner {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .kpw-panel { flex: 1; }
+
+    .kpw-panel-topbar { padding: 20px 22px 16px; }
+    .kpw-panel-body { padding: 20px 22px 24px; gap: 16px; }
+    .kpw-panel-cancel-row { padding: 14px 22px 20px; }
+
+    .kpw-otp-cell { width: 44px; height: 52px; font-size: 20px; }
+    .kpw-otp-row { gap: 7px; }
+    .kpw-btn--pay { height: 52px; }
+    .kpw-btn { height: 50px; }
+}
+
+@media (max-width: 400px) {
+    .kpw-otp-cell { width: 38px; height: 47px; font-size: 18px; border-radius: 8px; }
+    .kpw-otp-row { gap: 5px; }
+    .kpw-left-inner { padding: 12px 16px; }
+}
+
+/* ── Browser autofill override ────────────────────────────────
+   Chrome/Edge/Safari inject a green or yellow background on
+   autofilled inputs via the internal :-webkit-autofill pseudo.
+   We neutralise it by forcing a transparent box-shadow inset
+   that paints over the UA background without losing the value.
+   ─────────────────────────────────────────────────────────── */
+.kpw-input:-webkit-autofill,
+.kpw-input:-webkit-autofill:hover,
+.kpw-input:-webkit-autofill:focus,
+.kpw-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--input-bg, #faf9f6) inset !important;
+    box-shadow:         0 0 0 1000px var(--input-bg, #faf9f6) inset !important;
+    -webkit-text-fill-color: var(--text-color, #111) !important;
+    caret-color: var(--text-color, #111);
+    border-color: var(--border) !important;
+    transition: background-color 9999s ease-in-out 0s; /* delay UA colour change forever */
 }

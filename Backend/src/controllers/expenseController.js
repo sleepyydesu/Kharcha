@@ -113,7 +113,8 @@ const getExpenseById = async (req, res) => {
 const createExpense = async (req, res) => {
     try {
         const userId = req.account.account_id;
-        const { category_id, amount, note, date } = req.body;
+        const { category_id, amount, note, date, is_auto } = req.body;
+
 
         if (!category_id)
             return res
@@ -133,6 +134,7 @@ const createExpense = async (req, res) => {
                 });
 
         const validCat = await resolveCategory(category_id, userId);
+        
         if (!validCat)
             return res
                 .status(404)
@@ -144,6 +146,8 @@ const createExpense = async (req, res) => {
                 success: false,
                 message: "Invalid date format. Use YYYY-MM-DD.",
             });
+
+
 
         const { data, error } = await supabase
             .from("expenses")
@@ -158,10 +162,14 @@ const createExpense = async (req, res) => {
             .select("*, categories(name, color, icon_url, icon_type)")
             .single();
 
+
+
         if (error) throw error;
         return res.status(201).json({ success: true, data });
     } catch (err) {
-        console.error("[createExpense]", err);
+        console.error("[createExpense] FULL ERROR:", err);
+        console.error("[createExpense] ERROR MESSAGE:", err.message); 
+        console.error("[createExpense] ERROR STACK:", err.stack); 
         return res
             .status(500)
             .json({ success: false, message: "Internal server error." });
