@@ -283,7 +283,7 @@ function KYCCard({ onSuccess, toast }) {
             />
           </div>
           <div className="acct-field">
-            <label className="acct-label">Grandfather's Name</label>
+            <label className="acct-label">Father's Name</label>
             <input
               className="acct-input"
               type="text"

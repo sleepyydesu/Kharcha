@@ -179,10 +179,22 @@ function LoginForm({ onLogin, onShowReset }) {
                 placeholder="98XXXXXXXX or john@example.com"
                 value={identifier}
                 onChange={(e) => {
-                    setIdentifier(e.target.value);
+                    const val = e.target.value;
+                    // If it looks like a phone (all digits, no @), cap at 10
+                    const isPhone = /^\d*$/.test(val);
+                    if (isPhone && val.length > 10) return;
+                    setIdentifier(val);
                     setErrors((prev) => ({ ...prev, identifier: "", general: "" }));
                 }}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => {
+                    // Block extra digits when identifier is all-numeric and already 10 chars
+                    const isPhone = /^\d*$/.test(identifier);
+                    if (isPhone && identifier.length >= 10 && /^\d$/.test(e.key)) {
+                        e.preventDefault();
+                        return;
+                    }
+                    handleKeyDown(e);
+                }}
                 icon="phone"
                 error={errors.identifier}
             />
