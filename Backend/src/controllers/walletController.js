@@ -372,35 +372,7 @@ const transfer = async (req, res) => {
                 timestamp: new Date().toISOString(),
             });
         }
-
-        // Auto-log: expense for sender, income for receiver
-        const _today = new Date().toISOString().slice(0, 10);
-        const _note = remarks || "Wallet transfer";
-        supabase
-            .from("expenses")
-            .insert({
-                user_id: sender_account_id,
-                category_id: null,
-                amount: parsedAmount,
-                note: _note,
-                date: _today,
-                is_auto: true,
-            })
-            .then(() => {})
-            .catch((e) => console.error("[auto-expense]", e));
-        supabase
-            .from("income")
-            .insert({
-                user_id: receiverAccount.account_id,
-                amount: parsedAmount,
-                source: "Transfer",
-                note: _note,
-                date: _today,
-                is_auto: true,
-            })
-            .then(() => {})
-            .catch((e) => console.error("[auto-income]", e));
-
+        
         return res.status(200).json(responsePayload);
     } catch (err) {
         console.error("[transfer]", err);

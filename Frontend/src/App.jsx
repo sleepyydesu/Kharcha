@@ -18,6 +18,9 @@ import KharchaBot from "./components/KharchaBot";
 
 import { isBiometricAvailable, getSavedBiometricUser, registerBiometric } from "./hooks/useBiometric";
 import { biometricRegisterApi } from "./services/api";
+import useSessionWarning from "./hooks/useSessionWarning";
+import useMoneyReceived from "./hooks/useMoneyReceived";
+import { markActivity } from "./hooks/useSessionWarning";
 
 import Dashboard from "./pages/Dashboard";
 import LoadMoney from "./pages/LoadMoney";
@@ -463,6 +466,12 @@ function AppShell({ qrOpen, setQrOpen }) {
   const location = useLocation();
   const isDashboard = location.pathname === "/";
 
+  // ── Notification hooks ──────────────────────
+  // Warn 2 min before the 15-min access token expires (zero extra requests)
+  useSessionWarning();
+  // Detect incoming money via visibility-based wallet polling
+  useMoneyReceived();
+
   const handleQrClose = useCallback(() => {
     setQrOpen(false);
   }, [setQrOpen]);
@@ -649,7 +658,8 @@ function App() {
                                             "kharcha_session",
                                             "1",
                                         );
-
+                                        // Seed the idle clock for useSessionWarning
+                                        markActivity();
                                         setIsAuthenticated(true);
                                     }}
                                 />
