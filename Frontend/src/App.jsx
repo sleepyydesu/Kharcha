@@ -22,6 +22,9 @@ import {
   registerBiometric,
 } from "./hooks/useBiometric";
 import { biometricRegisterApi } from "./services/api";
+import useSessionWarning from "./hooks/useSessionWarning";
+import useMoneyReceived from "./hooks/useMoneyReceived";
+import { markActivity } from "./hooks/useSessionWarning";
 
 import Dashboard from "./pages/Dashboard";
 import LoadMoney from "./pages/LoadMoney";
@@ -589,6 +592,12 @@ function AppShell({ qrOpen, setQrOpen }) {
   const location = useLocation();
   const isDashboard = location.pathname === "/";
 
+  // ── Notification hooks ──────────────────────
+  // Warn 2 min before the 15-min access token expires (zero extra requests)
+  useSessionWarning();
+  // Detect incoming money via visibility-based wallet polling
+  useMoneyReceived();
+
   const handleQrClose = useCallback(() => {
     setQrOpen(false);
   }, [setQrOpen]);
@@ -792,23 +801,40 @@ function App() {
         )}
 
         {showBiometricSetup && (
-          <BiometricSetupModal onDismiss={handleBiometricSetupDismiss} />
+          <BiometricSetupModal
+            onDismiss={handleBiometricSetupDismiss}
+          />
         )}
 
         <Routes>
-          <Route path="/pay/:session_id" element={<PaymentGateway />} />
+          <Route
+            path="/pay/:session_id"
+            element={<PaymentGateway />}
+          />
 
-          <Route path="/oauth-consent" element={<OAuthConsent />} />
+          <Route
+            path="/oauth-consent"
+            element={<OAuthConsent />}
+          />
 
           <Route
             path="/*"
             element={
               isAuthenticated ? (
-                <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
+                <AppShell
+                  qrOpen={qrOpen}
+                  setQrOpen={setQrOpen}
+                />
               ) : (
                 <AuthApp
                   onLogin={() => {
-                    localStorage.setItem("kharcha_session", "1");
+                    localStorage.setItem(
+                      "kharcha_session",
+                      "1",
+                    );
+
+                    // Seed idle/session tracking
+                    markActivity();
 
                     setIsAuthenticated(true);
                   }}

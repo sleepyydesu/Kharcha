@@ -258,26 +258,26 @@ async function adminRejectSubmission(req, res) {
     if (submission.status !== 'pending') {
       return res.status(409).json({ error: `Submission is already ${submission.status}` });
     }
-
+    
     const { error: subError } = await supabase
-      .from('kyc_submissions')
-      .update({
-        status:           'rejected',
-        rejection_reason: reason.trim(),
-        reviewed_by:      adminId,
-        reviewed_at:      new Date().toISOString(),
-      })
-      .eq('id', submission_id);
-
+    .from('kyc_submissions')
+    .update({
+      status:           'rejected',
+      rejection_reason: reason.trim(),
+      reviewed_by:      adminId,
+      reviewed_at:      new Date().toISOString(),
+    })
+    .eq('id', submission_id);
+    
     if (subError) throw subError;
-
+    
     const { error: accountError } = await supabase
-      .from('accounts')
-      .update({ kyc_status: 'rejected', is_verified: false })
-      .eq('account_id', submission.account_id);
-
+    .from('accounts')
+    .update({ kyc_status: 'rejected', is_verified: false })
+    .eq('account_id', submission.account_id);
+    
     if (accountError) throw accountError;
-
+    
     return res.json({ message: 'KYC submission rejected' });
   } catch (err) {
     console.error('adminRejectSubmission error:', err);

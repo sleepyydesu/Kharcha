@@ -886,7 +886,7 @@ function CardRequestsSection({ toast }) {
           </div>
         </div>
         <div className="adm-tabs">
-          {["pending", "approved", "rejected", "issued", "all"].map((t) => (
+          {["pending", "rejected", "issued", "all"].map((t) => (
             <button
               key={t}
               className={`adm-tab ${tab === t ? "adm-tab--active" : ""}`}

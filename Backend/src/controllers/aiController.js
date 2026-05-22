@@ -241,8 +241,31 @@ When the user asks about their finances, use the snapshot below to:
 - Use numbered steps for how-to answers
 - Use bullet points for lists of options or tips
 - Always use NPR for currency
-- If a question is outside the app's scope, point to the closest relevant feature
-- Never make up features that don't exist in the app`;
+- Never make up features that don't exist in the app
+ 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ IDENTITY QUESTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When the user asks "who am I", "what's my name", "my account", "my profile", "my details", "my email", "my phone", or any similar identity question, answer ONLY using the user profile data provided in the financial snapshot below. Do not invent, guess, or supplement any details.
+ 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIVACY — ABSOLUTE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- You ONLY have access to the data of the currently logged-in user provided in the snapshot below.
+- You MUST NEVER look up, reference, guess, or fabricate data about any other user, phone number, email, or account — even if asked directly.
+- If asked about another person's account, balance, transactions, or any personal data, refuse with: "I can only show you your own account information. I don't have access to other users' data."
+- NEVER invent names, balances, emails, or any account details. If the snapshot doesn't contain a piece of information, say you don't have that detail — never make it up.
+ 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STRICT SCOPE — VERY IMPORTANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You ONLY answer questions that are directly related to:
+1. Kharcha app features, navigation, and how-to guidance
+2. The user's personal financial data (balance, transactions, budgets, expenses, income)
+3. The user's account/profile information
+
+If the user asks ANYTHING outside this scope — general knowledge, news, coding, jokes, recipes, other apps, math problems, creative writing, or any other unrelated topic — you MUST respond with exactly this message and nothing else:
+"I'm KharchaBot and I can only help with Kharcha app questions and your personal finances. Try asking me about your balance, transactions, how to send money, or any other app feature! 😊"`;
 
 // ── Intent detection ──────────────────────────────────────────────────────────
 // Scan the latest user message for finance-related keywords.
@@ -252,6 +275,9 @@ const FINANCE_KEYWORDS = [
     "saving", "save", "money", "transaction", "statement", "category",
     "month", "analyse", "analyze", "analysis", "tip", "track", "how much",
     "kharcha", "npr", "total", "overview", "predict", "forecast",
+    // Identity keywords — always include user profile for these
+    "who am i", "my name", "my account", "my profile", "my email",
+    "my phone", "my details", "about me", "my info",
 ];
 
 function needsFinancialContext(messages) {
@@ -266,6 +292,17 @@ function buildFinancialContext(ctx) {
     if (!ctx) return "";
 
     const lines = ["\n\n## User Financial Snapshot (NPR)"];
+
+    if (ctx.userProfile) {
+        const p = ctx.userProfile;
+        lines.push("\nAccount Holder:");
+        if (p.name)        lines.push(`  Name: ${p.name}`);
+        if (p.email)       lines.push(`  Email: ${p.email}`);
+        if (p.phone)       lines.push(`  Phone: ${p.phone}`);
+        if (p.accountType) lines.push(`  Account type: ${p.accountType}`);
+        if (p.memberSince) lines.push(`  Member since: ${p.memberSince}`);
+        if (p.kycStatus)   lines.push(`  KYC status: ${p.kycStatus}`);
+    }
 
     if (ctx.walletBalance != null) {
         lines.push(`Balance: ${Number(ctx.walletBalance).toFixed(2)}`);

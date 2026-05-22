@@ -5,6 +5,7 @@ import {
     getIncome,
     getBudgets,
     getWallet,
+    getProfile,
     chatWithBot,
 } from "../services/api";
 import "./KharchaBot.css";
@@ -170,6 +171,14 @@ export default function KharchaBot() {
     const inputRef = useRef(null);
     const contextFetchedRef = useRef(false);
 
+    // Auto-resize textarea as user types
+    useEffect(() => {
+        const el = inputRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    }, [input]);
+
     // Auto-scroll to latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -203,13 +212,14 @@ export default function KharchaBot() {
             const lstStart = fmt(new Date(y, m - 1, 1));
             const lstEnd = fmt(new Date(y, m, 0));
 
-            const [walletRes, curExpRes, lstExpRes, incRes, budRes] =
+            const [walletRes, curExpRes, lstExpRes, incRes, budRes, profileRes] =
                 await Promise.allSettled([
                     getWallet(),
                     getExpenseOverview(curStart, curEnd),
                     getExpenseOverview(lstStart, lstEnd),
                     getIncome(curStart, curEnd),
                     getBudgets(curStart, curEnd),
+                    getProfile(),
                 ]);
 
             const toCtx = (res) => (res.status === "fulfilled" ? res.value : null);
@@ -220,6 +230,7 @@ export default function KharchaBot() {
             const inc = toCtx(incRes);
             const bud = toCtx(budRes);
             const wallet = toCtx(walletRes);
+            const profile = toCtx(profileRes);
 
             const summarizeExpenses = (data) => {
                 if (!data) return null;
@@ -255,7 +266,25 @@ export default function KharchaBot() {
                 return { totalIncome: total.toFixed(2), entries: entries.slice(0, 5) };
             };
 
+            // Normalize profile — strip ALL sensitive fields before sending to AI
+            // The API returns the account row directly (email, phone_number, account_type, kyc_status, created_at)
+            // We deliberately omit: password_hash, mpin_hash, account_id, profile_picture_url
+            const rawProfile = profile?.data || profile?.profile || profile?.user
+                || (Array.isArray(profile) ? profile[0] : profile);
+
+            const safeProfile = rawProfile ? {
+                name:        rawProfile.full_name || rawProfile.name || rawProfile.username || null,
+                email:       rawProfile.email || null,
+                phone:       rawProfile.phone_number || rawProfile.phone || null,
+                accountType: rawProfile.account_type || rawProfile.accountType || rawProfile.role || null,
+                memberSince: rawProfile.created_at
+                    ? new Date(rawProfile.created_at).toLocaleDateString("en-NP", { year: "numeric", month: "long" })
+                    : null,
+                kycStatus:   rawProfile.kyc_status || rawProfile.kycStatus || null,
+            } : null;
+
             setFinancialContext({
+                userProfile: safeProfile,
                 walletBalance: wallet?.wallet?.balance,
                 currentMonth: {
                     ...summarizeExpenses(curExp),
@@ -407,7 +436,7 @@ export default function KharchaBot() {
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     placeholder="Ask me anything…"
-                                    rows={1}
+                                    rows={3}
                                     disabled={isTyping}
                                 />
                                 <button
