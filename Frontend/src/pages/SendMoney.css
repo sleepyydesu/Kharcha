@@ -895,3 +895,27 @@
 [data-theme="dark"] .sm__cat-item--active .sm__cat-name {
     color: #f5f7fb;
 }
+
+/* Dark mode biometric payment button visibility fix */
+[data-theme="dark"] .sm__btn--biometric {
+    background: rgba(245, 200, 0, 0.12);
+    border-color: var(--accent);
+    color: #f5f7fb;
+    box-shadow: 0 0 0 1px rgba(245, 200, 0, 0.12) inset;
+}
+
+[data-theme="dark"] .sm__btn--biometric:hover:not(:disabled),
+[data-theme="dark"] .sm__btn--biometric:focus-visible:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #111820;
+    box-shadow: 0 4px 16px rgba(245, 200, 0, 0.22);
+}
+
+[data-theme="dark"] .sm__btn--biometric svg {
+    color: currentColor;
+}
+
+[data-theme="dark"] .sm__or-divider {
+    color: #aeb8c4;
+}

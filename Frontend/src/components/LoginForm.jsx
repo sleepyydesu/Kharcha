@@ -78,12 +78,6 @@ function LoginForm({ onLogin, onShowReset }) {
                     // Non-blocking
                 }
 
-                // Store account info for the setup modal
-                window.__kharcha_pending_biometric_setup = {
-                    account_id: data.account?.account_id,
-                    email:      data.account?.email,
-                };
-
                 onLogin();
             } else {
                 setErrors({ general: data.message || "Login failed. Please try again." });
