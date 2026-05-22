@@ -195,9 +195,14 @@ export async function biometricLogin(apiVerify) {
         publicKey: {
             challenge,
             allowCredentials: allowCredentials.map((c) => ({
-                id:   base64urlToBuffer(c.id),
-                type: "public-key",
+                id:         base64urlToBuffer(c.id),
+                type:       "public-key",
+                // Prefer the built-in device authenticator (Touch ID / Face ID / Windows Hello).
+                // Without this hint, some desktop browsers show "phone or security key" first.
+                transports: c.transports || ["internal"],
             })),
+            // Prefer local platform biometrics over cross-device passkeys/security keys where supported.
+            hints:            ["client-device"],
             userVerification: "required",
             timeout:          60000,
             rpId:             RP_ID,
@@ -334,9 +339,14 @@ export async function biometricTxLogin(apiVerify) {
         publicKey: {
             challenge,
             allowCredentials: allowCredentials.map((c) => ({
-                id:   base64urlToBuffer(c.id),
-                type: "public-key",
+                id:         base64urlToBuffer(c.id),
+                type:       "public-key",
+                // Prefer the built-in device authenticator (Touch ID / Face ID / Windows Hello).
+                // Without this hint, some desktop browsers show "phone or security key" first.
+                transports: c.transports || ["internal"],
             })),
+            // Prefer local platform biometrics over cross-device passkeys/security keys where supported.
+            hints:            ["client-device"],
             userVerification: "required",
             timeout:          60000,
             rpId:             RP_ID,

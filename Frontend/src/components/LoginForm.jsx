@@ -51,75 +51,67 @@ function LoginForm({ onLogin, onShowReset }) {
     return val;
   }
 
-  async function handleSubmit() {
-    if (!validate()) return;
-    setLoading(true);
-    setErrors({});
+async function handleSubmit() {
+  if (!validate()) return;
+  setLoading(true);
+  setErrors({});
 
-    try {
-      const data = await signIn({
-        identifier: normalizePhone(identifier),
-        credential,
-      });
+  try {
+    const data = await signIn({
+      identifier: normalizePhone(identifier),
+      credential,
+    });
 
-      if (data.success) {
-        try {
-          const mpinStatus = await getMpinStatus();
-          if (!mpinStatus?.mpin_set) {
-            addNotification({
-              id: "mpin_setup_prompt",
-              title: "Set up your MPIN",
-              body: "Secure your transactions by setting up your 6-digit MPIN on your Account page.",
-              link: "/account",
-              type: "warning",
-            });
-          }
-        } catch {
-          // Non-blocking
+    if (data.success) {
+      try {
+        const mpinStatus = await getMpinStatus();
+        if (!mpinStatus?.mpin_set) {
+          addNotification({
+            id: "mpin_setup_prompt",
+            title: "Set up your MPIN",
+            body: "Secure your transactions by setting up your 6-digit MPIN on your Account page.",
+            link: "/account",
+            type: "warning",
+          });
         }
-
-        // Store account info for the setup modal
-        window.__kharcha_pending_biometric_setup = {
-          account_id: data.account?.account_id,
-          email: data.account?.email,
-        };
-
-        onLogin();
-      } else {
-        setErrors({
-          general: data.message || "Login failed. Please try again.",
-        });
+      } catch {
+        // Non-blocking
       }
-    } catch (err) {
-      // AFTER
-      const msg = err.message || "";
-      if (msg.includes("400")) {
-        setErrors({ general: "Please check your input and try again." });
-      } else if (msg.includes("404")) {
-        // Check 404 BEFORE 401 — some backends return 404 for unknown accounts
-        setErrors({
-          identifier: "No account found with this email or phone number.",
-        });
-      } else if (msg.includes("401")) {
-        setErrors({
-          credential: "Incorrect password or MPIN. Please try again.",
-        });
-      } else if (msg.includes("403")) {
-        setErrors({
-          general: "Your account has been deactivated. Contact support.",
-        });
-      } else if (msg === "Session expired") {
-        // Guard: prevent the session-expired error from leaking into login UI
-        setErrors({ general: "Login failed. Please try again." });
-      } else {
-        setErrors({
-          general: msg || "Something went wrong. Please try again later.",
-        });
-      }
-    } finally {
-      setLoading(false);
+
+      onLogin();
+    } else {
+      setErrors({
+        general: data.message || "Login failed. Please try again.",
+      });
     }
+  } catch (err) {
+    const msg = err.message || "";
+
+    if (msg.includes("400")) {
+      setErrors({ general: "Please check your input and try again." });
+    } else if (msg.includes("404")) {
+      setErrors({
+        identifier: "No account found with this email or phone number.",
+      });
+    } else if (msg.includes("401")) {
+      setErrors({
+        credential: "Incorrect password or MPIN. Please try again.",
+      });
+    } else if (msg.includes("403")) {
+      setErrors({
+        general: "Your account has been deactivated. Contact support.",
+      });
+    } else if (msg === "Session expired") {
+      setErrors({ general: "Login failed. Please try again." });
+    } else {
+      setErrors({
+        general: msg || "Something went wrong. Please try again later.",
+      });
+    }
+  } finally {
+    setLoading(false);
   }
+}
 
   async function handleBiometricLogin() {
     setBiometricLoading(true);

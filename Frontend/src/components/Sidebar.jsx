@@ -208,7 +208,10 @@ export default function Sidebar({ onScanQR }) {
                   />
                   Send Money
                 </button>
-                <button className="sidebar__child">
+                <button
+                  className="sidebar__child"
+                  onClick={() => navigate("/bank-transfer")}
+                >
                   <img
                     src={bankIcon}
                     className="sidebar__icon sidebar__icon--sm"
