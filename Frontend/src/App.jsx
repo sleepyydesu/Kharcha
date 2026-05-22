@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 
@@ -16,7 +16,11 @@ import BalancePanel from "./components/BalancePanel";
 import QRScanner from "./components/QRScanner";
 import KharchaBot from "./components/KharchaBot";
 
-import { isBiometricAvailable, getSavedBiometricUser, registerBiometric } from "./hooks/useBiometric";
+import {
+  isBiometricAvailable,
+  getSavedBiometricUser,
+  registerBiometric,
+} from "./hooks/useBiometric";
 import { biometricRegisterApi } from "./services/api";
 
 import Dashboard from "./pages/Dashboard";
@@ -55,96 +59,213 @@ function BubblePortal() {
   );
 }
 
+// ── Session Timeout Warning Modal ─────────────────────────────
+const INACTIVITY_WARN_MS = 15 * 60 * 1000; // 15 min → show warning
+const INACTIVITY_LOGOUT_MS = 5 * 60 * 1000; //  5 min after warning → logout
+
+function SessionTimeoutWarning({ onStayLoggedIn, onLogout, secondsLeft }) {
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9998,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.55)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+          padding: "36px 32px 28px",
+          maxWidth: "380px",
+          width: "90%",
+          textAlign: "center",
+          animation: "slideUp 0.25s ease",
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "var(--warning-bg)",
+            border: "1.5px solid var(--warning-border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 26,
+            margin: "0 auto 18px",
+          }}
+        >
+          ⏱
+        </div>
+        <h2
+          style={{
+            fontSize: "18px",
+            fontWeight: 700,
+            color: "var(--text-color)",
+            margin: "0 0 8px",
+          }}
+        >
+          Session Expiring Soon
+        </h2>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "var(--text-sub)",
+            margin: "0 0 6px",
+            lineHeight: 1.6,
+          }}
+        >
+          Your session will expire in 5 minutes due to inactivity.
+        </p>
+        <p
+          style={{
+            fontSize: "13px",
+            color: "var(--text-muted)",
+            margin: "0 0 24px",
+          }}
+        >
+          Auto-logout in <strong>{secondsLeft}s</strong>
+        </p>
+        <button
+          onClick={onStayLoggedIn}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "var(--primary)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            fontSize: "15px",
+            fontWeight: 600,
+            cursor: "pointer",
+            letterSpacing: "0.01em",
+            marginBottom: "10px",
+          }}
+        >
+          Stay Logged In
+        </button>
+        <button
+          onClick={onLogout}
+          style={{
+            width: "100%",
+            padding: "10px",
+            background: "transparent",
+            color: "var(--text-sub)",
+            border: "1px solid var(--border)",
+            borderRadius: "10px",
+            fontSize: "14px",
+            cursor: "pointer",
+          }}
+        >
+          Log Out Now
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // ── Session Expired Modal ─────────────────────────────────────
 function SessionExpiredModal({ onDismiss }) {
-    return createPortal(
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.55)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+          padding: "36px 32px 28px",
+          maxWidth: "380px",
+          width: "90%",
+          textAlign: "center",
+          animation: "slideUp 0.25s ease",
+        }}
+      >
         <div
-            style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 9999,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                animation: "fadeIn 0.2s ease",
-            }}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "var(--warning-bg)",
+            border: "1.5px solid var(--warning-border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 26,
+            margin: "0 auto 18px",
+          }}
         >
-            <div
-                style={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
-                    padding: "36px 32px 28px",
-                    maxWidth: "380px",
-                    width: "90%",
-                    textAlign: "center",
-                    animation: "slideUp 0.25s ease",
-                }}
-            >
-                <div
-                    style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: "50%",
-                        background: "var(--warning-bg)",
-                        border: "1.5px solid var(--warning-border)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 26,
-                        margin: "0 auto 18px",
-                    }}
-                >
-                    🔒
-                </div>
+          🔒
+        </div>
 
-                <h2
-                    style={{
-                        fontSize: "18px",
-                        fontWeight: 700,
-                        color: "var(--text-color)",
-                        margin: "0 0 8px",
-                    }}
-                >
-                    Session Expired
-                </h2>
+        <h2
+          style={{
+            fontSize: "18px",
+            fontWeight: 700,
+            color: "var(--text-color)",
+            margin: "0 0 8px",
+          }}
+        >
+          Session Expired
+        </h2>
 
-                <p
-                    style={{
-                        fontSize: "14px",
-                        color: "var(--text-sub)",
-                        margin: "0 0 24px",
-                        lineHeight: 1.6,
-                    }}
-                >
-                    Your session has expired for security. Please sign in again
-                    to continue.
-                </p>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "var(--text-sub)",
+            margin: "0 0 24px",
+            lineHeight: 1.6,
+          }}
+        >
+          Your session has expired for security. Please sign in again to
+          continue.
+        </p>
 
-                <button
-                    onClick={onDismiss}
-                    style={{
-                        width: "100%",
-                        padding: "12px",
-                        background: "var(--primary)",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "10px",
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        letterSpacing: "0.01em",
-                    }}
-                >
-                    Sign in again
-                </button>
-            </div>
+        <button
+          onClick={onDismiss}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "var(--primary)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            fontSize: "15px",
+            fontWeight: 600,
+            cursor: "pointer",
+            letterSpacing: "0.01em",
+          }}
+        >
+          Sign in again
+        </button>
+      </div>
 
-            <style>{`
+      <style>{`
                 @keyframes fadeIn {
                     from { opacity: 0 }
                     to { opacity: 1 }
@@ -161,301 +282,306 @@ function SessionExpiredModal({ onDismiss }) {
                     }
                 }
             `}</style>
-        </div>,
-        document.body,
-    );
+    </div>,
+    document.body,
+  );
 }
 
 // Biometric setup modal shown after first password login
 function BiometricSetupModal({ onDismiss }) {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    const handleEnable = async () => {
-        setLoading(true);
-        setError("");
+  const handleEnable = async () => {
+    setLoading(true);
+    setError("");
 
-        try {
-            const pending = window.__kharcha_pending_biometric_setup;
-            if (!pending) {
-                onDismiss();
-                return;
-            }
-
-            const available = await isBiometricAvailable();
-            if (!available) {
-                setError("Biometric authentication is not available on this device.");
-                return;
-            }
-
-            await registerBiometric(
-                {
-                    account_id:   pending.account_id,
-                    email:        pending.email,
-                    display_name: pending.email,
-                },
-                biometricRegisterApi,
-            );
-
-            // Clear pending data
-            delete window.__kharcha_pending_biometric_setup;
-            onDismiss();
-        } catch (e) {
-            console.error("Biometric setup error:", e);
-            setError(e.message || "Failed to set up biometric. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSkip = () => {
-        // Just clear the pending data without setting up
-        delete window.__kharcha_pending_biometric_setup;
+    try {
+      const pending = window.__kharcha_pending_biometric_setup;
+      if (!pending) {
         onDismiss();
-    };
+        return;
+      }
 
-    return createPortal(
+      const available = await isBiometricAvailable();
+      if (!available) {
+        setError("Biometric authentication is not available on this device.");
+        return;
+      }
+
+      await registerBiometric(
+        {
+          account_id: pending.account_id,
+          email: pending.email,
+          display_name: pending.email,
+        },
+        biometricRegisterApi,
+      );
+
+      // Clear pending data
+      delete window.__kharcha_pending_biometric_setup;
+      onDismiss();
+    } catch (e) {
+      console.error("Biometric setup error:", e);
+      setError(e.message || "Failed to set up biometric. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    // Just clear the pending data without setting up
+    delete window.__kharcha_pending_biometric_setup;
+    onDismiss();
+  };
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.55)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+          padding: "36px 32px 28px",
+          maxWidth: "380px",
+          width: "90%",
+          textAlign: "center",
+          animation: "slideUp 0.25s ease",
+        }}
+      >
         <div
-            style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 9999,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                animation: "fadeIn 0.2s ease",
-            }}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "var(--success-bg)",
+            border: "1.5px solid var(--success-border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 26,
+            margin: "0 auto 20px",
+          }}
         >
-            <div
-                style={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
-                    padding: "36px 32px 28px",
-                    maxWidth: "380px",
-                    width: "90%",
-                    textAlign: "center",
-                    animation: "slideUp 0.25s ease",
-                }}
-            >
-                <div
-                    style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: "50%",
-                        background: "var(--success-bg)",
-                        border: "1.5px solid var(--success-border)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 26,
-                        margin: "0 auto 20px",
-                    }}
-                >
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
-                        <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
-                        <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
-                        <path d="M2 12a10 10 0 0 1 18-6" />
-                        <path d="M2 17c1 .5 2.06.78 3 .87" />
-                        <path d="M22 6c.18.5.33 1 .44 1.5" />
-                    </svg>
-                </div>
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--success)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+            <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+            <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+            <path d="M2 12a10 10 0 0 1 18-6" />
+            <path d="M2 17c1 .5 2.06.78 3 .87" />
+            <path d="M22 6c.18.5.33 1 .44 1.5" />
+          </svg>
+        </div>
 
-                <h2
-                    style={{
-                        fontSize: "18px",
-                        fontWeight: 700,
-                        color: "var(--text-color)",
-                        margin: "0 0 8px",
-                    }}
-                >
-                    Enable Fingerprint Login
-                </h2>
+        <h2
+          style={{
+            fontSize: "18px",
+            fontWeight: 700,
+            color: "var(--text-color)",
+            margin: "0 0 8px",
+          }}
+        >
+          Enable Fingerprint Login
+        </h2>
 
-                <p
-                    style={{
-                        fontSize: "14px",
-                        color: "var(--text-sub)",
-                        margin: "0 0 24px",
-                        lineHeight: 1.6,
-                    }}
-                >
-                    Use your fingerprint to quickly and securely log in without entering your password each time.
-                </p>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "var(--text-sub)",
+            margin: "0 0 24px",
+            lineHeight: 1.6,
+          }}
+        >
+          Use your fingerprint to quickly and securely log in without entering
+          your password each time.
+        </p>
 
-                {error && (
-                    <p style={{ color: "var(--error)", fontSize: "13px", marginBottom: "16px" }}>
-                        {error}
-                    </p>
-                )}
+        {error && (
+          <p
+            style={{
+              color: "var(--error)",
+              fontSize: "13px",
+              marginBottom: "16px",
+            }}
+          >
+            {error}
+          </p>
+        )}
 
-                <button
-                    onClick={handleEnable}
-                    disabled={loading}
-                    style={{
-                        width: "100%",
-                        padding: "12px",
-                        background: "var(--primary)",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "10px",
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        cursor: loading ? "not-allowed" : "pointer",
-                        opacity: loading ? 0.7 : 1,
-                        marginBottom: "12px",
-                        letterSpacing: "0.01em",
-                    }}
-                >
-                    {loading ? "Setting up..." : "Enable Fingerprint"}
-                </button>
+        <button
+          onClick={handleEnable}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "var(--primary)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            fontSize: "15px",
+            fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+            marginBottom: "12px",
+            letterSpacing: "0.01em",
+          }}
+        >
+          {loading ? "Setting up..." : "Enable Fingerprint"}
+        </button>
 
-                <button
-                    onClick={handleSkip}
-                    style={{
-                        width: "100%",
-                        padding: "12px",
-                        background: "transparent",
-                        color: "var(--text-sub)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "10px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                    }}
-                >
-                    Skip for now
-                </button>
-            </div>
-        </div>,
-        document.body,
-    );
+        <button
+          onClick={handleSkip}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "transparent",
+            color: "var(--text-sub)",
+            border: "1px solid var(--border)",
+            borderRadius: "10px",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Skip for now
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 // ── Auth App ─────────────────────────────────────────────────
 function AuthApp({ onLogin }) {
-    const [activeTab, setActiveTab] = useState("login");
-    const [showReset, setShowReset] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
+  const [showReset, setShowReset] = useState(false);
 
-    return (
-        <>
-            <BubblePortal />
+  return (
+    <>
+      <BubblePortal />
 
-            <div className="page-wrapper">
-                <div className="auth-container">
-                    <div className="brand-panel">
-                        <div className="brand-logo-row">
-                            <KharchaLogo size={52} />
-                            <span className="brand-name">
-                                Khar<span>cha</span>
-                            </span>
-                        </div>
-
-                        <p className="brand-tagline">
-                            Nepal's trusted digital wallet
-                        </p>
-
-                        <p className="brand-sub">
-                            Send money. Pay bills. Stay in control.
-                        </p>
-
-                        <ul className="brand-features">
-                            <li>
-                                <span className="feat-icon">⚡</span>
-                                Instant transfers
-                            </li>
-
-                            <li>
-                                <span className="feat-icon">🔒</span>
-                                Bank-grade security
-                            </li>
-
-                            <li>
-                                <span className="feat-icon">📱</span>
-                                Works everywhere
-                            </li>
-
-                            <li>
-                                <span className="feat-icon">🇳🇵</span>
-                                Made for Nepal
-                            </li>
-                        </ul>
-
-                        <div className="brand-deco-circle brand-deco-1" />
-                        <div className="brand-deco-circle brand-deco-2" />
-                        <div className="brand-deco-circle brand-deco-3" />
-                    </div>
-
-                    <div className="form-panel">
-                        {!showReset && (
-                            <div className="tab-bar">
-                                <button
-                                    className={`tab-btn ${
-                                        activeTab === "login" ? "active" : ""
-                                    }`}
-                                    onClick={() => setActiveTab("login")}
-                                >
-                                    Login
-                                </button>
-
-                                <button
-                                    className={`tab-btn ${
-                                        activeTab === "register"
-                                            ? "active"
-                                            : ""
-                                    }`}
-                                    onClick={() => setActiveTab("register")}
-                                >
-                                    Register
-                                </button>
-                            </div>
-                        )}
-
-                        {showReset && (
-                            <div className="reset-header">
-                                <KharchaLogo size={32} />
-                                <span className="brand-name-sm">
-                                    Khar<span>cha</span>
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="scroll-area">
-                            {showReset && (
-                                <ResetForm
-                                    key="reset"
-                                    onBack={() => {
-                                        setShowReset(false);
-                                        setActiveTab("login");
-                                    }}
-                                />
-                            )}
-
-                            {!showReset && activeTab === "login" && (
-                                <LoginForm
-                                    key="login"
-                                    onLogin={onLogin}
-                                    onShowReset={() => setShowReset(true)}
-                                />
-                            )}
-
-                            {!showReset && activeTab === "register" && (
-                                <SignupForm
-                                    key="signup"
-                                    onLogin={onLogin}
-                                />
-                            )}
-                        </div>
-                    </div>
-                </div>
+      <div className="page-wrapper">
+        <div className="auth-container">
+          <div className="brand-panel">
+            <div className="brand-logo-row">
+              <KharchaLogo size={52} />
+              <span className="brand-name">
+                Khar<span>cha</span>
+              </span>
             </div>
-        </>
-    );
+
+            <p className="brand-tagline">Nepal's trusted digital wallet</p>
+
+            <p className="brand-sub">Send money. Pay bills. Stay in control.</p>
+
+            <ul className="brand-features">
+              <li>
+                <span className="feat-icon">⚡</span>
+                Instant transfers
+              </li>
+
+              <li>
+                <span className="feat-icon">🔒</span>
+                Bank-grade security
+              </li>
+
+              <li>
+                <span className="feat-icon">📱</span>
+                Works everywhere
+              </li>
+
+              <li>
+                <span className="feat-icon">🇳🇵</span>
+                Made for Nepal
+              </li>
+            </ul>
+
+            <div className="brand-deco-circle brand-deco-1" />
+            <div className="brand-deco-circle brand-deco-2" />
+            <div className="brand-deco-circle brand-deco-3" />
+          </div>
+
+          <div className="form-panel">
+            {!showReset && (
+              <div className="tab-bar">
+                <button
+                  className={`tab-btn ${activeTab === "login" ? "active" : ""}`}
+                  onClick={() => setActiveTab("login")}
+                >
+                  Login
+                </button>
+
+                <button
+                  className={`tab-btn ${
+                    activeTab === "register" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("register")}
+                >
+                  Register
+                </button>
+              </div>
+            )}
+
+            {showReset && (
+              <div className="reset-header">
+                <KharchaLogo size={32} />
+                <span className="brand-name-sm">
+                  Khar<span>cha</span>
+                </span>
+              </div>
+            )}
+
+            <div className="scroll-area">
+              {showReset && (
+                <ResetForm
+                  key="reset"
+                  onBack={() => {
+                    setShowReset(false);
+                    setActiveTab("login");
+                  }}
+                />
+              )}
+
+              {!showReset && activeTab === "login" && (
+                <LoginForm
+                  key="login"
+                  onLogin={onLogin}
+                  onShowReset={() => setShowReset(true)}
+                />
+              )}
+
+              {!showReset && activeTab === "register" && (
+                <SignupForm key="signup" onLogin={onLogin} />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 // ── App Shell ────────────────────────────────────────────────
@@ -467,199 +593,233 @@ function AppShell({ qrOpen, setQrOpen }) {
     setQrOpen(false);
   }, [setQrOpen]);
 
-return (
+  return (
     <>
-        <div className="app-shell">
-            <Sidebar onScanQR={() => setQrOpen(true)} />
-            <BalancePanel dashboardOnly={!isDashboard} />
-            <NotificationToast />
+      <div className="app-shell">
+        <Sidebar onScanQR={() => setQrOpen(true)} />
+        <BalancePanel dashboardOnly={!isDashboard} />
+        <NotificationToast />
 
-            <main
-                className={`app-content${
-                    isDashboard ? " app-content--has-panel" : ""
-                }`}
-            >
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/load" element={<LoadMoney />} />
-                    <Route path="/send" element={<SendMoney />} />
+        <main
+          className={`app-content${
+            isDashboard ? " app-content--has-panel" : ""
+          }`}
+        >
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/load" element={<LoadMoney />} />
+            <Route path="/send" element={<SendMoney />} />
 
-                    <Route
-                        path="/statements"
-                        element={<Statements />}
-                    />
+            <Route path="/statements" element={<Statements />} />
 
-                    <Route
-                        path="/statements/:transaction_id"
-                        element={<StatementDetail />}
-                    />
+            <Route
+              path="/statements/:transaction_id"
+              element={<StatementDetail />}
+            />
 
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/account" element={<Account />} />
-                    <Route path="/set-token" element={<SetToken />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/set-token" element={<SetToken />} />
 
-                    <Route
-                        path="/org/qr-codes"
-                        element={<OrgQRCodes />}
-                    />
+            <Route path="/org/qr-codes" element={<OrgQRCodes />} />
 
-                    <Route
-                        path="/org/dynamic-qr"
-                        element={<DynamicQRPayment />}
-                    />
+            <Route path="/org/dynamic-qr" element={<DynamicQRPayment />} />
 
-                    <Route
-                        path="/developers"
-                        element={<ApiDocs />}
-                    />
+            <Route path="/developers" element={<ApiDocs />} />
 
-                    <Route path="/services" element={<Services />} />
-                    <Route
-                        path="/services/:type"
-                        element={<ServiceDetail />}
-                    />
-                    <Route path="/services/topup" element={<Topup />} />
-                    <Route path="/services/internet" element={<Internet />} />
-                    <Route path="/services/landline" element={<Landline />} />
-                    <Route path="/services/water" element={<Water />} />
-                    <Route
-                        path="/services/electricity"
-                        element={<Electricity />}
-                    />
-                    <Route
-                        path="/services/education"
-                        element={<Education />}
-                    />
+            <Route path="/services" element={<Services />} />
+            <Route path="/services/:type" element={<ServiceDetail />} />
+            <Route path="/services/topup" element={<Topup />} />
+            <Route path="/services/internet" element={<Internet />} />
+            <Route path="/services/landline" element={<Landline />} />
+            <Route path="/services/water" element={<Water />} />
+            <Route path="/services/electricity" element={<Electricity />} />
+            <Route path="/services/education" element={<Education />} />
 
-                    <Route path="/card" element={<KharchaCard />} />
+            <Route path="/card" element={<KharchaCard />} />
 
-                    <Route
-                        path="/admin"
-                        element={<AdminDashboard />}
-                    />
-                </Routes>
-            </main>
-        </div>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Routes>
+        </main>
+      </div>
 
-        <QRScanner open={qrOpen} onClose={handleQrClose} />
-        <KharchaBot />
+      <QRScanner open={qrOpen} onClose={handleQrClose} />
+      <KharchaBot />
     </>
-);
+  );
 }
 
 // ── Root App ─────────────────────────────────────────────────
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(
-        () => localStorage.getItem("kharcha_session") === "1",
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => localStorage.getItem("kharcha_session") === "1",
+  );
+
+  const [qrOpen, setQrOpen] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+
+  // Inactivity timeout state
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [timeoutSecondsLeft, setTimeoutSecondsLeft] = useState(300);
+
+  // Refs so callbacks always have fresh values without re-registering listeners
+  const warnTimerRef = useRef(null);
+  const logoutTimerRef = useRef(null);
+  const countdownRef = useRef(null);
+
+  const doLogout = useCallback(() => {
+    clearTimeout(warnTimerRef.current);
+    clearTimeout(logoutTimerRef.current);
+    clearInterval(countdownRef.current);
+    setShowTimeoutWarning(false);
+    localStorage.removeItem("kharcha_session");
+    setIsAuthenticated(false);
+    setSessionExpired(false);
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (!isAuthenticated) return;
+    clearTimeout(warnTimerRef.current);
+    clearTimeout(logoutTimerRef.current);
+    clearInterval(countdownRef.current);
+    setShowTimeoutWarning(false);
+
+    warnTimerRef.current = setTimeout(() => {
+      setTimeoutSecondsLeft(300);
+      setShowTimeoutWarning(true);
+      // Countdown ticker
+      countdownRef.current = setInterval(() => {
+        setTimeoutSecondsLeft((s) => {
+          if (s <= 1) {
+            clearInterval(countdownRef.current);
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+      // Auto-logout after 5 min
+      logoutTimerRef.current = setTimeout(() => {
+        doLogout();
+      }, INACTIVITY_LOGOUT_MS);
+    }, INACTIVITY_WARN_MS);
+  }, [isAuthenticated, doLogout]);
+
+  // Start/stop inactivity tracking based on auth state
+  useEffect(() => {
+    if (!isAuthenticated) {
+      clearTimeout(warnTimerRef.current);
+      clearTimeout(logoutTimerRef.current);
+      clearInterval(countdownRef.current);
+      setShowTimeoutWarning(false);
+      return;
+    }
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "click",
+    ];
+    const handler = () => resetInactivityTimer();
+    events.forEach((ev) =>
+      window.addEventListener(ev, handler, { passive: true }),
     );
+    resetInactivityTimer(); // kick off the first timer
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, handler));
+      clearTimeout(warnTimerRef.current);
+      clearTimeout(logoutTimerRef.current);
+      clearInterval(countdownRef.current);
+    };
+  }, [isAuthenticated, resetInactivityTimer]);
 
-    const [qrOpen, setQrOpen] = useState(false);
-    const [sessionExpired, setSessionExpired] = useState(false);
-    const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  useEffect(() => {
+    const handleExpired = () => {
+      setSessionExpired(true);
+    };
 
-    useEffect(() => {
-        const handleExpired = () => {
-            setSessionExpired(true);
-        };
+    window.addEventListener("kharcha:session-expired", handleExpired);
 
-        window.addEventListener(
-            "kharcha:session-expired",
-            handleExpired,
-        );
+    return () =>
+      window.removeEventListener("kharcha:session-expired", handleExpired);
+  }, []);
 
-        return () =>
-            window.removeEventListener(
-                "kharcha:session-expired",
-                handleExpired,
-            );
-    }, []);
-
-    // Check for pending biometric setup after authentication
-    useEffect(() => {
-        if (isAuthenticated && !sessionExpired) {
-            const pending = window.__kharcha_pending_biometric_setup;
-            if (pending) {
-                // Only show if user doesn't already have biometric set up on this device
-                const existingBiometric = getSavedBiometricUser();
-                if (!existingBiometric) {
-                    setShowBiometricSetup(true);
-                } else {
-                    // Already has biometric, clear pending
-                    delete window.__kharcha_pending_biometric_setup;
-                }
-            }
+  // Check for pending biometric setup after authentication
+  useEffect(() => {
+    if (isAuthenticated && !sessionExpired) {
+      const pending = window.__kharcha_pending_biometric_setup;
+      if (pending) {
+        // Only show if user doesn't already have biometric set up on this device
+        const existingBiometric = getSavedBiometricUser();
+        if (!existingBiometric) {
+          setShowBiometricSetup(true);
+        } else {
+          // Already has biometric, clear pending
+          delete window.__kharcha_pending_biometric_setup;
         }
-    }, [isAuthenticated, sessionExpired]);
+      }
+    }
+  }, [isAuthenticated, sessionExpired]);
 
-    const handleSessionDismiss = useCallback(() => {
-        localStorage.removeItem("kharcha_session");
-        setSessionExpired(false);
-        setIsAuthenticated(false);
-    }, []);
+  const handleSessionDismiss = useCallback(() => {
+    doLogout();
+    setSessionExpired(false);
+  }, [doLogout]);
 
-    const handleBiometricSetupDismiss = useCallback(() => {
-        setShowBiometricSetup(false);
-    }, []);
+  const handleBiometricSetupDismiss = useCallback(() => {
+    setShowBiometricSetup(false);
+  }, []);
 
-    useEffect(() => {
-        document.body.classList.toggle(
-            "app-authenticated",
-            isAuthenticated,
-        );
-    }, [isAuthenticated]);
+  useEffect(() => {
+    document.body.classList.toggle("app-authenticated", isAuthenticated);
+  }, [isAuthenticated]);
 
-    return (
-        <NotificationProvider>
-            <BrowserRouter>
-                {sessionExpired && (
-                    <SessionExpiredModal
-                        onDismiss={handleSessionDismiss}
-                    />
-                )}
+  return (
+    <NotificationProvider>
+      <BrowserRouter>
+        {showTimeoutWarning && !sessionExpired && (
+          <SessionTimeoutWarning
+            secondsLeft={timeoutSecondsLeft}
+            onStayLoggedIn={resetInactivityTimer}
+            onLogout={doLogout}
+          />
+        )}
 
-                {showBiometricSetup && (
-                    <BiometricSetupModal
-                        onDismiss={handleBiometricSetupDismiss}
-                    />
-                )}
+        {sessionExpired && (
+          <SessionExpiredModal onDismiss={handleSessionDismiss} />
+        )}
 
-                <Routes>
-                    <Route
-                        path="/pay/:session_id"
-                        element={<PaymentGateway />}
-                    />
+        {showBiometricSetup && (
+          <BiometricSetupModal onDismiss={handleBiometricSetupDismiss} />
+        )}
 
-                    <Route
-                        path="/oauth-consent"
-                        element={<OAuthConsent />}
-                    />
+        <Routes>
+          <Route path="/pay/:session_id" element={<PaymentGateway />} />
 
-                    <Route
-                        path="/*"
-                        element={
-                            isAuthenticated ? (
-                                <AppShell
-                                    qrOpen={qrOpen}
-                                    setQrOpen={setQrOpen}
-                                />
-                            ) : (
-                                <AuthApp
-                                    onLogin={() => {
-                                        localStorage.setItem(
-                                            "kharcha_session",
-                                            "1",
-                                        );
+          <Route path="/oauth-consent" element={<OAuthConsent />} />
 
-                                        setIsAuthenticated(true);
-                                    }}
-                                />
-                            )
-                        }
-                    />
-                </Routes>
-            </BrowserRouter>
-        </NotificationProvider>
-    );
+          <Route
+            path="/*"
+            element={
+              isAuthenticated ? (
+                <AppShell qrOpen={qrOpen} setQrOpen={setQrOpen} />
+              ) : (
+                <AuthApp
+                  onLogin={() => {
+                    localStorage.setItem("kharcha_session", "1");
+
+                    setIsAuthenticated(true);
+                  }}
+                />
+              )
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </NotificationProvider>
+  );
 }
 
 export default App;
