@@ -49,6 +49,10 @@ async function request(path, options = {}, _isRetry = false) {
 
   // ── Success ───────────────────────────────────────────────
   if (res.ok) {
+    // Reset the idle clock for useSessionWarning (zero cost — no extra request)
+    sessionStorage.setItem("kharcha_last_activity_at", String(Date.now()));
+    window.dispatchEvent(new CustomEvent("kharcha:activity"));
+
     const contentType = res.headers.get("content-type") || "";
 
     // Handle empty responses safely
