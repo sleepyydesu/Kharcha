@@ -22,6 +22,9 @@ const { loginLockout, mpinLockout } = require("../middleware/securityMiddleware"
 const SALT_ROUNDS = 10;
 const OTP_EXPIRY_MINUTES = 15;
 const VALID_ACCOUNT_TYPES = ["user", "organization", "admin"];
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const PASSWORD_RULE_MESSAGE =
+    "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.";
 
 // ─────────────────────────────────────────────────────────────
 //  Internal helper — issue access + refresh cookies and persist
@@ -715,8 +718,8 @@ const resetPassword = async (req, res) => {
         if (!email || !otp || !new_password) {
             return res.status(400).json({ success: false, message: "email, otp, and new_password are required." });
         }
-        if (new_password.length < 8) {
-            return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+        if (!PASSWORD_REGEX.test(new_password)) {
+            return res.status(400).json({ success: false, message: PASSWORD_RULE_MESSAGE });
         }
 
         const normalizedEmail = email.toLowerCase().trim();

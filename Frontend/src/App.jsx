@@ -323,6 +323,7 @@ function AppShell({ qrOpen, setQrOpen }) {
             <Route path="/set-token" element={<SetToken />} />
 
             <Route path="/org/qr-codes" element={<OrgQRCodes />} />
+            <Route path="/org/api-keys" element={<OrgQRCodes />} />
 
             <Route path="/org/dynamic-qr" element={<DynamicQRPayment />} />
 

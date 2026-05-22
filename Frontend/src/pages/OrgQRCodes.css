@@ -40,6 +40,14 @@
     margin: 0;
 }
 
+.oqr__header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 /* ── Tabs ───────────────────────────────────────────────────── */
 .oqr__tabs {
     display: flex;
@@ -94,6 +102,17 @@
     border-color: var(--color-border, #e5e7eb);
 }
 .oqr__btn--ghost:hover:not(:disabled) { background: var(--color-surface-raised, #f3f4f6); }
+.oqr__btn--docs {
+    background: var(--color-surface, #fff);
+    color: var(--color-primary, #7c3aed);
+    border-color: color-mix(in srgb, var(--color-primary, #7c3aed) 28%, var(--color-border, #e5e7eb));
+    box-shadow: 0 8px 18px rgba(124, 58, 237, 0.08);
+}
+.oqr__btn--docs:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary, #7c3aed) 9%, var(--color-surface, #fff));
+    border-color: var(--color-primary, #7c3aed);
+    transform: translateY(-1px);
+}
 .oqr__btn--danger {
     background: var(--color-danger, #dc2626);
     color: #fff;
@@ -794,4 +813,228 @@ details[open] .oqr__revoked-summary::before { content: "▾ "; }
 .oqr__btn--sm {
     padding: .4rem .875rem;
     font-size: .8rem;
+}
+@media (max-width: 560px) {
+    .oqr__header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .oqr__header-actions .oqr__btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+[data-theme="dark"] .oqr__btn--docs,
+.dark .oqr__btn--docs {
+    background: rgba(124, 58, 237, 0.16);
+    color: #ddd6fe;
+    border-color: rgba(167, 139, 250, 0.55);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+[data-theme="dark"] .oqr__btn--docs:hover:not(:disabled),
+.dark .oqr__btn--docs:hover:not(:disabled) {
+    background: rgba(124, 58, 237, 0.26);
+    border-color: rgba(196, 181, 253, 0.8);
+}
+
+/* ── Theme alignment / dark mode fixes ─────────────────────────
+   Keep this page on the app-level palette and keep QR surfaces white
+   so scanners can read them reliably in both themes. */
+.oqr {
+    color: var(--text-color, var(--color-text-primary, #111));
+}
+
+.oqr__heading,
+.oqr__card-name,
+.oqr__empty-title,
+.oqr__modal-title,
+.oqr__label,
+.oqr__confirm p,
+.oqr__apikey-name,
+.oqr__api-docs__label,
+.oqr__api-docs__path,
+.oqr__docs-toggle__title,
+.oqr__docs-section__title,
+.oqr__docs-path {
+    color: var(--text-color, var(--color-text-primary, #111));
+}
+
+.oqr__sub,
+.oqr__back,
+.oqr__tab,
+.oqr__card-note,
+.oqr__empty-sub,
+.oqr__loading,
+.oqr__qr-detail-label,
+.oqr__qr-detail-note,
+.oqr__apikey-desc,
+.oqr__empty-hint,
+.oqr__confirm-sub,
+.oqr__api-docs__note,
+.oqr__api-docs__pre,
+.oqr__docs-toggle__sub,
+.oqr__docs-note,
+.oqr__docs-pre,
+.oqr__revoked-summary {
+    color: var(--text-sub, var(--color-text-secondary, #6b7280));
+}
+
+.oqr__hint,
+.oqr__optional,
+.oqr__apikey-prefix,
+.oqr__key-prefix,
+.oqr__key-dates,
+.oqr__qr-detail-id,
+.oqr__card-qr-hint {
+    color: var(--text-muted, var(--color-text-tertiary, #9ca3af));
+}
+
+.oqr__card,
+.oqr__modal,
+.oqr__icon-btn,
+.oqr__btn--docs {
+    background: var(--card, var(--color-surface, #fff));
+    border-color: var(--border, var(--color-border, #e5e7eb));
+}
+
+.oqr__create-key-form,
+.oqr__key-card__bottom,
+.oqr__hint-code,
+.oqr__key-prefix,
+.oqr__docs-toggle,
+.oqr__docs-pre,
+.oqr__api-docs,
+.oqr__api-docs__pre,
+.oqr__api-docs__note code {
+    background: var(--shaded-background, var(--color-surface-raised, #f3f4f6));
+    border-color: var(--border, var(--color-border, #e5e7eb));
+}
+
+.oqr__tabs,
+.oqr__card-actions,
+.oqr__card-qr,
+.oqr__key-card__bottom,
+.oqr__docs-body,
+.oqr__docs-divider {
+    border-color: var(--border, var(--color-border, #e5e7eb));
+}
+
+.oqr__input,
+.oqr__select {
+    background: var(--input-bg, var(--card, #fff));
+    color: var(--text-color, #111);
+    border-color: var(--border, #e5e7eb);
+}
+
+.oqr__input::placeholder {
+    color: var(--text-muted, #9ca3af);
+}
+
+.oqr__card-body svg,
+.oqr__modal-close,
+.oqr__icon-btn {
+    color: var(--text-sub, #6b7280);
+}
+
+.oqr__card-body code {
+    color: var(--text-muted, #9ca3af) !important;
+    background: var(--shaded-background, #f3f4f6) !important;
+}
+
+.oqr__card-body > span {
+    color: var(--text-muted, #9ca3af) !important;
+}
+
+/* QR codes must stay on a white surface in dark mode too. */
+.oqr__card-qr,
+.oqr__qr-detail-canvas,
+.oqr__qr-canvas {
+    background: #ffffff !important;
+}
+
+.oqr__card-qr {
+    border-right-color: var(--border, #e5e7eb);
+}
+
+.oqr__qr-canvas,
+.oqr__qr-detail-canvas {
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .oqr__card,
+.dark .oqr__card,
+[data-theme="dark"] .oqr__modal,
+.dark .oqr__modal,
+[data-theme="dark"] .oqr__key-card,
+.dark .oqr__key-card {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .oqr__create-key-form,
+.dark .oqr__create-key-form,
+[data-theme="dark"] .oqr__key-card__bottom,
+.dark .oqr__key-card__bottom,
+[data-theme="dark"] .oqr__hint-code,
+.dark .oqr__hint-code,
+[data-theme="dark"] .oqr__docs-toggle,
+.dark .oqr__docs-toggle,
+[data-theme="dark"] .oqr__docs-pre,
+.dark .oqr__docs-pre,
+[data-theme="dark"] .oqr__api-docs,
+.dark .oqr__api-docs,
+[data-theme="dark"] .oqr__api-docs__pre,
+.dark .oqr__api-docs__pre {
+    background: var(--shaded-background);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .oqr__btn--ghost,
+.dark .oqr__btn--ghost,
+[data-theme="dark"] .oqr__icon-btn,
+.dark .oqr__icon-btn {
+    color: var(--text-color);
+    background: var(--card);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .oqr__btn--ghost:hover:not(:disabled),
+.dark .oqr__btn--ghost:hover:not(:disabled),
+[data-theme="dark"] .oqr__icon-btn:hover,
+.dark .oqr__icon-btn:hover {
+    background: var(--shaded-background);
+}
+
+[data-theme="dark"] .oqr__input,
+.dark .oqr__input,
+[data-theme="dark"] .oqr__select,
+.dark .oqr__select {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .oqr__input:focus,
+.dark .oqr__input:focus,
+[data-theme="dark"] .oqr__select:focus,
+.dark .oqr__select:focus {
+    border-color: var(--border-focus, var(--primary));
+    box-shadow: 0 0 0 3px rgba(42, 122, 78, 0.2);
+}
+
+[data-theme="dark"] .oqr__modal-backdrop,
+.dark .oqr__modal-backdrop {
+    background: rgba(0, 0, 0, 0.68);
+}
+
+@media (max-width: 480px) {
+    .oqr__card-qr {
+        border-right: none;
+        border-bottom-color: var(--border, #e5e7eb);
+    }
 }

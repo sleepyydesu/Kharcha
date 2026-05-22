@@ -1094,6 +1094,28 @@ function BiometricCard({ toast, profile }) {
   );
 }
 
+
+const PASSWORD_RULES = [
+  { id: "length", label: "At least 8 characters", test: (value) => value.length >= 8 },
+  { id: "upper", label: "One uppercase letter", test: (value) => /[A-Z]/.test(value) },
+  { id: "lower", label: "One lowercase letter", test: (value) => /[a-z]/.test(value) },
+  { id: "number", label: "One number", test: (value) => /\d/.test(value) },
+  { id: "special", label: "One special character", test: (value) => /[^A-Za-z0-9]/.test(value) },
+];
+
+function getPasswordStrength(password) {
+  const passed = PASSWORD_RULES.filter((rule) => rule.test(password)).length;
+
+  if (!password) return { passed, label: "Start typing", className: "empty" };
+  if (passed <= 2) return { passed, label: "Weak", className: "weak" };
+  if (passed === 3 || passed === 4) return { passed, label: "Good", className: "good" };
+  return { passed, label: "Strong", className: "strong" };
+}
+
+function isStrongPassword(password) {
+  return PASSWORD_RULES.every((rule) => rule.test(password));
+}
+
 // ── Change Password card ──────────────────────────────────────
 function ChangePasswordCard({ email, toast }) {
   const [step, setStep] = useState(0); // 0=idle, 1=otp-sent, 2=done
@@ -1104,6 +1126,10 @@ function ChangePasswordCard({ email, toast }) {
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const strength = getPasswordStrength(newPw);
+  const passwordIsStrong = isStrongPassword(newPw);
+  const passwordsMatch = confirm.length > 0 && newPw === confirm;
 
   const reset = () => {
     setStep(0);
@@ -1129,8 +1155,13 @@ function ChangePasswordCard({ email, toast }) {
   };
 
   const doReset = async () => {
-    if (newPw.length < 8)
-      return toast("Password must be at least 8 characters.", "error");
+    if (!/^\d{6}$/.test(otp))
+      return toast("Please enter the 6-digit verification code.", "error");
+    if (!passwordIsStrong)
+      return toast(
+        "Password must include uppercase, lowercase, number, and special character.",
+        "error"
+      );
     if (newPw !== confirm) return toast("Passwords do not match.", "error");
     setLoad(true);
     try {
@@ -1223,7 +1254,7 @@ function ChangePasswordCard({ email, toast }) {
                   <input
                     className="acct-input"
                     type={showPw ? "text" : "password"}
-                    placeholder="Min. 8 characters"
+                    placeholder="Use A-Z, a-z, 0-9 and symbol"
                     value={newPw}
                     onChange={(e) => setNewPw(e.target.value)}
                   />
@@ -1260,6 +1291,29 @@ function ChangePasswordCard({ email, toast }) {
                     )}
                   </button>
                 </div>
+                <div className={`acct-password-strength acct-password-strength--${strength.className}`}>
+                  <div className="acct-password-strength__top">
+                    <span>Password strength</span>
+                    <strong>{strength.label}</strong>
+                  </div>
+                  <div className="acct-password-strength__bar" aria-hidden="true">
+                    <span style={{ width: `${(strength.passed / PASSWORD_RULES.length) * 100}%` }} />
+                  </div>
+                </div>
+                <ul className="acct-password-rules" aria-label="Password requirements">
+                  {PASSWORD_RULES.map((rule) => {
+                    const passed = rule.test(newPw);
+                    return (
+                      <li
+                        key={rule.id}
+                        className={passed ? "acct-password-rule acct-password-rule--pass" : "acct-password-rule"}
+                      >
+                        <span>{passed ? "✓" : "•"}</span>
+                        {rule.label}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
               <div className="acct-field">
                 <label className="acct-label">Confirm New Password</label>
@@ -1304,13 +1358,23 @@ function ChangePasswordCard({ email, toast }) {
                     )}
                   </button>
                 </div>
+                {confirm.length > 0 && !passwordsMatch && (
+                  <p className="acct-password-match acct-password-match--error">
+                    Passwords do not match.
+                  </p>
+                )}
+                {passwordsMatch && (
+                  <p className="acct-password-match acct-password-match--ok">
+                    Passwords match.
+                  </p>
+                )}
               </div>
               <div className="acct-action-btns">
                 <button
                   className="acct-btn acct-btn--primary"
                   onClick={doReset}
                   disabled={
-                    loading || otp.length < 6 || newPw.length < 8 || !confirm
+                    loading || !/^\d{6}$/.test(otp) || !passwordIsStrong || !passwordsMatch
                   }
                 >
                   {loading ? <span className="acct-spinner" /> : null}
