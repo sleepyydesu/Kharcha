@@ -49,6 +49,10 @@ async function request(path, options = {}, _isRetry = false) {
 
   // ── Success ───────────────────────────────────────────────
   if (res.ok) {
+    // Reset the idle clock for useSessionWarning (zero cost — no extra request)
+    sessionStorage.setItem("kharcha_last_activity_at", String(Date.now()));
+    window.dispatchEvent(new CustomEvent("kharcha:activity"));
+
     const contentType = res.headers.get("content-type") || "";
 
     // Handle empty responses safely
@@ -275,10 +279,10 @@ export const deleteCategory = (id) =>
     method: "DELETE",
   });
 
-export const uploadCategoryIcon = (id, formData) =>
+export const uploadCategoryIcon = (id, body) =>
   request(`/categories/${id}/icon`, {
     method: "POST",
-    body: formData,
+    body: JSON.stringify(body),
   });
 
 export const deleteCategoryIcon = (id) =>
@@ -288,7 +292,7 @@ export const deleteCategoryIcon = (id) =>
 
 // ── KYC ───────────────────────────────────────────────────────
 export const submitKYC = (formData) =>
-    request("/kyc/submit", { method: "POST", body: formData });
+  request("/kyc/submit", { method: "POST", body: formData });
 
 // ── Auth — MPIN ───────────────────────────────────────────────
 export const getMpinStatus = () => request("/auth/mpin/status");
