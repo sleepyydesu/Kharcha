@@ -279,10 +279,10 @@ export const deleteCategory = (id) =>
     method: "DELETE",
   });
 
-export const uploadCategoryIcon = (id, formData) =>
+export const uploadCategoryIcon = (id, body) =>
   request(`/categories/${id}/icon`, {
     method: "POST",
-    body: formData,
+    body: JSON.stringify(body),
   });
 
 export const deleteCategoryIcon = (id) =>
@@ -292,7 +292,7 @@ export const deleteCategoryIcon = (id) =>
 
 // ── KYC ───────────────────────────────────────────────────────
 export const submitKYC = (formData) =>
-    request("/kyc/submit", { method: "POST", body: formData });
+  request("/kyc/submit", { method: "POST", body: formData });
 
 // ── Auth — MPIN ───────────────────────────────────────────────
 export const getMpinStatus = () => request("/auth/mpin/status");
