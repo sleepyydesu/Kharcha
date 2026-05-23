@@ -8,6 +8,9 @@ import "./App.css";
 import { NotificationProvider } from "./context/NotificationContext";
 import NotificationToast from "./components/NotificationToast";
 import KharchaLogo from "./components/KharchaLogo";
+import instantIcon from "./assets/instantIcon.svg";
+import securityIcon from "./assets/securityIcon.svg";
+import globalIcon from "./assets/globalIcon.svg";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ResetForm from "./components/ResetForm";
@@ -194,17 +197,17 @@ function AuthApp({ onLogin }) {
 
             <ul className="brand-features">
               <li>
-                <span className="feat-icon">⚡</span>
+                <span className="feat-icon"><img src={instantIcon} alt="" aria-hidden="true" /></span>
                 Instant transfers
               </li>
 
               <li>
-                <span className="feat-icon">🔒</span>
+                <span className="feat-icon"><img src={securityIcon} alt="" aria-hidden="true" /></span>
                 Bank-grade security
               </li>
 
               <li>
-                <span className="feat-icon">📱</span>
+                <span className="feat-icon"><img src={globalIcon} alt="" aria-hidden="true" /></span>
                 Works everywhere
               </li>
 

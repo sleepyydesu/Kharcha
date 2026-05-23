@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./Sidebar.css";
+import KharchaLogo from "./KharchaLogo";
 
 import homeIcon from "../assets/homeIcon.svg";
 import servicesIcon from "../assets/servicesIcon.svg";
@@ -71,7 +72,10 @@ export default function Sidebar({ onScanQR }) {
       {/* ── Desktop Sidebar ─────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar__logo">
-          <span className="sidebar__logo-text">Kharcha</span>
+          <KharchaLogo size={36} />
+          <span className="sidebar__logo-text" aria-label="Kharcha">
+            <span>Khar</span><span className="sidebar__logo-text-accent">cha</span>
+          </span>
         </div>
 
         <nav className="sidebar__menu">

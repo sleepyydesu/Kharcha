@@ -346,6 +346,12 @@ body:not(.app-authenticated) #root {
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
 }
+.feat-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+}
 
 /* Decorative circles on the brand panel */
 .brand-deco-circle {
@@ -823,7 +829,7 @@ body:not(.app-authenticated) #root {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
-  background: var(--primary);
+  background: var(--bg-card);
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: center;
@@ -833,6 +839,12 @@ body:not(.app-authenticated) #root {
   font-size: 20px;
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
+}
+.type-card-icon img {
+  width: 26px;
+  height: 26px;
+  display: block;
+  object-fit: contain;
 }
 .type-card.selected .type-card-icon {
   background: var(--accent);
@@ -1768,3 +1780,10 @@ body:not(.app-authenticated) #root {
   caret-color: #ffffff;
   border-color: #4b4b4b !important;
 }
+.btn-biometric__icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
+}
+

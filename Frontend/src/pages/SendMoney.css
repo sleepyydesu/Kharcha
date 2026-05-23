@@ -919,3 +919,15 @@
 [data-theme="dark"] .sm__or-divider {
     color: #aeb8c4;
 }
+
+.sm__biometric-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  object-fit: contain;
+}
+
+[data-theme="dark"] .sm__btn--biometric img {
+  opacity: 1;
+}
+

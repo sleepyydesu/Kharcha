@@ -6,6 +6,8 @@ import {
   signupComplete,
 } from "../services/api";
 import InputField from "./InputField";
+import userIcon from "../assets/userIcon.svg";
+import organizationIcon from "../assets/organizationIcon.svg";
 import { useNotifications } from "../context/NotificationContext";
 
 function ProgressBar({ currentStep, totalSteps = 4 }) {
@@ -369,7 +371,7 @@ function SignupForm({ onLogin }) {
                 setErrors({});
               }}
             >
-              <div className="type-card-icon">👤</div>
+              <div className="type-card-icon"><img src={userIcon} alt="" aria-hidden="true" /></div>
               <div className="type-card-text">
                 <h4>Personal Account</h4>
                 <p>For individuals – send, receive &amp; manage money</p>
@@ -382,7 +384,7 @@ function SignupForm({ onLogin }) {
                 setErrors({});
               }}
             >
-              <div className="type-card-icon">🏢</div>
+              <div className="type-card-icon"><img src={organizationIcon} alt="" aria-hidden="true" /></div>
               <div className="type-card-text">
                 <h4>Organization Account</h4>
                 <p>For businesses – collect payments &amp; manage payroll</p>

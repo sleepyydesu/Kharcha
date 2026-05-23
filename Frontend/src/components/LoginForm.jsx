@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { signIn, getMpinStatus, biometricVerifyApi } from "../services/api";
 import InputField from "./InputField";
+import fingerprintIcon from "../assets/fingerprintIcon.svg";
 import { useNotifications } from "../context/NotificationContext";
 import {
   isBiometricAvailable,
@@ -176,7 +177,12 @@ async function handleSubmit() {
           {biometricLoading ? (
             <span className="biometric-spinner" />
           ) : (
-            <FingerprintIcon />
+            <img
+              src={fingerprintIcon}
+              alt=""
+              aria-hidden="true"
+              className="btn-biometric__icon"
+            />
           )}
           <span>
             {biometricLoading
@@ -257,33 +263,5 @@ async function handleSubmit() {
   );
 }
 
-function FingerprintIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
-      <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
-      <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
-      <path d="M2 12a10 10 0 0 1 18-6" />
-      <path d="M2 17c1 .5 2.06.78 3 .87" />
-      <path d="M22 6c.18.5.33 1 .44 1.5" />
-      <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
-      <path d="M17.44 9a6 6 0 0 1 .56 3 22.49 22.49 0 0 1-.31 3" />
-      <path d="M4.42 11.247A13.152 13.152 0 0 0 4 12a13.55 13.55 0 0 0 2.1 7.338" />
-      <path d="M8.53 16.11a6 6 0 0 0 .98 3.89" />
-      <path d="M12 20c-.3.8-.7 1.4-1 2" />
-    </svg>
-  );
-}
 
 export default LoginForm;
