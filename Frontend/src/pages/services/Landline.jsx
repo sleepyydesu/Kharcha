@@ -30,7 +30,6 @@ export default function Landline() {
         >
           <option value="">Select provider</option>
           <option>Nepal Telecom</option>
-          <option>Smart Telecom</option>
         </select>
       </div>
     </>

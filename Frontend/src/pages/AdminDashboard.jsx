@@ -847,7 +847,7 @@ function CardRequestsSection({ toast }) {
     setActivating(true);
     try {
       await adminActivateCard({
-        card_id: cardId.trim().toUpperCase(),
+        rfid_uid: cardId.trim().toUpperCase(),
         account_id: activateFor.account_id,
         request_id: activateFor.request_id,
       });

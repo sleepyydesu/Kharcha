@@ -31,8 +31,6 @@ export default function Topup() {
           <option value="">Select operator</option>
           <option>Ncell</option>
           <option>NTC</option>
-          <option>Smart Cell</option>
-          <option>UTL</option>
         </select>
       </div>
     </>
