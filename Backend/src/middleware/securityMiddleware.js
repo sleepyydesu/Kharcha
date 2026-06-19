@@ -105,12 +105,13 @@ const rateLimiter = ({
     // Clean up expired entries every window to prevent memory leaks.
     // Note: the loop variable is named "key" here to avoid shadowing the
     // "ip" variable that used to live in the middleware closure below.
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
         const now = Date.now();
         for (const [key, record] of store.entries()) {
             if (record.resetAt <= now) store.delete(key);
         }
     }, windowMs);
+    cleanupTimer.unref?.();
 
     return (req, res, next) => {
         // Resolve the bucket key. keyFn takes the full request so callers can
@@ -225,7 +226,7 @@ const createLockoutStore = ({
     const store = new Map();
 
     // Prune entries whose lock window has fully expired.
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
         const now = Date.now();
         for (const [key, record] of store.entries()) {
             if (!record.lockedUntil || record.lockedUntil <= now) {
@@ -233,6 +234,7 @@ const createLockoutStore = ({
             }
         }
     }, lockDurationMs);
+    cleanupTimer.unref?.();
 
     return {
         /**
@@ -305,6 +307,11 @@ const mpinLockout = createLockoutStore({
     lockDurationMs: 15 * 60 * 1000,
 });
 
+const cardPinLockout = createLockoutStore({
+    maxFailures:    5,
+    lockDurationMs: 15 * 60 * 1000,
+});
+
 module.exports = {
     securityHeaders,
     rateLimiter,
@@ -315,4 +322,5 @@ module.exports = {
     createLockoutStore,
     loginLockout,
     mpinLockout,
+    cardPinLockout,
 };

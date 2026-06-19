@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import {
     listApiKeys, createApiKey, updateApiKey, revokeApiKey,
+    listPosTerminals, createPosTerminal, revokePosTerminal,
     getTransactionCategories,
 } from "../services/api";
 import "./OrgQRCodes.css";
@@ -17,6 +18,7 @@ function CopyIcon()   { return <svg width="14" height="14" viewBox="0 0 24 24" f
 function CheckIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>; }
 function DownloadIcon(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function DocsIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>; }
+function TerminalIcon(){ return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="m7 8 2 2-2 2M12 12h4"/></svg>; }
 
 function fmtDate(iso) {
     if (!iso) return "—";
@@ -303,11 +305,20 @@ export default function OrgQRCodes() {
     const [creating,   setCreating]   = useState(false);
     const [newRawKey,  setNewRawKey]  = useState(null);
     const [showCreate, setShowCreate] = useState(false);
+    const [terminals, setTerminals] = useState([]);
+    const [terminalName, setTerminalName] = useState("");
+    const [creatingTerminal, setCreatingTerminal] = useState(false);
+    const [showTerminalCreate, setShowTerminalCreate] = useState(false);
+    const [newTerminalCredential, setNewTerminalCredential] = useState(null);
+    const [terminalError, setTerminalError] = useState("");
 
     useEffect(() => {
         Promise.all([
             listApiKeys().then(d => setKeys(d?.api_keys || [])),
             getTransactionCategories().then(d => setCategories(d?.categories || [])),
+            listPosTerminals()
+                .then(d => setTerminals(d?.terminals || []))
+                .catch(e => setTerminalError(e.message || "Failed to load POS terminals.")),
         ]).finally(() => setLoading(false));
     }, []);
 
@@ -335,6 +346,35 @@ export default function OrgQRCodes() {
         setKeys(ks => ks.map(k => k.api_key_id === api_key_id ? { ...k, is_active: false } : k));
     }, []);
 
+    async function handleCreateTerminal() {
+        if (!terminalName.trim()) return;
+        setCreatingTerminal(true);
+        setTerminalError("");
+        try {
+            const data = await createPosTerminal({ name: terminalName.trim() });
+            setTerminals(ts => [data.terminal, ...ts]);
+            setNewTerminalCredential({ credential: data.credential, terminal: data.terminal });
+            setTerminalName("");
+            setShowTerminalCreate(false);
+        } catch (e) {
+            setTerminalError(e.message || "Failed to register POS terminal.");
+        } finally {
+            setCreatingTerminal(false);
+        }
+    }
+
+    async function handleRevokeTerminal(terminal) {
+        if (!window.confirm(`Revoke ${terminal.name}? This terminal will immediately lose POS access.`)) return;
+        try {
+            const data = await revokePosTerminal(terminal.terminal_id);
+            setTerminals(ts => ts.map(t =>
+                t.terminal_id === terminal.terminal_id ? { ...t, ...data.terminal } : t
+            ));
+        } catch (e) {
+            setTerminalError(e.message || "Failed to revoke POS terminal.");
+        }
+    }
+
     const activeKeys  = keys.filter(k => k.is_active);
     const revokedKeys = keys.filter(k => !k.is_active);
 
@@ -344,7 +384,7 @@ export default function OrgQRCodes() {
 
             <div className="oqr__header">
                 <div>
-                    <h1 className="oqr__heading">QR Codes &amp; API Keys</h1>
+                    <h1 className="oqr__heading">QR Codes, API Keys &amp; POS</h1>
                     <p className="oqr__sub">
                         Each key generates a unique QR code. Customers scan it to pay you — category and remarks are pre-filled but editable. Payments trigger your webhook so your cashier app knows instantly.
                     </p>
@@ -449,6 +489,116 @@ export default function OrgQRCodes() {
                     </div>
                 </details>
             )}
+
+            <section className="oqr__terminal-section">
+                <div className="oqr__apikeys-header">
+                    <div>
+                        <h2 className="oqr__apikeys-title">POS Terminals</h2>
+                        <p className="oqr__apikeys-sub">
+                            Register each POS device separately. Its credential is shown once and can be revoked without affecting your API keys.
+                        </p>
+                    </div>
+                    <button
+                        className="oqr__btn oqr__btn--primary"
+                        onClick={() => setShowTerminalCreate(v => !v)}
+                    >
+                        <PlusIcon /> New POS Terminal
+                    </button>
+                </div>
+
+                {newTerminalCredential && (
+                    <div className="oqr__new-key-banner">
+                        <div className="oqr__new-key-banner__icon"><TerminalIcon /></div>
+                        <div className="oqr__new-key-banner__body">
+                            <p className="oqr__new-key-banner__title">
+                                Copy the credential for {newTerminalCredential.terminal.name} — it won't be shown again
+                            </p>
+                            <p className="oqr__new-key-banner__sub">
+                                Paste this <code>pos_live_...</code> value into the POS device or standalone test page.
+                            </p>
+                            <div className="oqr__raw-key-row">
+                                <code className="oqr__raw-key">{newTerminalCredential.credential}</code>
+                                <CopyButton text={newTerminalCredential.credential} label="Copy credential" />
+                            </div>
+                        </div>
+                        <button className="oqr__modal-close" onClick={() => setNewTerminalCredential(null)}><CloseIcon /></button>
+                    </div>
+                )}
+
+                {showTerminalCreate && (
+                    <div className="oqr__create-key-form">
+                        <div className="oqr__field">
+                            <label className="oqr__label">Terminal name <span className="oqr__req">*</span></label>
+                            <input
+                                className="oqr__input"
+                                placeholder="e.g. Front Counter POS"
+                                value={terminalName}
+                                onChange={e => setTerminalName(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && handleCreateTerminal()}
+                                maxLength={100}
+                                autoFocus
+                            />
+                            <p className="oqr__hint">Use a name that identifies the physical device or counter.</p>
+                        </div>
+                        <div className="oqr__form-actions">
+                            <button
+                                className="oqr__btn oqr__btn--ghost"
+                                onClick={() => { setShowTerminalCreate(false); setTerminalName(""); }}
+                                disabled={creatingTerminal}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="oqr__btn oqr__btn--primary"
+                                onClick={handleCreateTerminal}
+                                disabled={creatingTerminal || !terminalName.trim()}
+                            >
+                                {creatingTerminal ? "Registering…" : "Register Terminal"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {terminalError && <p className="oqr__terminal-error">{terminalError}</p>}
+
+                <div className="oqr__terminal-list">
+                    {terminals.length === 0 && !terminalError ? (
+                        <div className="oqr__terminal-empty">
+                            <TerminalIcon />
+                            <span>No POS terminals registered yet.</span>
+                        </div>
+                    ) : terminals.map(terminal => (
+                        <div
+                            key={terminal.terminal_id}
+                            className={`oqr__terminal-card${terminal.is_active ? "" : " oqr__terminal-card--revoked"}`}
+                        >
+                            <div className="oqr__terminal-icon"><TerminalIcon /></div>
+                            <div className="oqr__terminal-info">
+                                <div className="oqr__terminal-name-row">
+                                    <strong>{terminal.name}</strong>
+                                    <span className={`oqr__badge ${terminal.is_active ? "oqr__badge--active" : "oqr__badge--inactive"}`}>
+                                        {terminal.is_active ? "Active" : "Revoked"}
+                                    </span>
+                                </div>
+                                <code>{terminal.terminal_id}</code>
+                                <span>
+                                    Created {fmtDate(terminal.created_at)}
+                                    {terminal.last_used_at && ` · Last used ${fmtDate(terminal.last_used_at)}`}
+                                </span>
+                            </div>
+                            {terminal.is_active && (
+                                <button
+                                    className="oqr__icon-btn oqr__icon-btn--danger"
+                                    onClick={() => handleRevokeTerminal(terminal)}
+                                    title="Revoke terminal"
+                                >
+                                    <DeleteIcon />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </section>
         </div>
     );
 }

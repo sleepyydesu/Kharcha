@@ -397,6 +397,14 @@ export const updateApiKey = (id, body) =>
 export const revokeApiKey = (id) =>
   request(`/org/api-keys/${id}`, { method: "DELETE" });
 
+export const listPosTerminals = () => request("/pos-terminals");
+
+export const createPosTerminal = (body) =>
+  request("/pos-terminals", { method: "POST", body: JSON.stringify(body) });
+
+export const revokePosTerminal = (id) =>
+  request(`/pos-terminals/${id}/revoke`, { method: "POST" });
+
 // ── Dynamic QR Codes (org) ────────────────────────────────────
 export const listOrgQRCodes = () => request("/org/qr-codes");
 

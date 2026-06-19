@@ -155,10 +155,13 @@ const issueVirtualCard = async (req, res) => {
 const requestPhysicalCard = async (req, res) => {
     try {
         const { account_id, account_type } = req.account;
-        const { delivery_address } = req.body;
+        const { delivery_address, pin } = req.body;
 
         if (account_type !== "user") {
             return res.status(403).json({ success: false, message: "Only individual user accounts can request a physical card." });
+        }
+        if (!/^\d{6}$/.test(String(pin || ""))) {
+            return res.status(400).json({ success: false, message: "Card PIN must be exactly 6 digits." });
         }
 
         const { data: existingCard } = await supabase
@@ -175,15 +178,26 @@ const requestPhysicalCard = async (req, res) => {
             return res.status(409).json({ success: false, message: `You already have a card request with status: ${existingReq.status}.`, request_id: existingReq.request_id });
         }
 
+        const cardPinHash = await bcrypt.hash(String(pin), 10);
+
         const { data: request, error } = await supabase
             .from("card_requests")
-            .insert({ account_id, delivery_address: delivery_address || null, status: "pending" })
+            .insert({
+                account_id,
+                delivery_address: delivery_address || null,
+                card_pin_hash: cardPinHash,
+                status: "pending",
+            })
             .select("request_id, status, delivery_address, created_at")
             .single();
 
         if (error) throw error;
 
-        return res.status(201).json({ success: true, message: "Physical card request submitted. You'll be notified when it's ready.", request });
+        return res.status(201).json({
+            success: true,
+            message: "Physical card request submitted. Your dedicated 6-digit card PIN was saved securely.",
+            request,
+        });
     } catch (err) {
         console.error("[requestPhysicalCard]", err);
         return res.status(500).json({ success: false, message: "Server error.", error: err.message });
@@ -288,6 +302,27 @@ const adminActivatePhysical = async (req, res) => {
         if (!targetAccount)           return res.status(404).json({ success: false, message: "Account not found." });
         if (!targetAccount.is_active) return res.status(400).json({ success: false, message: "Account is inactive." });
 
+        let requestQuery = supabase
+            .from("card_requests")
+            .select("request_id, account_id, card_pin_hash, status")
+            .eq("account_id", account_id)
+            .in("status", ["pending", "approved"]);
+        if (request_id) requestQuery = requestQuery.eq("request_id", request_id);
+        const { data: cardRequest, error: requestError } = await requestQuery
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (requestError) throw requestError;
+        if (!cardRequest) {
+            return res.status(404).json({ success: false, message: "Active physical card request not found." });
+        }
+        if (!cardRequest.card_pin_hash) {
+            return res.status(409).json({
+                success: false,
+                message: "This card request has no card PIN. Ask the user to submit a new card request.",
+            });
+        }
+
         const card_number = await newUniqueCardNumber();
         const plainCVV    = generateCVV();
         const cvv_hash    = await hashCVV(plainCVV);
@@ -295,15 +330,27 @@ const adminActivatePhysical = async (req, res) => {
 
         const { data: card, error } = await supabase
             .from("cards")
-            .insert({ account_id, card_type: "physical", card_number, cvv: cvv_hash, expiry_date, rfid_uid: normalizedUID, request_id: request_id || null, status: "active", activated_at: new Date().toISOString() })
+            .insert({
+                account_id,
+                card_type: "physical",
+                card_number,
+                cvv: cvv_hash,
+                card_pin_hash: cardRequest.card_pin_hash,
+                expiry_date,
+                rfid_uid: normalizedUID,
+                request_id: cardRequest.request_id,
+                status: "active",
+                activated_at: new Date().toISOString(),
+            })
             .select("card_id, card_type, card_number, expiry_date, rfid_uid, status, activated_at")
             .single();
 
         if (error) throw error;
 
-        if (request_id) {
-            await supabase.from("card_requests").update({ status: "issued", updated_at: new Date().toISOString() }).eq("request_id", request_id);
-        }
+        await supabase
+            .from("card_requests")
+            .update({ status: "issued", card_pin_hash: null, updated_at: new Date().toISOString() })
+            .eq("request_id", cardRequest.request_id);
 
         // Send CVV to user's email — only time it is ever revealed
         if (targetAccount.email) {

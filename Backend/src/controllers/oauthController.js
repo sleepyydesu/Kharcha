@@ -62,11 +62,12 @@ const authCodeStore = new Map();
 const paymentOtpStore = new Map();
 
 // Sweep expired entries every 5 minutes
-setInterval(() => {
+const paymentCleanupTimer = setInterval(() => {
     const now = Date.now();
     for (const [k, v] of authCodeStore)   if (v.expires < now) authCodeStore.delete(k);
     for (const [k, v] of paymentOtpStore) if (v.expires < now) paymentOtpStore.delete(k);
 }, 5 * 60 * 1000);
+paymentCleanupTimer.unref?.();
 
 //  INTERNAL HELPERS
 function generateClientSecret() {

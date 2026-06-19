@@ -452,6 +452,19 @@
     gap: 6px;
 }
 
+.kc-pin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.kc-pin-help {
+    margin: -6px 0 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
 .kc-label {
     font-size: 0.82rem;
     font-weight: 600;
@@ -683,6 +696,9 @@
     }
     .kc-card-actions .kc-btn {
         justify-content: center;
+    }
+    .kc-pin-grid {
+        grid-template-columns: 1fr;
     }
 }
 

@@ -1,6 +1,13 @@
 const express = require("express");
 const { posCharge, createCheckout, resolveCheckout, payCheckout, checkoutStatus } = require("../controllers/posController");
 const { authenticate } = require("../middleware/authmiddleware");
+const { authenticatePosTerminal } = require("../middleware/posTerminalAuth");
+const {
+    listActivePosSessions,
+    selectPosSession,
+    lookupPosCard,
+    authorizePosSession,
+} = require("../controllers/posPaymentSessionController");
 const rateLimit = require("express-rate-limit");
 
 const router = express.Router();
@@ -25,5 +32,11 @@ router.post("/checkout",                posRateLimiter, createCheckout);
 router.get( "/checkout/:session_id",               resolveCheckout);
 router.post("/checkout/:session_id/pay", authenticate, payCheckout);
 router.get( "/checkout/:session_id/status",        checkoutStatus);
+
+// Dedicated terminal-authenticated payment session flow.
+router.get("/payment-sessions", authenticatePosTerminal, listActivePosSessions);
+router.post("/payment-sessions/:id/select", authenticatePosTerminal, selectPosSession);
+router.get("/cards/:card_identifier", authenticatePosTerminal, lookupPosCard);
+router.post("/payment-sessions/:id/authorize", posRateLimiter, authenticatePosTerminal, authorizePosSession);
 
 module.exports = router;

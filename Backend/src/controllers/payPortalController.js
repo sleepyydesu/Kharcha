@@ -27,10 +27,11 @@ const { sendOTPEmail } = require("../utils/emailUtils");
 // Replace with Redis in production for multi-process deployments.
 const otpStore = new Map();
 
-setInterval(() => {
+const otpCleanupTimer = setInterval(() => {
     const now = Date.now();
     for (const [k, v] of otpStore) if (v.expires < now) otpStore.delete(k);
 }, 5 * 60 * 1000);
+otpCleanupTimer.unref?.();
 
 // ─────────────────────────────────────────────────────────────
 //  CREATE SESSION  (merchant backend — X-API-Key)

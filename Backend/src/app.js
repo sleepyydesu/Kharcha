@@ -38,6 +38,8 @@ const budgetRoutes = require("./routes/budgetRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const payPortalRoutes = require("./routes/payPortalRoutes");
 const oauthRoutes = require("./routes/oauthRoutes");
+const paymentSessionRoutes = require("./routes/paymentSessionRoutes");
+const posTerminalRoutes = require("./routes/posTerminalRoutes");
 
 const app = express();
 
@@ -60,6 +62,7 @@ const DEV_TUNNEL_RE =
 
 function isOriginAllowed(origin) {
   if (!origin) return true; // curl / Postman / same-host Swagger
+  if (origin === "null" && process.env.NODE_ENV !== "production") return true; // local POS test HTML opened via file://
   if (allowedOrigins.includes(origin)) return true;
   if (process.env.NODE_ENV !== "production" && DEV_TUNNEL_RE.test(origin))
     return true;
@@ -82,6 +85,7 @@ app.use(
       "Authorization",
       "X-API-Key",
       "X-Payment-Token",
+      "X-POS-Token",
     ],
     exposedHeaders: [
       "X-RateLimit-Limit",
@@ -122,6 +126,8 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/pos", posRoutes);
+app.use("/api/payment-sessions", paymentSessionRoutes);
+app.use("/api/pos-terminals", posTerminalRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);

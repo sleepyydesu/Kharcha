@@ -592,15 +592,28 @@ function PhysicalCardPending({ request }) {
 
 function PhysicalCardRequest({ onRequested }) {
     const [address, setAddress] = useState("");
+    const [pin, setPin]         = useState("");
+    const [confirmPin, setConfirmPin] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError]     = useState("");
     const [success, setSuccess] = useState(false);
 
     async function handleRequest() {
+        if (!/^\d{6}$/.test(pin)) {
+            setError("Card PIN must be exactly 6 digits.");
+            return;
+        }
+        if (pin !== confirmPin) {
+            setError("Card PINs do not match.");
+            return;
+        }
         setLoading(true);
         setError("");
         try {
-            await requestPhysicalCard({ delivery_address: address || undefined });
+            await requestPhysicalCard({
+                delivery_address: address || undefined,
+                pin,
+            });
             setSuccess(true);
             setTimeout(onRequested, 1200);
         } catch (e) {
@@ -659,13 +672,53 @@ function PhysicalCardRequest({ onRequested }) {
                     />
                 </div>
 
+                <div className="kc-pin-grid">
+                    <div className="kc-address-field">
+                        <label className="kc-label" htmlFor="kc-card-pin">6-digit card PIN</label>
+                        <input
+                            id="kc-card-pin"
+                            className="kc-input"
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            maxLength={6}
+                            placeholder="••••••"
+                            value={pin}
+                            onChange={(e) => {
+                                setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                                setError("");
+                            }}
+                        />
+                    </div>
+                    <div className="kc-address-field">
+                        <label className="kc-label" htmlFor="kc-card-pin-confirm">Confirm PIN</label>
+                        <input
+                            id="kc-card-pin-confirm"
+                            className="kc-input"
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            maxLength={6}
+                            placeholder="••••••"
+                            value={confirmPin}
+                            onChange={(e) => {
+                                setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                                setError("");
+                            }}
+                        />
+                    </div>
+                </div>
+                <p className="kc-pin-help">
+                    This PIN belongs only to your physical card. It can be different from your account MPIN.
+                </p>
+
                 {error   && <p className="kc-error">{error}</p>}
                 {success && <p className="kc-success">Request submitted! We'll notify you soon.</p>}
 
                 <button
                     className="kc-btn kc-btn--primary kc-btn--full"
                     onClick={handleRequest}
-                    disabled={loading || success}
+                    disabled={loading || success || pin.length !== 6 || confirmPin.length !== 6}
                 >
                     {loading ? "Submitting…" : success ? "Submitted!" : "Request Physical Card"}
                 </button>
