@@ -368,7 +368,7 @@ export default function Groups() {
       <main>
         <section className="kg-panel">
           <div className="kg-panel-head"><div><span className="kg-eyebrow">You are the receiver</span><h2>Add a bill</h2></div>
-            <span className="kg-split-preview">{Math.max(group.members.length - 1, 0)} payers</span></div>
+            <span className="kg-split-preview">{group.members.length} equal shares</span></div>
           <div className="kg-bill-mode">
             <button className={billMode === "equal" ? "active" : ""} onClick={() => setBillMode("equal")}>
               <strong>Equal bill</strong><span>Split one total evenly</span>
@@ -383,7 +383,7 @@ export default function Groups() {
               <div className="kg-money-input"><span>Rs</span><input inputMode="decimal" value={bill.amount} onChange={(e) => setBill({ ...bill, amount: e.target.value })} placeholder="0.00" /></div>
               <button onClick={addBill} disabled={busy || group.members.length < 2 || !bill.title || !bill.amount}>Create equal bill</button></div>
             {bill.amount && group.members.length > 1 && <p className="kg-preview-copy">
-              The other {group.members.length - 1} member{group.members.length === 2 ? "" : "s"} will pay about Rs {(Number(bill.amount) / (group.members.length - 1)).toFixed(2)} each.
+              Rs {Number(bill.amount).toFixed(2)} split between all {group.members.length} members is about Rs {(Number(bill.amount) / group.members.length).toFixed(2)} each. Your share is already covered.
             </p>}
           </> : <div className="kg-custom-bill">
             <input value={customBill.title} onChange={(e) => setCustomBill({ ...customBill, title: e.target.value })} placeholder="Bill title" />
@@ -421,7 +421,11 @@ export default function Groups() {
                 )}
                 <div><strong>{split.display_name}{split.is_current_user ? " (you)" : ""}</strong><small>
                   {split.status === "paid"
-                    ? split.settlement_method === "cash" ? "Settled in cash" : "Settled with Kharcha"
+                    ? split.settlement_method === "cash"
+                      ? "Settled in cash"
+                      : split.settlement_method === "self"
+                        ? "Covered by bill creator"
+                        : "Settled with Kharcha"
                     : "Payment due"}
                 </small></div>
                 <b>Rs {Number(split.amount).toFixed(2)}</b>

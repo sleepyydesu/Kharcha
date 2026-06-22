@@ -46,5 +46,98 @@
 .kg-remove-person:hover { background: #c33 !important; color: #fff !important; }
 .kg-add-person { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }.kg-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px; background: rgba(6,20,13,.6); backdrop-filter: blur(6px); }.kg-modal { width: min(410px,100%); background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 28px; text-align: center; }.kg-modal-icon { display: grid; place-items: center; width: 50px; height: 50px; margin: 0 auto 14px; border-radius: 50%; background: #e4f7ed; color: #16834b; font-size: 24px; }.kg-modal label { display: grid; gap: 7px; text-align: left; margin: 22px 0 16px; font-size: 12px; font-weight: 700; }.kg-modal label input { text-align: center; font-size: 22px; letter-spacing: .3em; }.kg-modal>div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.kg-secondary { background: color-mix(in srgb,var(--text-sub) 10%,var(--card)) !important; color: var(--text-color) !important; }
 .kg-loading { padding: 80px; text-align: center; color: var(--text-sub); }
-@media (max-width: 900px) { .kg-grid { grid-template-columns: 1fr 1fr; }.kg-layout { grid-template-columns: 1fr; }.kg-people { position: static; }.kg-create-card { grid-template-columns: 50px 1fr; }.kg-create-input { grid-column: 1/-1; }.kg-bill-form { grid-template-columns: 1fr 1fr; }.kg-bill-form button { grid-column: 1/-1; } }
-@media (max-width: 560px) { .kg-page { padding-top: 26px; }.kg-title-row,.kg-group-head { align-items: flex-start; flex-direction: column; gap: 20px; }.kg-group-identity { align-items: flex-start; }.kg-group-picture { width: 72px; height: 72px; border-radius: 20px; }.kg-grid { grid-template-columns: 1fr; }.kg-create-card { grid-template-columns: 1fr; }.kg-create-input { flex-direction: column; }.kg-bill-form,.kg-bill-mode { grid-template-columns: 1fr; }.kg-bill-form button { grid-column: auto; }.kg-split { grid-template-columns: 34px 1fr auto; }.kg-split button { grid-column: 2/-1; }.kg-money-input { width: 100%; }.kg-custom-shares label { grid-template-columns: 36px 1fr; }.kg-custom-shares .kg-money-input { grid-column: 1/-1; } }
+@media (max-width: 1050px) {
+  .kg-grid { grid-template-columns: 1fr 1fr; }
+  .kg-layout { grid-template-columns: minmax(0,1fr) 280px; }
+  .kg-picture-actions { flex-wrap: wrap; }
+  .kg-group-delete-btn { margin-left: 0; }
+}
+
+@media (max-width: 820px) {
+  .kg-page {
+    width: 100%;
+    max-width: none;
+    padding: 28px 18px 110px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .kg-title-row,.kg-group-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .kg-layout { grid-template-columns: minmax(0,1fr); }
+  .kg-people { position: static; order: -1; }
+  .kg-create-card { grid-template-columns: 50px minmax(0,1fr); padding: 20px; }
+  .kg-create-input { grid-column: 1/-1; }
+  .kg-bill-form { grid-template-columns: minmax(0,1fr) 150px; }
+  .kg-bill-form button { grid-column: 1/-1; }
+  .kg-members { padding-left: 9px; }
+  .kg-panel { padding: 20px; }
+}
+
+@media (max-width: 600px) {
+  .kg-page { padding: 22px 12px 110px; }
+  .kg-page h1 { font-size: clamp(29px,10vw,38px); overflow-wrap: anywhere; }
+  .kg-back { margin-bottom: 16px; }
+  .kg-group-identity { width: 100%; align-items: flex-start; gap: 13px; }
+  .kg-group-identity>div:last-child { min-width: 0; flex: 1; }
+  .kg-group-picture { width: 68px; height: 68px; border-radius: 19px; font-size: 29px; }
+  .kg-picture-actions {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    width: 100%;
+  }
+  .kg-picture-actions button { width: 100%; min-height: 38px; padding: 8px !important; }
+  .kg-group-delete-btn { grid-column: 1/-1; }
+  .kg-members { max-width: 100%; overflow-x: auto; padding-block: 3px; }
+  .kg-members .kg-avatar { margin-left: -7px; }
+  .kg-grid { grid-template-columns: minmax(0,1fr); }
+  .kg-card { grid-template-columns: 42px minmax(0,1fr) auto; padding: 15px !important; }
+  .kg-create-card { grid-template-columns: 44px minmax(0,1fr); gap: 13px; padding: 17px; }
+  .kg-create-icon { width: 44px; height: 44px; border-radius: 14px; }
+  .kg-create-input,.kg-bill-form,.kg-bill-mode { grid-template-columns: minmax(0,1fr); }
+  .kg-create-input { flex-direction: column; }
+  .kg-create-input button,.kg-bill-form button,.kg-custom-bill>button { width: 100%; }
+  .kg-panel { padding: 16px; border-radius: 17px; }
+  .kg-panel-head { align-items: flex-start; gap: 10px; }
+  .kg-split-preview { flex: 0 0 auto; }
+  .kg-custom-shares label { grid-template-columns: 36px minmax(0,1fr); }
+  .kg-custom-shares .kg-money-input { grid-column: 1/-1; }
+  .kg-bill-top { align-items: flex-start; flex-direction: column; gap: 10px; padding: 14px; }
+  .kg-bill-top>div:last-child { width: 100%; text-align: left; }
+  .kg-splits { padding: 5px 13px 10px; }
+  .kg-split {
+    grid-template-columns: 34px minmax(0,1fr) auto;
+    gap: 9px;
+    padding: 13px 0;
+  }
+  .kg-split>b { text-align: right; white-space: nowrap; }
+  .kg-split button { grid-column: 2/-1; width: 100%; }
+  .kg-confirm-backdrop { align-items: end; padding: 10px; }
+  .kg-confirm {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 24px 18px;
+    border-radius: 22px;
+  }
+  .kg-confirm-actions { grid-template-columns: 1fr; }
+  .kg-confirm-actions .kg-secondary { order: 2; }
+  .kg-empty { padding: 25px 16px; }
+}
+
+@media (max-width: 380px) {
+  .kg-page { padding-inline: 9px; }
+  .kg-group-identity { flex-direction: column; }
+  .kg-group-picture { width: 74px; height: 74px; }
+  .kg-picture-actions { grid-template-columns: 1fr; }
+  .kg-group-delete-btn { grid-column: auto; }
+  .kg-panel-head { flex-direction: column; }
+  .kg-split-preview { align-self: flex-start; }
+  .kg-split { grid-template-columns: 32px minmax(0,1fr); }
+  .kg-split>b { grid-column: 2; text-align: left; }
+  .kg-split button { grid-column: 1/-1; }
+  .kg-person { grid-template-columns: 38px minmax(0,1fr) auto; }
+}

@@ -432,16 +432,18 @@ const createBill = async (req, res) => {
       .eq("group_id", groupId)
       .order("joined_at");
     if (membersError) throw membersError;
-    const payers = members.filter(
+    const otherMembers = members.filter(
       (member) => member.account_id !== req.account.account_id,
     );
-    if (!payers.length) {
+    if (!otherMembers.length) {
       return res.status(400).json({
         success: false,
         message: "Add at least one other member before creating a bill.",
       });
     }
-    const payerIds = new Set(payers.map((member) => member.account_id));
+    const payerIds = new Set(
+      otherMembers.map((member) => member.account_id),
+    );
     let splits;
     if (requestedSplits) {
       splits = requestedSplits
@@ -470,12 +472,19 @@ const createBill = async (req, res) => {
       }
     } else {
       const totalPaisa = Math.round(total * 100);
-      const base = Math.floor(totalPaisa / payers.length);
-      let remainder = totalPaisa - base * payers.length;
-      splits = payers.map((member) => {
+      const base = Math.floor(totalPaisa / members.length);
+      let remainder = totalPaisa - base * members.length;
+      splits = members.map((member) => {
         const extra = remainder > 0 ? 1 : 0;
         remainder -= extra;
-        return { account_id: member.account_id, amount: (base + extra) / 100 };
+        const isCreator = member.account_id === req.account.account_id;
+        return {
+          account_id: member.account_id,
+          amount: (base + extra) / 100,
+          status: isCreator ? "paid" : "pending",
+          settlement_method: isCreator ? "self" : null,
+          paid_at: isCreator ? new Date().toISOString() : null,
+        };
       });
     }
     const { data: bill, error } = await supabase
@@ -488,6 +497,9 @@ const createBill = async (req, res) => {
       bill_id: bill.bill_id,
       account_id: split.account_id,
       amount: split.amount,
+      status: split.status || "pending",
+      settlement_method: split.settlement_method || null,
+      paid_at: split.paid_at || null,
     }));
     const { error: splitError } = await supabase.from("kharcha_group_bill_splits").insert(splitRows);
     if (splitError) throw splitError;

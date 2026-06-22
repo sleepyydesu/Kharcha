@@ -217,10 +217,93 @@
 .services-card-banner small { color: rgba(255,255,255,.68); }
 .services-card-banner__cta { font-size: 0.76rem; font-weight: 700; }
 
+.services-groups-banner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 17px 20px;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--card));
+  color: var(--text-color);
+  text-align: left;
+  cursor: pointer;
+}
+
+.services-groups-banner__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 13px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.services-groups-banner__icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.services-groups-banner__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.services-groups-banner__copy strong { font-size: 0.92rem; }
+.services-groups-banner__copy small { color: var(--text-muted); }
+
+.services-groups-banner__cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.services-groups-banner__cta svg {
+  width: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 @media (max-width: 700px) {
-  .services-body { padding: 24px 16px 44px; }
+  .services-body { padding: 24px 16px 104px; }
   .services-hero__mark { display: none; }
   .services-panel { padding: 16px; }
   .svc-grid { grid-template-columns: 1fr; }
-  .services-card-banner__cta { display: none; }
+  .services-card-banner__cta,
+  .services-groups-banner__cta { display: none; }
+  .services-card-banner,
+  .services-groups-banner { padding: 15px 16px; }
+}
+
+@media (max-width: 390px) {
+  .services-body { padding-inline: 12px; }
+  .services-panel { padding: 13px; border-radius: 18px; }
+  .services-panel__heading { align-items: flex-start; }
+  .services-secure { display: none; }
+  .svc-item { padding: 12px; }
+  .svc-item__icon-wrap { width: 44px; height: 44px; flex-basis: 44px; }
+  .services-card-banner small,
+  .services-groups-banner__copy small {
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
 }
