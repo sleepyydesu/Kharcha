@@ -32,6 +32,7 @@ const {
     completeAuthorization,
     exchangeToken,
     initiatePayment,
+    createLinkedGroup,
     confirmPayment,
     listLinkedApps,
     revokeLinkedApp,
@@ -49,6 +50,7 @@ router.post("/token", exchangeToken);
 
 // Third-party backend initiates payment (sends OTP to user)
 router.post("/pay/initiate", initiatePayment);
+router.post("/groups/create", createLinkedGroup);
 
 // Third-party backend (or their frontend) confirms payment with OTP
 router.post("/pay/confirm", confirmPayment);

@@ -479,6 +479,133 @@ const initiatePayment = async (req, res) => {
     }
 };
 
+// Create a Kharcha Group from a trusted linked third-party app.
+// POST /api/oauth/groups/create
+// Headers: X-Client-Id, X-Client-Secret
+const createLinkedGroup = async (req, res) => {
+    try {
+        const clientId = req.headers["x-client-id"];
+        const clientSecret = req.headers["x-client-secret"];
+        const {
+            name,
+            creator_link_token,
+            member_link_tokens = [],
+            amount,
+            bill_title,
+        } = req.body;
+
+        const { client, error: clientError } =
+            await resolveClient(clientId, clientSecret);
+        if (clientError) {
+            return res.status(401).json({ success: false, message: clientError });
+        }
+        if (!name?.trim() || !creator_link_token) {
+            return res.status(400).json({
+                success: false,
+                message: "name and creator_link_token are required.",
+            });
+        }
+        const numericAmount = Number(amount);
+        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "amount must be a positive number.",
+            });
+        }
+
+        const { authorization: creator, error: creatorError } =
+            await resolveLinkToken(creator_link_token);
+        if (creatorError || creator.client_id !== client.client_id) {
+            return res.status(403).json({
+                success: false,
+                message: creatorError || "Creator link token belongs to another client.",
+            });
+        }
+
+        const accountIds = [creator.account_id];
+        const rejected_tokens = [];
+        for (const token of Array.isArray(member_link_tokens) ? member_link_tokens : []) {
+            const { authorization, error } = await resolveLinkToken(token);
+            if (
+                error ||
+                authorization.client_id !== client.client_id ||
+                accountIds.includes(authorization.account_id)
+            ) {
+                rejected_tokens.push(token.slice(0, 15));
+                continue;
+            }
+            accountIds.push(authorization.account_id);
+        }
+
+        const { data: group, error: groupError } = await supabase
+            .from("kharcha_groups")
+            .insert({
+                name: name.trim().slice(0, 100),
+                created_by: creator.account_id,
+            })
+            .select("group_id, name")
+            .single();
+        if (groupError) throw groupError;
+
+        const { error: membersError } = await supabase
+            .from("kharcha_group_members")
+            .insert(accountIds.map((account_id) => ({
+                group_id: group.group_id,
+                account_id,
+            })));
+        if (membersError) throw membersError;
+
+        const { data: bill, error: billError } = await supabase
+            .from("kharcha_group_bills")
+            .insert({
+                group_id: group.group_id,
+                created_by: creator.account_id,
+                title: String(bill_title || name).trim().slice(0, 120),
+                total_amount: numericAmount,
+            })
+            .select("bill_id")
+            .single();
+        if (billError) throw billError;
+
+        const totalPaisa = Math.round(numericAmount * 100);
+        const base = Math.floor(totalPaisa / accountIds.length);
+        let remainder = totalPaisa - (base * accountIds.length);
+        const now = new Date().toISOString();
+        const splitRows = accountIds.map((account_id) => {
+            const extra = remainder > 0 ? 1 : 0;
+            remainder -= extra;
+            const isCreator = account_id === creator.account_id;
+            return {
+                bill_id: bill.bill_id,
+                account_id,
+                amount: (base + extra) / 100,
+                status: isCreator ? "paid" : "pending",
+                settlement_method: isCreator ? "self" : null,
+                paid_at: isCreator ? now : null,
+            };
+        });
+        const { error: splitError } = await supabase
+            .from("kharcha_group_bill_splits")
+            .insert(splitRows);
+        if (splitError) throw splitError;
+
+        return res.status(201).json({
+            success: true,
+            group_id: group.group_id,
+            bill_id: bill.bill_id,
+            added_members: accountIds.length,
+            rejected_tokens,
+        });
+    } catch (err) {
+        console.error("[createLinkedGroup]", err);
+        return res.status(500).json({
+            success: false,
+            message: "Could not create the linked Kharcha Group.",
+            error: err.message,
+        });
+    }
+};
+
 //  6. CONFIRM PAYMENT  (third-party backend, after user enters OTP)
 //  POST /api/oauth/pay/confirm
 //  Body: { payment_id, otp }
@@ -759,6 +886,7 @@ module.exports = {
     completeAuthorization,
     exchangeToken,
     initiatePayment,
+    createLinkedGroup,
     confirmPayment,
     listLinkedApps,
     revokeLinkedApp,
