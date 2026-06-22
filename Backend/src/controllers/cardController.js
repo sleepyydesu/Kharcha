@@ -508,9 +508,104 @@ const adminListRequests = async (req, res) => {
         const { data: requests, error } = await query;
         if (error) throw error;
 
-        return res.status(200).json({ success: true, requests: requests || [] });
+        const accountIds = [...new Set((requests || []).map((item) => item.account_id))];
+        const [{ data: accounts, error: accountError }, { data: users, error: userError }] =
+            accountIds.length
+                ? await Promise.all([
+                    supabase
+                        .from("accounts")
+                        .select("account_id, email, phone_number, profile_picture_url")
+                        .in("account_id", accountIds),
+                    supabase
+                        .from("users")
+                        .select("account_id, full_name")
+                        .in("account_id", accountIds),
+                ])
+                : [{ data: [], error: null }, { data: [], error: null }];
+
+        if (accountError) throw accountError;
+        if (userError) throw userError;
+
+        const accountMap = new Map((accounts || []).map((item) => [item.account_id, item]));
+        const userMap = new Map((users || []).map((item) => [item.account_id, item]));
+        const enrichedRequests = (requests || []).map((item) => {
+            const account = accountMap.get(item.account_id);
+            const user = userMap.get(item.account_id);
+            return {
+                ...item,
+                requester: {
+                    full_name: user?.full_name || "Kharcha User",
+                    email: account?.email || null,
+                    phone_number: account?.phone_number || null,
+                    profile_picture_url: account?.profile_picture_url || null,
+                },
+            };
+        });
+
+        return res.status(200).json({ success: true, requests: enrichedRequests });
     } catch (err) {
         console.error("[adminListRequests]", err);
+        return res.status(500).json({ success: false, message: "Server error.", error: err.message });
+    }
+};
+
+// ADMIN: Reject a pending physical card request
+// PATCH /api/cards/admin/requests/:request_id/reject
+const adminRejectRequest = async (req, res) => {
+    try {
+        const { account_type } = req.account;
+        if (account_type !== "admin") {
+            return res.status(403).json({ success: false, message: "Admin access required." });
+        }
+
+        const { request_id } = req.params;
+        const reason = String(req.body.reason || "").trim();
+        if (!reason) {
+            return res.status(400).json({ success: false, message: "A rejection reason is required." });
+        }
+        if (reason.length > 500) {
+            return res.status(400).json({ success: false, message: "Rejection reason cannot exceed 500 characters." });
+        }
+
+        const { data: request, error: findError } = await supabase
+            .from("card_requests")
+            .select("request_id, account_id, status")
+            .eq("request_id", request_id)
+            .maybeSingle();
+
+        if (findError) throw findError;
+        if (!request) {
+            return res.status(404).json({ success: false, message: "Card request not found." });
+        }
+        if (!["pending", "approved"].includes(request.status)) {
+            return res.status(409).json({
+                success: false,
+                message: `A ${request.status} card request cannot be rejected.`,
+            });
+        }
+
+        const { data: rejected, error } = await supabase
+            .from("card_requests")
+            .update({
+                status: "rejected",
+                admin_notes: reason,
+                card_pin_hash: null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("request_id", request_id)
+            .in("status", ["pending", "approved"])
+            .select("request_id, account_id, status, admin_notes, updated_at")
+            .single();
+
+        if (error) throw error;
+
+        return res.status(200).json({
+            success: true,
+            message: "Physical card request rejected.",
+            request: rejected,
+        });
+    } catch (err) {
+        console.error("[adminRejectRequest]", err);
         return res.status(500).json({ success: false, message: "Server error.", error: err.message });
     }
 };
@@ -552,5 +647,6 @@ module.exports = {
     adminBlockCard,
     adminUnblockCard,
     adminListRequests,
+    adminRejectRequest,
     posLookupByRFID,
 };

@@ -308,6 +308,78 @@
   background: var(--error-bg);
 }
 
+.adm-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.adm-requester {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 180px;
+}
+
+.adm-requester__avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-text);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.adm-requester__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adm-requester__copy,
+.adm-contact {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.adm-requester__copy strong {
+  color: var(--text-color);
+  font-size: 0.82rem;
+}
+
+.adm-requester__copy small,
+.adm-contact small {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-contact span {
+  color: var(--text-color);
+  font-size: 0.78rem;
+}
+
+.adm-rejection-note {
+  display: inline-block;
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--error-text);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* ── Status badge ────────────────────────────────────────────── */
 .adm-badge {
   display: inline-flex;

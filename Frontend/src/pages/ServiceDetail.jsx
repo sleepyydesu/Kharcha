@@ -1,559 +1,753 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getWallet, transfer } from "../services/api";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  biometricVerifyTransactionApi,
+  getServiceCatalog,
+  getServiceTestAccounts,
+  getWallet,
+  lookupServiceBill,
+  transfer,
+} from "../services/api";
+import {
+  biometricTxLogin,
+  clearSavedBiometricTxUser,
+  getSavedBiometricTxUser,
+  isBiometricAvailable,
+} from "../hooks/useBiometric";
+import fingerprintIcon from "../assets/fingerprintIcon.svg";
+import { SERVICE_UI } from "./serviceConfig";
 import "./ServiceDetail.css";
 
-// ── Service config ────────────────────────────────────────────
-const SERVICE_CONFIG = {
-  topup: {
-    label: "Mobile Topup",
-    accent: "#1a5c39",
-    fields: [
-      {
-        key: "phone",
-        label: "Mobile Number",
-        placeholder: "98XXXXXXXX",
-        type: "tel",
-        maxLength: 10,
-      },
-      {
-        key: "operator",
-        label: "Operator",
-        type: "select",
-        options: ["Ncell", "NTC", "Smart Cell", "UTL"],
-      },
-    ],
-    presets: [50, 100, 200, 500, 1000],
-    amountLabel: "Topup Amount",
-    remarks: (f) => `Mobile Topup – ${f.operator} – ${f.phone}`,
-  },
-  internet: {
-    label: "Internet Bill",
-    accent: "#1a56db",
-    fields: [
-      {
-        key: "username",
-        label: "Username / Customer ID",
-        placeholder: "ISP username",
-        type: "text",
-      },
-      {
-        key: "provider",
-        label: "Provider",
-        type: "select",
-        options: ["WorldLink", "Vianet", "Subisu", "Classic Tech", "Dish Home"],
-      },
-    ],
-    presets: [500, 800, 1000, 1500, 2000],
-    amountLabel: "Bill Amount",
-    remarks: (f) => `Internet Bill – ${f.provider} – ${f.username}`,
-  },
-  landline: {
-    label: "Landline Bill",
-    accent: "#7c3aed",
-    fields: [
-      {
-        key: "phone",
-        label: "Landline Number",
-        placeholder: "01XXXXXXX",
-        type: "tel",
-        maxLength: 9,
-      },
-      {
-        key: "provider",
-        label: "Provider",
-        type: "select",
-        options: ["Nepal Telecom", "Smart Telecom"],
-      },
-    ],
-    presets: [200, 400, 600, 800, 1000],
-    amountLabel: "Bill Amount",
-    remarks: (f) => `Landline Bill – ${f.provider} – ${f.phone}`,
-  },
-  water: {
-    label: "Water Bill",
-    accent: "#0369a1",
-    fields: [
-      {
-        key: "customer_id",
-        label: "Customer ID",
-        placeholder: "Enter customer ID",
-        type: "text",
-      },
-      {
-        key: "office",
-        label: "Office",
-        type: "select",
-        options: [
-          "KUKL",
-          "NWSC Kathmandu",
-          "NWSC Pokhara",
-          "Municipality Water",
-        ],
-      },
-    ],
-    presets: [100, 200, 400, 600, 1000],
-    amountLabel: "Bill Amount",
-    remarks: (f) => `Water Bill – ${f.office} – ${f.customer_id}`,
-  },
-  electricity: {
-    label: "Electricity Bill",
-    accent: "#b45309",
-    fields: [
-      {
-        key: "sc_no",
-        label: "SC Number",
-        placeholder: "Enter SC number",
-        type: "text",
-      },
-      {
-        key: "office",
-        label: "NEA Office",
-        type: "select",
-        options: [
-          "Kathmandu",
-          "Lalitpur",
-          "Bhaktapur",
-          "Pokhara",
-          "Chitwan",
-          "Biratnagar",
-        ],
-      },
-    ],
-    presets: [500, 1000, 2000, 3000, 5000],
-    amountLabel: "Bill Amount",
-    remarks: (f) => `Electricity Bill – NEA ${f.office} – SC ${f.sc_no}`,
-  },
-  education: {
-    label: "School / College Fee",
-    accent: "#0f766e",
-    fields: [
-      {
-        key: "student_id",
-        label: "Student ID / Roll No.",
-        placeholder: "Enter student ID",
-        type: "text",
-      },
-      {
-        key: "institution",
-        label: "Institution Name",
-        placeholder: "School or college name",
-        type: "text",
-      },
-    ],
-    presets: [1000, 2000, 5000, 10000, 20000],
-    amountLabel: "Fee Amount",
-    remarks: (f) => `Education Fee – ${f.institution} – ${f.student_id}`,
-  },
+const MOBILE_PREFIXES = {
+  NTC: ["984", "985", "976"],
+  Ncell: ["980", "981", "970"],
 };
 
-// ── MPIN Overlay — same pattern as SendMoney ──────────────────
-function MpinOverlay({ amount, label, onConfirm, onClose, submitting, error }) {
-  const [mpin, setMpin] = useState("");
-  const DIGITS = 6;
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
+function detectMobileProvider(phone, providers) {
+  const prefix = phone.slice(0, 3);
+  const providerName = Object.entries(MOBILE_PREFIXES).find(([, prefixes]) =>
+    prefixes.includes(prefix),
+  )?.[0];
 
-  function tap(k) {
-    if (submitting) return;
-    if (k === "⌫") setMpin((v) => v.slice(0, -1));
-    else if (mpin.length < DIGITS) setMpin((v) => v + k);
+  if (!providerName) return null;
+  return (
+    providers.find(
+      (provider) => provider.organization_name === providerName,
+    ) || null
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+function ProviderLogo({ provider, color }) {
+  const initials = provider.organization_name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <span
+      className="bill-provider-logo"
+      style={{ "--provider-color": color }}
+    >
+      {provider.logo_url ? (
+        <img src={provider.logo_url} alt="" />
+      ) : (
+        <span>{initials}</span>
+      )}
+    </span>
+  );
+}
+
+function MpinOverlay({
+  amount,
+  providerName,
+  busy,
+  error,
+  onClose,
+  onConfirm,
+}) {
+  const [mpin, setMpin] = useState("");
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
+
+  function press(key) {
+    if (busy) return;
+    if (key === "del") setMpin((value) => value.slice(0, -1));
+    else setMpin((value) => (value.length < 6 ? value + key : value));
   }
 
   return (
     <div
-      className="sd__backdrop"
-      onClick={(e) => e.target === e.currentTarget && !submitting && onClose()}
+      className="bill-mpin-backdrop"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="sd__overlay">
-        <div className="sd__overlay-handle" />
-        <p className="sd__overlay-title">Enter MPIN</p>
-        <p className="sd__overlay-sub">
-          Confirm <strong>NPR {Number(amount).toLocaleString()}</strong> for{" "}
-          {label}
+      <div className="bill-mpin">
+        <span className="bill-mpin__handle" />
+        <h2>Enter MPIN</h2>
+        <p>
+          Confirm NPR {Number(amount).toLocaleString()} payment to{" "}
+          <strong>{providerName}</strong>
         </p>
-        <div className="sd__dots">
-          {Array.from({ length: DIGITS }).map((_, i) => (
-            <div
-              key={i}
-              className={`sd__dot${i < mpin.length ? " sd__dot--on" : ""}`}
+        <div className="bill-mpin__dots">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <span
+              key={index}
+              className={index < mpin.length ? "is-filled" : ""}
             />
           ))}
         </div>
-        {error && <p className="sd__overlay-err">{error}</p>}
-        <div className="sd__pad">
-          {keys.map((k, i) => (
+        {error && <div className="bill-error bill-error--compact">{error}</div>}
+        <div className="bill-mpin__pad">
+          {keys.map((key, index) => (
             <button
-              key={i}
+              key={`${key}-${index}`}
+              className={key === "" ? "is-empty" : ""}
               type="button"
-              className={`sd__key${k === "" ? " sd__key--empty" : ""}${k === "⌫" ? " sd__key--del" : ""}`}
-              onClick={() => k && tap(k)}
-              disabled={submitting || k === ""}
+              disabled={busy || key === ""}
+              onClick={() => press(key)}
             >
-              {k}
+              {key === "del" ? "⌫" : key}
             </button>
           ))}
         </div>
         <button
-          className="sd__btn sd__btn--primary"
+          className="bill-primary-btn"
+          type="button"
+          disabled={busy || mpin.length !== 6}
           onClick={() => onConfirm(mpin)}
-          disabled={submitting || mpin.length < DIGITS}
         >
-          {submitting ? "Processing…" : "Confirm Payment"}
+          {busy ? "Processing…" : "Confirm payment"}
         </button>
       </div>
     </div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────
 export default function ServiceDetail() {
   const { type } = useParams();
   const navigate = useNavigate();
-  const cfg = SERVICE_CONFIG[type];
+  const config = SERVICE_UI[type];
 
-  const [fields, setFields] = useState({});
-  const [amount, setAmount] = useState("");
+  const [providers, setProviders] = useState([]);
+  const [testAccounts, setTestAccounts] = useState([]);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [identifier, setIdentifier] = useState("");
+  const [topupAmount, setTopupAmount] = useState("");
+  const [bill, setBill] = useState(null);
   const [wallet, setWallet] = useState(null);
-  const [walletLoading, setWalletLoading] = useState(true);
-
+  const [step, setStep] = useState("providers");
+  const [loading, setLoading] = useState(true);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [error, setError] = useState("");
   const [showMpin, setShowMpin] = useState(false);
-  const [mpinErr, setMpinErr] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  // "form" | "success" | "error"  — only set to "success" after real API response
-  const [view, setView] = useState("form");
-  const [successData, setSuccessData] = useState(null);
-  const [errorMsg, setErrorMsg] = useState("");
-
-  // ── Wallet load ───────────────────────────────────────────
-  const fetchWallet = useCallback(async () => {
-    try {
-      const d = await getWallet();
-      setWallet(d?.wallet ?? null);
-    } catch {
-      setWallet(null);
-    } finally {
-      setWalletLoading(false);
-    }
-  }, []);
+  const [biometricReady, setBiometricReady] = useState(false);
+  const [transaction, setTransaction] = useState(null);
 
   useEffect(() => {
-    fetchWallet();
-  }, [fetchWallet]);
+    if (!config) return;
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      getServiceCatalog(),
+      getServiceTestAccounts(type),
+      getWallet().catch(() => null),
+    ])
+      .then(([catalog, tests, walletResult]) => {
+        if (cancelled) return;
+        const related = (catalog.providers || []).filter((provider) => {
+          if (provider.org_type_id !== config.orgTypeId) return false;
+          return (
+            !config.providerNames ||
+            config.providerNames.includes(provider.organization_name)
+          );
+        });
+        setProviders(related);
+        setTestAccounts(tests.test_accounts || []);
+        setWallet(walletResult?.wallet || null);
 
-  if (!cfg) {
+        if (type === "topup") {
+          setStep("account");
+        } else if (type === "landline" && related.length === 1) {
+          setSelectedProvider(related[0]);
+          setStep("account");
+        }
+      })
+      .catch((err) => setError(err.message || "Unable to load providers."))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [config, type]);
+
+  useEffect(() => {
+    async function checkBiometric() {
+      if ((await isBiometricAvailable()) && getSavedBiometricTxUser()) {
+        setBiometricReady(true);
+      }
+    }
+    checkBiometric();
+  }, []);
+
+  const testIdentifier = useMemo(
+    () =>
+      testAccounts.find(
+        (item) =>
+          item.organization_id === selectedProvider?.organization_id,
+      )?.test_identifier || "",
+    [selectedProvider, testAccounts],
+  );
+
+  if (!config) {
     return (
-      <div className="sd__page sd__page--center">
-        <p className="sd__muted">Service not found.</p>
-        <button
-          className="sd__btn sd__btn--ghost"
-          onClick={() => navigate("/services")}
-        >
-          ← Back
+      <div className="bill-center">
+        <h1>Service not found</h1>
+        <button type="button" onClick={() => navigate("/services")}>
+          Back to services
         </button>
       </div>
     );
   }
 
-  const amtNum = parseFloat(amount) || 0;
-  const balance = wallet ? parseFloat(wallet.balance) : 0;
-  const allFilled = cfg.fields.every(
-    (f) => (fields[f.key] || "").trim().length > 0,
-  );
-  const hasEnough = wallet !== null && amtNum > 0 && amtNum <= balance;
-  const canPay = allFilled && amtNum > 0;
-
-  // ── Transfer — identical logic to SendMoney.handleTransfer ─
-  async function handleTransfer(mpin) {
-    if (mpin.length !== 6) {
-      setMpinErr("Enter your 6-digit MPIN.");
+  function goBack() {
+    setError("");
+    if (showMpin) return setShowMpin(false);
+    if (step === "review") {
+      setStep("account");
       return;
     }
-
-    // receiver_identifier: set VITE_SERVICE_RECEIVER_ID in .env to your
-    // service/utility org account_id (UUID) or registered phone number.
-    const receiver_identifier = import.meta.env.VITE_SERVICE_RECEIVER_ID;
-    if (!receiver_identifier) {
-      setMpinErr(
-        "Service account not configured (VITE_SERVICE_RECEIVER_ID missing).",
-      );
+    if (step === "account") {
+      if (type === "topup" || type === "landline") {
+        navigate("/services");
+        return;
+      }
+      setSelectedProvider(null);
+      setIdentifier("");
+      setBill(null);
+      setStep("providers");
       return;
     }
+    navigate("/services");
+  }
 
-    setSubmitting(true);
-    setMpinErr("");
-    try {
-      const remarksStr = cfg.remarks(fields);
-      // ── Real transfer call — same as SendMoney ──────────
-      const res = await transfer({
-        receiver_identifier,
-        amount: amtNum,
-        remarks: remarksStr,
-        mpin,
-      });
-      // ── Only reach here on API success ─────────────────
-      setShowMpin(false);
+  function selectProvider(provider) {
+    setSelectedProvider(provider);
+    setIdentifier("");
+    setTopupAmount("");
+    setBill(null);
+    setError("");
+    setStep("account");
+  }
 
-      // Refresh wallet — use balance_after from response if available,
-      // otherwise re-fetch (same pattern as SendMoney)
-      const balanceAfter = res?.transaction?.balance_after;
-      if (balanceAfter !== undefined) {
-        setWallet((prev) =>
-          prev ? { ...prev, balance: parseFloat(balanceAfter) } : prev,
+  async function findBill(event) {
+    event.preventDefault();
+    if (!identifier.trim()) return;
+    if (type === "topup") {
+      const normalizedPhone = identifier.replace(/\D/g, "");
+      const amount = Number(topupAmount);
+      if (!/^(97|98)\d{8}$/.test(normalizedPhone)) {
+        setError("Enter a valid 10-digit mobile number.");
+        return;
+      }
+      if (!amount || amount < 10 || amount > 5000) {
+        setError("Enter a top-up amount between NPR 10 and NPR 5,000.");
+        return;
+      }
+      if (!selectedProvider) {
+        setError(
+          "Unsupported mobile prefix. Use NTC (984, 985, 976) or Ncell (980, 981, 970).",
         );
-      } else {
-        fetchWallet();
+        return;
       }
 
-      setSuccessData({
-        amount: amtNum,
-        remarks: remarksStr,
-        transaction_id: res?.transaction?.transaction_id ?? null,
-        balance_after: balanceAfter,
+      setError("");
+      setBill({
+        service: "topup",
+        service_label: "Mobile Topup",
+        organization_id: selectedProvider.organization_id,
+        receiver_account_id: selectedProvider.account_id,
+        organization_name: selectedProvider.organization_name,
+        identifier: normalizedPhone,
+        identifier_label: "Mobile number",
+        customer_name: normalizedPhone,
+        amount,
+        currency: "NPR",
+        bill_reference: `TOPUP-${normalizedPhone.slice(-4)}`,
+        billing_period: "Prepaid recharge",
+        due_date: new Date().toISOString(),
       });
-      setView("success");
-    } catch (e) {
-      const msg = e?.message || "Transfer failed.";
-      // MPIN errors stay in overlay (same as SendMoney)
-      if (/mpin|incorrect|wrong pin/i.test(msg)) {
-        setMpinErr(msg);
-      } else {
-        setShowMpin(false);
-        setErrorMsg(msg);
-        setView("error");
+      setStep("review");
+      return;
+    }
+
+    setLookupBusy(true);
+    setError("");
+    try {
+      const response = await lookupServiceBill({
+        service: type,
+        organization_id: selectedProvider.organization_id,
+        identifier: identifier.trim(),
+      });
+      setBill(response.bill);
+      setStep("review");
+    } catch (err) {
+      setError(err.message || "Account not found.");
+    } finally {
+      setLookupBusy(false);
+    }
+  }
+
+  function paymentPayload(authorization) {
+    return {
+      receiver_identifier: bill.receiver_account_id,
+      amount: bill.amount,
+      remarks: `${bill.service_label} · ${bill.organization_name} · ${bill.identifier} · Ref ${bill.bill_reference}`,
+      ...authorization,
+    };
+  }
+
+  async function completePayment(authorization) {
+    setPaymentBusy(true);
+    setError("");
+    try {
+      const response = await transfer(paymentPayload(authorization));
+      setTransaction(response.transaction);
+      setShowMpin(false);
+      setStep("success");
+    } catch (err) {
+      setError(err.message || "Payment failed.");
+      throw err;
+    } finally {
+      setPaymentBusy(false);
+    }
+  }
+
+  async function payWithBiometric() {
+    try {
+      setPaymentBusy(true);
+      setError("");
+      const { biometric_token } = await biometricTxLogin(
+        biometricVerifyTransactionApi,
+      );
+      await completePayment({ biometric_token });
+    } catch (err) {
+      if (err.message?.includes("Credential not found")) {
+        clearSavedBiometricTxUser();
+        setBiometricReady(false);
+      }
+      if (!error) {
+        setError(
+          err.name === "NotAllowedError"
+            ? "Fingerprint verification was cancelled."
+            : err.message || "Biometric verification failed.",
+        );
       }
     } finally {
-      setSubmitting(false);
+      setPaymentBusy(false);
     }
   }
 
-  // ── Success ───────────────────────────────────────────────
-  if (view === "success" && successData) {
+  if (step === "success") {
     return (
-      <div className="sd__page sd__page--center">
-        <div className="sd__result">
-          <div className="sd__result-ring" style={{ background: cfg.accent }}>
-            ✓
+      <div className="bill-center">
+        <div className="bill-success__icon">✓</div>
+        <span className="bill-success__eyebrow">Payment successful</span>
+        <h1>NPR {Number(bill.amount).toLocaleString()}</h1>
+        <p>
+          Your {bill.service_label.toLowerCase()} payment to{" "}
+          {bill.organization_name} is complete.
+        </p>
+        <div className="bill-receipt">
+          <div><span>Customer</span><strong>{bill.customer_name}</strong></div>
+          <div><span>Account</span><strong>{bill.identifier}</strong></div>
+          <div><span>Bill reference</span><strong>{bill.bill_reference}</strong></div>
+          <div>
+            <span>Transaction</span>
+            <strong>{transaction?.transaction_id?.slice(0, 8).toUpperCase()}</strong>
           </div>
-          <h2 className="sd__result-title">Payment Successful</h2>
-          <p className="sd__result-sub">{cfg.label}</p>
-          <p className="sd__result-remark">"{successData.remarks}"</p>
-          <div className="sd__receipt">
-            <div className="sd__receipt-row">
-              <span>Amount</span>
-              <strong>NPR {successData.amount.toLocaleString()}</strong>
-            </div>
-            {successData.balance_after !== undefined && (
-              <div className="sd__receipt-row">
-                <span>New Balance</span>
-                <strong>
-                  NPR{" "}
-                  {parseFloat(successData.balance_after).toLocaleString(
-                    "en-NP",
-                    { minimumFractionDigits: 2 },
-                  )}
-                </strong>
-              </div>
-            )}
-            {successData.transaction_id && (
-              <div className="sd__receipt-row">
-                <span>Ref</span>
-                <code className="sd__ref">
-                  {successData.transaction_id.slice(0, 8).toUpperCase()}
-                </code>
-              </div>
-            )}
-          </div>
-          <button
-            className="sd__btn sd__btn--primary"
-            style={{ background: cfg.accent }}
-            onClick={() => navigate("/services")}
-          >
-            Done
-          </button>
-          <button
-            className="sd__btn sd__btn--ghost"
-            onClick={() => navigate("/statements")}
-          >
-            View Statement
-          </button>
         </div>
-      </div>
-    );
-  }
-
-  // ── Error ─────────────────────────────────────────────────
-  if (view === "error") {
-    return (
-      <div className="sd__page sd__page--center">
-        <div className="sd__result">
-          <div className="sd__result-ring sd__result-ring--err">✕</div>
-          <h2 className="sd__result-title">Payment Failed</h2>
-          <p className="sd__result-sub">{errorMsg}</p>
-          <button
-            className="sd__btn sd__btn--primary"
-            onClick={() => {
-              setErrorMsg("");
-              setView("form");
-            }}
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Form ──────────────────────────────────────────────────
-  return (
-    <div className="sd__page">
-      {/* Header */}
-      <div className="sd__header">
         <button
-          className="sd__icon-btn"
-          onClick={() => navigate("/services")}
-          aria-label="Back"
+          className="bill-primary-btn"
+          type="button"
+          onClick={() => navigate("/statements")}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          View statement
         </button>
-        <span className="sd__accent-dot" style={{ background: cfg.accent }} />
-        <h1 className="sd__title">{cfg.label}</h1>
+        <button
+          className="bill-ghost-btn"
+          type="button"
+          onClick={() => navigate("/services")}
+        >
+          Back to services
+        </button>
       </div>
+    );
+  }
 
-      <div className="sd__body">
-        {/* Wallet balance */}
-        <div className="sd__balance-bar">
-          <span className="sd__balance-label">Wallet Balance</span>
-          {walletLoading ? (
-            <span className="sd__skel" />
-          ) : wallet ? (
-            <span className="sd__balance-val">
-              NPR{" "}
-              {parseFloat(wallet.balance).toLocaleString("en-NP", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-          ) : (
-            <span className="sd__balance-err">
-              Unavailable —{" "}
-              <button className="sd__link-btn" onClick={fetchWallet}>
-                retry
-              </button>
-            </span>
-          )}
+  return (
+    <div className="bill-page" style={{ "--service-color": config.color }}>
+      <header className="bill-header">
+        <button className="bill-back" type="button" onClick={goBack}>
+          <BackIcon /> Back
+        </button>
+        <div className="bill-header__service">
+          <span className="bill-header__icon">
+            <img src={config.icon} alt="" />
+          </span>
+          <div>
+            <h1>{config.label}</h1>
+            <p>
+              {step === "providers"
+                ? "Choose your service provider"
+                : step === "account"
+                  ? `Enter your ${config.label.toLowerCase()} account`
+                  : "Review and confirm payment"}
+            </p>
+          </div>
         </div>
+        <div className="bill-steps" aria-label="Payment progress">
+          {["providers", "account", "review"].map((item, index) => (
+            <span
+              key={item}
+              className={
+                ["providers", "account", "review"].indexOf(step) >= index
+                  ? "is-active"
+                  : ""
+              }
+            />
+          ))}
+        </div>
+      </header>
 
-        {/* Service-specific fields */}
-        <div className="sd__card">
-          {cfg.fields.map((f) =>
-            f.type === "select" ? (
-              <div key={f.key} className="sd__field">
-                <label className="sd__label">{f.label}</label>
-                <select
-                  className="sd__select"
-                  value={fields[f.key] || ""}
-                  onChange={(e) =>
-                    setFields((p) => ({ ...p, [f.key]: e.target.value }))
-                  }
-                >
-                  <option value="">Select {f.label}</option>
-                  {f.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
+      <main className="bill-content">
+        {step === "providers" && (
+          <section>
+            <div className="bill-section-title">
+              <div>
+                <span>Available providers</span>
+                <h2>Select provider</h2>
+              </div>
+              <small>{providers.length} connected</small>
+            </div>
+
+            {loading ? (
+              <div className="bill-state"><span className="bill-spinner" />Loading providers…</div>
+            ) : error ? (
+              <div className="bill-error">{error}</div>
+            ) : (
+              <div className="bill-provider-list">
+                {providers.map((provider) => (
+                  <button
+                    key={provider.organization_id}
+                    className="bill-provider"
+                    type="button"
+                    onClick={() => selectProvider(provider)}
+                  >
+                    <ProviderLogo provider={provider} color={config.color} />
+                    <span>
+                      <strong>{provider.organization_name}</strong>
+                      <small>Kharcha verified provider</small>
+                    </span>
+                    <ChevronIcon />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {step === "account" && (selectedProvider || type === "topup") && (
+          <section className="bill-account-card">
+            {type === "topup" ? (
+              <div className="bill-topup-heading">
+                <span className="bill-topup-heading__icon">
+                  <img src={config.icon} alt="" />
+                </span>
+                <span>
+                  <small>Prepaid recharge</small>
+                  <strong>Enter mobile number and amount</strong>
+                </span>
               </div>
             ) : (
-              <div key={f.key} className="sd__field">
-                <label className="sd__label">{f.label}</label>
-                <input
-                  className="sd__input"
-                  type={f.type}
-                  placeholder={f.placeholder}
-                  value={fields[f.key] || ""}
-                  maxLength={f.maxLength}
-                  onChange={(e) =>
-                    setFields((p) => ({ ...p, [f.key]: e.target.value }))
-                  }
-                />
+              <div className="bill-selected-provider">
+                <ProviderLogo provider={selectedProvider} color={config.color} />
+                <span>
+                  <small>Paying to</small>
+                  <strong>{selectedProvider.organization_name}</strong>
+                </span>
+                {type !== "landline" && (
+                  <button type="button" onClick={() => setStep("providers")}>
+                    Change
+                  </button>
+                )}
               </div>
-            ),
-          )}
-        </div>
-
-        {/* Amount + presets */}
-        <div className="sd__card">
-          <div className="sd__field">
-            <label className="sd__label">{cfg.amountLabel}</label>
-            <div className="sd__amount-row">
-              <span className="sd__currency">NPR</span>
-              <input
-                className="sd__amount-input"
-                type="number"
-                min="1"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-            {wallet && amtNum > 0 && amtNum > balance && (
-              <p className="sd__field-err">Insufficient wallet balance.</p>
             )}
-          </div>
-          <div className="sd__presets">
-            {cfg.presets.map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`sd__preset${amtNum === p ? " sd__preset--on" : ""}`}
-                style={
-                  amtNum === p
-                    ? { borderColor: cfg.accent, color: cfg.accent }
-                    : {}
+
+            <form onSubmit={findBill}>
+              <label htmlFor="bill-identifier">
+                {type === "electricity"
+                  ? "SC number"
+                  : type === "education"
+                    ? "Student ID / Roll number"
+                    : type === "topup"
+                      ? "Mobile number"
+                      : type === "landline"
+                        ? "Landline number"
+                        : "Username / Customer ID"}
+              </label>
+              <input
+                id="bill-identifier"
+                value={identifier}
+                onChange={(event) => {
+                  setIdentifier(
+                    type === "topup"
+                      ? event.target.value.replace(/\D/g, "").slice(0, 10)
+                      : event.target.value,
+                  );
+                  if (type === "topup") {
+                    const phone = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
+                    setSelectedProvider(detectMobileProvider(phone, providers));
+                  }
+                  setError("");
+                }}
+                placeholder={
+                  type === "topup"
+                    ? "98XXXXXXXX"
+                    : testIdentifier || "Enter account identifier"
                 }
-                onClick={() => setAmount(String(p))}
+                inputMode={type === "topup" ? "numeric" : undefined}
+                autoFocus
+              />
+
+              {type === "topup" && identifier.length >= 3 && (
+                <div
+                  className={`bill-network-status${
+                    selectedProvider ? " is-detected" : " is-unsupported"
+                  }`}
+                >
+                  {selectedProvider ? (
+                    <>
+                      <ProviderLogo
+                        provider={selectedProvider}
+                        color={config.color}
+                      />
+                      <span>
+                        <small>Network detected</small>
+                        <strong>{selectedProvider.organization_name}</strong>
+                      </span>
+                      <span className="bill-network-status__check">✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="bill-network-status__warning">!</span>
+                      <span>
+                        <small>Unsupported prefix</small>
+                        <strong>
+                          NTC: 984, 985, 976 · Ncell: 980, 981, 970
+                        </strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {type === "topup" && (
+                <div className="bill-topup-amount">
+                  <label htmlFor="topup-amount">Recharge amount</label>
+                  <div className="bill-topup-amount__input">
+                    <span>NPR</span>
+                    <input
+                      id="topup-amount"
+                      type="number"
+                      min="10"
+                      max="5000"
+                      value={topupAmount}
+                      onChange={(event) => {
+                        setTopupAmount(event.target.value);
+                        setError("");
+                      }}
+                      placeholder="Enter amount"
+                    />
+                  </div>
+                  <div className="bill-topup-presets">
+                    {[50, 100, 200, 500, 1000].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        className={
+                          Number(topupAmount) === amount ? "is-active" : ""
+                        }
+                        onClick={() => setTopupAmount(String(amount))}
+                      >
+                        {amount.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {testIdentifier && type !== "topup" && (
+                <button
+                  className="bill-demo"
+                  type="button"
+                  onClick={() => {
+                    setIdentifier(testIdentifier);
+                    setError("");
+                  }}
+                >
+                  <span>Demo account</span>
+                  <strong>{testIdentifier}</strong>
+                  <small>Tap to use</small>
+                </button>
+              )}
+
+              {error && <div className="bill-error">{error}</div>}
+
+              <button
+                className="bill-primary-btn"
+                type="submit"
+                disabled={
+                  !identifier.trim() ||
+                  lookupBusy ||
+                  (type === "topup" &&
+                    (!Number(topupAmount) || !selectedProvider))
+                }
               >
-                {p.toLocaleString()}
+                {lookupBusy
+                  ? "Checking account…"
+                  : type === "topup"
+                    ? "Review top-up"
+                    : "View bill"}
               </button>
-            ))}
-          </div>
-        </div>
+            </form>
+            <p className="bill-help">
+              {type === "topup"
+                ? "The recharge is sent instantly to the entered prepaid mobile number."
+                : "The amount is fetched securely from the provider and cannot be edited."}
+            </p>
+          </section>
+        )}
 
-        {/* Pay button */}
-        <button
-          type="button"
-          className="sd__btn sd__btn--primary sd__btn--pay"
-          style={canPay && hasEnough ? { background: cfg.accent } : {}}
-          disabled={!canPay || !hasEnough}
-          onClick={() => {
-            setMpinErr("");
-            setShowMpin(true);
-          }}
-        >
-          Pay NPR {amtNum > 0 ? amtNum.toLocaleString() : "—"}
-        </button>
-      </div>
+        {step === "review" && bill && (
+          <section className="bill-review">
+            <div className="bill-amount-card">
+              <span>Amount due</span>
+              <div><small>NPR</small>{Number(bill.amount).toLocaleString()}</div>
+              <p>
+                {type === "topup"
+                  ? "Instant prepaid recharge"
+                  : `Due ${new Date(bill.due_date).toLocaleDateString("en-NP", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}`}
+              </p>
+            </div>
 
-      {/* MPIN overlay */}
-      {showMpin && (
+            <div className="bill-summary">
+              <div>
+                <span>Provider</span>
+                <strong>{bill.organization_name}</strong>
+              </div>
+              <div>
+                <span>Customer</span>
+                <strong>{bill.customer_name}</strong>
+              </div>
+              <div>
+                <span>{bill.identifier_label}</span>
+                <strong>{bill.identifier}</strong>
+              </div>
+              <div>
+                <span>Billing period</span>
+                <strong>{bill.billing_period}</strong>
+              </div>
+              <div>
+                <span>Reference</span>
+                <strong>{bill.bill_reference}</strong>
+              </div>
+              <div>
+                <span>Pay from</span>
+                <strong>
+                  Kharcha Wallet
+                  {wallet
+                    ? ` · NPR ${Number(wallet.balance).toLocaleString()}`
+                    : ""}
+                </strong>
+              </div>
+            </div>
+
+            {wallet && Number(wallet.balance) < Number(bill.amount) && (
+              <div className="bill-error">Insufficient wallet balance.</div>
+            )}
+            {error && <div className="bill-error">{error}</div>}
+
+            <button
+              className="bill-primary-btn"
+              type="button"
+              onClick={() => {
+                setError("");
+                setShowMpin(true);
+              }}
+              disabled={
+                paymentBusy ||
+                (wallet && Number(wallet.balance) < Number(bill.amount))
+              }
+            >
+              Confirm &amp; enter MPIN
+            </button>
+            {biometricReady && (
+              <>
+                <div className="bill-or"><span>OR</span></div>
+                <button
+                  className="bill-biometric-btn"
+                  type="button"
+                  onClick={payWithBiometric}
+                  disabled={
+                    paymentBusy ||
+                    (wallet && Number(wallet.balance) < Number(bill.amount))
+                  }
+                >
+                  <img src={fingerprintIcon} alt="" />
+                  {paymentBusy ? "Verifying…" : "Use Fingerprint"}
+                </button>
+              </>
+            )}
+          </section>
+        )}
+      </main>
+
+      {showMpin && bill && (
         <MpinOverlay
-          amount={amtNum}
-          label={cfg.label}
-          onConfirm={handleTransfer}
-          onClose={() => !submitting && setShowMpin(false)}
-          submitting={submitting}
-          error={mpinErr}
+          amount={bill.amount}
+          providerName={bill.organization_name}
+          busy={paymentBusy}
+          error={error}
+          onClose={() => !paymentBusy && setShowMpin(false)}
+          onConfirm={async (mpin) => {
+            try {
+              await completePayment({ mpin });
+            } catch {
+              // Error is shown inside the overlay so the user can retry.
+            }
+          }}
         />
       )}
     </div>

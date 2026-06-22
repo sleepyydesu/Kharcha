@@ -12,6 +12,7 @@ const {
     adminBlockCard,
     adminUnblockCard,
     adminListRequests,
+    adminRejectRequest,
     posLookupByRFID,
 } = require("../controllers/cardController");
 const { authenticate, authenticateApiKey } = require("../middleware/authmiddleware");
@@ -52,6 +53,7 @@ router.post("/admin/unblock",              authenticate, adminUnblockCard);
 
 // GET   /api/cards/admin/requests          — list physical card requests
 router.get("/admin/requests",              authenticate, adminListRequests);
+router.patch("/admin/requests/:request_id/reject", authenticate, adminRejectRequest);
 
 // ── POS / RFID reader route (API key required — no JWT) ────────
 // GET   /api/cards/pos/lookup/:rfid_uid    — look up account by RFID tap

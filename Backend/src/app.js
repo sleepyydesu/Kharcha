@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 
 const testRoutes = require("./routes/testRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
+const servicePaymentRoutes = require("./routes/servicePaymentRoutes");
 const authRoutes = require("./routes/authRoutes");
 const biometricRoutes = require("./routes/biometricRoutes");
 const walletRoutes = require("./routes/walletRoutes");
@@ -25,6 +26,7 @@ const khaltiRoutes = require("./routes/khaltiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const giftCardRoutes = require("./routes/giftCardRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const groupRoutes = require("./routes/groupRoutes");
 
 const {
   publicRouter: qrPublicRoutes,
@@ -123,6 +125,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/auth/biometric", biometricRoutes);
 
 app.use("/api/wallet", walletRoutes);
+app.use("/api/organizations", organizationRoutes);
+app.use("/api/service-payments", servicePaymentRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/pos", posRoutes);
@@ -133,6 +137,7 @@ app.use("/api/org/api-keys", apiKeyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gift-cards", giftCardRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/groups", groupRoutes);
 app.use("/api/org/qr-codes", qrOrgRoutes);
 app.use("/api/qr-codes", qrPublicRoutes);
 app.use("/api/expenses", expenseRoutes);

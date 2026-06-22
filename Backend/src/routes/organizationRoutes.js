@@ -29,7 +29,28 @@ router.get("/", async (req, res) => {
 
         if (error) throw error;
 
-        res.json({ organizations: data ?? [] });
+        const accountIds = (data ?? []).map((org) => org.account_id);
+        const { data: accounts, error: accountError } = accountIds.length
+            ? await supabase
+                .from("accounts")
+                .select("account_id, profile_picture_url")
+                .in("account_id", accountIds)
+            : { data: [], error: null };
+        if (accountError) throw accountError;
+
+        const logos = new Map(
+            (accounts ?? []).map((account) => [
+                account.account_id,
+                account.profile_picture_url,
+            ]),
+        );
+
+        res.json({
+            organizations: (data ?? []).map((org) => ({
+                ...org,
+                logo_url: logos.get(org.account_id) || null,
+            })),
+        });
     } catch (err) {
         console.error("GET /api/organizations error:", err);
         res.status(500).json({ error: "Failed to load organizations" });

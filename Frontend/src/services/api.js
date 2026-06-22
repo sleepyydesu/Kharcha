@@ -200,6 +200,69 @@ export const transfer = (body) =>
 export const lookupReceiver = (id) =>
   request(`/wallet/lookup?identifier=${encodeURIComponent(id)}`);
 
+// Groups
+export const getGroups = () => request("/groups");
+export const createKharchaGroup = (name) =>
+  request("/groups", { method: "POST", body: JSON.stringify({ name }) });
+export const getKharchaGroup = (groupId) => request(`/groups/${groupId}`);
+export const updateKharchaGroup = (groupId, name) =>
+  request(`/groups/${groupId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+export const deleteKharchaGroup = (groupId) =>
+  request(`/groups/${groupId}`, {
+    method: "DELETE",
+  });
+export const addKharchaGroupMember = (groupId, phone_number) =>
+  request(`/groups/${groupId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ phone_number }),
+  });
+export const removeKharchaGroupMember = (groupId, accountId) =>
+  request(`/groups/${groupId}/members/${accountId}`, {
+    method: "DELETE",
+  });
+export const uploadKharchaGroupPicture = (groupId, body) =>
+  request(`/groups/${groupId}/picture`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+export const deleteKharchaGroupPicture = (groupId) =>
+  request(`/groups/${groupId}/picture`, {
+    method: "DELETE",
+  });
+export const createKharchaGroupBill = (groupId, title, amount, splits) =>
+  request(`/groups/${groupId}/bills`, {
+    method: "POST",
+    body: JSON.stringify(splits ? { title, splits } : { title, amount }),
+  });
+export const setKharchaGroupCashSettlement = (splitId, paid = true) =>
+  request(`/groups/splits/${splitId}/cash`, {
+    method: "PATCH",
+    body: JSON.stringify({ paid }),
+  });
+export const settleKharchaGroupSplit = (splitId, transaction_id) =>
+  request(`/groups/splits/${splitId}/settle`, {
+    method: "POST",
+    body: JSON.stringify({ transaction_id }),
+  });
+export const getKharchaGroupPaymentContext = (splitId) =>
+  request(`/groups/splits/${splitId}/payment-context`);
+
+export const getServiceCatalog = () => request("/service-payments/catalog");
+
+export const getServiceTestAccounts = (service) =>
+  request(
+    `/service-payments/test-accounts?service=${encodeURIComponent(service)}`,
+  );
+
+export const lookupServiceBill = (body) =>
+  request("/service-payments/lookup", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
 // ── Profile ───────────────────────────────────────────────────
 export const getProfile = () => request("/profile");
 
@@ -514,6 +577,12 @@ export const adminActivateCard = (body) =>
   request("/cards/admin/activate-physical", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+
+export const adminRejectCardRequest = (request_id, reason) =>
+  request(`/cards/admin/requests/${request_id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
   });
 
 export const issueVirtualCard = () =>

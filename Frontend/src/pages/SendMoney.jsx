@@ -5,6 +5,8 @@ import {
   lookupReceiver,
   getTransactionCategories,
   biometricVerifyTransactionApi,
+  getKharchaGroupPaymentContext,
+  settleKharchaGroupSplit,
 } from "../services/api";
 import CategoryIcon from "../components/CategoryIcon";
 import fingerprintIcon from "../assets/fingerprintIcon.svg";
@@ -200,9 +202,11 @@ export default function SendMoney() {
   const qrCodeId = searchParams.get("qr_id") || "";
   const defaultCategoryId = searchParams.get("default_category_id") || "";
   const defaultCategoryName = searchParams.get("default_category_name") || "";
+  const groupSplitId = searchParams.get("group_split_id") || "";
 
   const fromDynamicQR = Boolean(qrCodeId);
-  const amountLocked = fromDynamicQR && Boolean(qrAmount);
+  const fromGroup = Boolean(groupSplitId);
+  const amountLocked = fromGroup || (fromDynamicQR && Boolean(qrAmount));
 
   const [view, setView] = useState(qrId ? "amount" : "phone");
   const [phone, setPhone] = useState(qrId);
@@ -227,6 +231,9 @@ export default function SendMoney() {
   const [showMpin, setShowMpin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState("");
+  const [groupSettlementWarning, setGroupSettlementWarning] = useState("");
+  const [groupReturnTo, setGroupReturnTo] = useState("");
+  const [groupContextLoading, setGroupContextLoading] = useState(fromGroup);
 
   // Biometric payment state — checked once on mount
   const [biometricTxReady, setBiometricTxReady] = useState(false);
@@ -247,6 +254,27 @@ export default function SendMoney() {
     // not a UUID (UUIDs are passed directly to the transfer API).
     if (qrId && !qrName && !isUUID(qrId)) doLookup(qrId, true);
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    if (!groupSplitId) return;
+    setGroupContextLoading(true);
+    getKharchaGroupPaymentContext(groupSplitId)
+      .then((data) => {
+        const payment = data.payment;
+        setPhone(payment.receiver.account_id);
+        setReceiver(payment.receiver);
+        setAmount(String(payment.amount));
+        setRemarks(payment.note);
+        setShowExtra(true);
+        setGroupReturnTo(payment.group.return_to);
+        setView("amount");
+      })
+      .catch((error) => {
+        setLookupErr(error.message || "Could not load this group payment.");
+        setView("phone");
+      })
+      .finally(() => setGroupContextLoading(false));
+  }, [groupSplitId]);
 
   useEffect(() => {
     if (showExtra && categories.length === 0) {
@@ -312,6 +340,25 @@ export default function SendMoney() {
     setView("confirm");
   }
 
+  async function settleGroupPayment(result) {
+    if (!groupSplitId) return;
+    const transactionId = result?.transaction?.transaction_id;
+    if (!transactionId) {
+      setGroupSettlementWarning(
+        "Money was sent, but the group share could not be updated automatically.",
+      );
+      return;
+    }
+    try {
+      await settleKharchaGroupSplit(groupSplitId, transactionId);
+    } catch (error) {
+      setGroupSettlementWarning(
+        error.message ||
+          "Money was sent, but the group share could not be updated automatically.",
+      );
+    }
+  }
+
   async function handleTransfer(mpin) {
     if (mpin.length !== 6) {
       setSubmitErr("Enter your 6-digit MPIN.");
@@ -321,14 +368,16 @@ export default function SendMoney() {
     setSubmitErr("");
     try {
       const receiver_identifier = normalisePhone(phone) || receiver?.account_id;
-      await transfer({
+      const result = await transfer({
         receiver_identifier,
         amount: parseFloat(amount),
         ...(selectedCat ? { category_id: selectedCat.category_id } : {}),
         remarks: remarks.trim(),
         ...(qrCodeId ? { qr_id: qrCodeId } : {}),
+        ...(groupSplitId ? { group_split_id: groupSplitId } : {}),
         mpin,
       });
+      await settleGroupPayment(result);
       setShowMpin(false);
       setView("success");
     } catch (e) {
@@ -346,14 +395,16 @@ export default function SendMoney() {
         biometricVerifyTransactionApi,
       );
       const receiver_identifier = normalisePhone(phone) || receiver?.account_id;
-      await transfer({
+      const result = await transfer({
         receiver_identifier,
         amount: parseFloat(amount),
         ...(selectedCat ? { category_id: selectedCat.category_id } : {}),
         remarks: remarks.trim(),
         ...(qrCodeId ? { qr_id: qrCodeId } : {}),
+        ...(groupSplitId ? { group_split_id: groupSplitId } : {}),
         biometric_token,
       });
+      await settleGroupPayment(result);
       setView("success");
     } catch (e) {
       // Clear stale credential if it's no longer valid
@@ -383,6 +434,10 @@ export default function SendMoney() {
       return;
     }
     if (view === "amount") {
+      if (fromGroup) {
+        navigate(groupReturnTo || -1);
+        return;
+      }
       setView("phone");
       return;
     }
@@ -401,18 +456,29 @@ export default function SendMoney() {
             {receiver?.display_name ? ` to ${receiver.display_name}` : ""}
           </p>
           <p className="sm__success-remark">"{remarks.trim()}"</p>
+          {groupSettlementWarning && (
+            <p className="sm__submit-err">{groupSettlementWarning}</p>
+          )}
+          {fromGroup && groupReturnTo && (
+            <button
+              className="sm__btn sm__btn--primary"
+              onClick={() => navigate(groupReturnTo)}
+            >
+              Back to Group
+            </button>
+          )}
           <button
-            className="sm__btn sm__btn--primary"
+            className={`sm__btn ${fromGroup ? "sm__btn--ghost" : "sm__btn--primary"}`}
             onClick={() => navigate("/statements")}
           >
             View Statement
           </button>
-          <button
+          {!fromGroup && <button
             className="sm__btn sm__btn--ghost"
             onClick={() => navigate("/")}
           >
             Back to Home
-          </button>
+          </button>}
         </div>
       </div>
     );
@@ -494,7 +560,7 @@ export default function SendMoney() {
               />
             )}
             <span>
-              {biometricSubmitting ? "Verifying…" : "Pay with Fingerprint"}
+              {biometricSubmitting ? "Verifying…" : "Pay using Fingerprint"}
             </span>
           </button>
         )}
@@ -532,6 +598,30 @@ export default function SendMoney() {
 
   // ── Phone view ────────────────────────────────────────────
   if (view === "phone") {
+    if (fromGroup && groupContextLoading) {
+      return (
+        <div className="sm sm--centered">
+          <div className="sm__success">
+            <span className="sm__biometric-spinner" />
+            <h2 className="sm__success-title">Preparing group payment…</h2>
+          </div>
+        </div>
+      );
+    }
+    if (fromGroup && lookupErr && !receiver) {
+      return (
+        <div className="sm sm--centered">
+          <div className="sm__success">
+            <div className="sm__success-ring" style={{ color: "#c33" }}>!</div>
+            <h2 className="sm__success-title">Payment unavailable</h2>
+            <p className="sm__submit-err">{lookupErr}</p>
+            <button className="sm__btn sm__btn--primary" onClick={() => navigate(-1)}>
+              Back to Group
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="sm">
         <button className="sm__back" onClick={() => navigate(-1)}>
@@ -610,7 +700,8 @@ export default function SendMoney() {
       )}
       {qrId && !fromDynamicQR && (
         <div className="sm__qr-banner">
-          <QRIcon /> Details filled from QR scan
+          {fromGroup ? <UserIcon /> : <QRIcon />}
+          {fromGroup ? " Group share · details securely pre-filled" : " Details filled from QR scan"}
         </div>
       )}
 
@@ -662,7 +753,13 @@ export default function SendMoney() {
           />
         </div>
         {amountLocked ? (
-          <p className="sm__field-hint">Amount fixed by merchant.</p>
+          <p className="sm__field-hint">
+            {fromDynamicQR
+              ? "Amount fixed by merchant."
+              : fromGroup
+                ? "Amount fixed for your group bill share."
+                : "Amount is fixed for this payment."}
+          </p>
         ) : (
           <div className="sm__presets">
             {PRESETS.map((p) => (

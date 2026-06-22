@@ -38,16 +38,11 @@ import OAuthConsent from "./pages/OAuthConsent";
 import ApiDocs from "./pages/ApiDocs";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
-import Topup from "./pages/services/Topup";
-import Internet from "./pages/services/Internet";
-import Landline from "./pages/services/Landline";
-import Water from "./pages/services/Water";
-import Electricity from "./pages/services/Electricity";
-import Education from "./pages/services/Education";
 import KharchaCard from "./pages/KharchaCard";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import Groups from "./pages/Groups";
 
 // ── Bubble Background (Auth only) ─────────────────────────────
 function BubblePortal() {
@@ -322,6 +317,8 @@ function AppShell({ qrOpen, setQrOpen }) {
             />
 
             <Route path="/expenses" element={<Expenses />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/groups/:groupId" element={<Groups />} />
             <Route path="/account" element={<Account />} />
             <Route path="/set-token" element={<SetToken />} />
 
@@ -334,12 +331,6 @@ function AppShell({ qrOpen, setQrOpen }) {
 
             <Route path="/services" element={<Services />} />
             <Route path="/services/:type" element={<ServiceDetail />} />
-            <Route path="/services/topup" element={<Topup />} />
-            <Route path="/services/internet" element={<Internet />} />
-            <Route path="/services/landline" element={<Landline />} />
-            <Route path="/services/water" element={<Water />} />
-            <Route path="/services/electricity" element={<Electricity />} />
-            <Route path="/services/education" element={<Education />} />
 
             <Route path="/card" element={<KharchaCard />} />
             <Route path="/bank-transfer" element={<ComingSoon />} />

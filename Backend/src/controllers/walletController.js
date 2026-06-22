@@ -74,7 +74,7 @@ const getWallet = async (req, res) => {
 const transfer = async (req, res) => {
     try {
         const { account_id: sender_account_id } = req.account;
-        const {
+        let {
             receiver_identifier,
             amount,
             category_id,
@@ -82,6 +82,7 @@ const transfer = async (req, res) => {
             mpin,
             qr_id,
             biometric_token,
+            group_split_id,
         } = req.body;
 
         // ── Verification gate ─────────────────────────────────
@@ -167,6 +168,35 @@ const transfer = async (req, res) => {
 
             // MPIN correct — clear failure counter
             mpinLockout.success(mpinLockoutKey);
+        }
+
+        // Group payments are server-authoritative. The client only supplies
+        // the split ID; recipient, amount, and note come from the stored bill.
+        let groupSplit = null;
+        if (group_split_id) {
+            const { data: split, error: splitError } = await supabase
+                .from("kharcha_group_bill_splits")
+                .select("split_id, bill_id, amount, status, kharcha_group_bills!inner(title, created_by)")
+                .eq("split_id", group_split_id)
+                .eq("account_id", sender_account_id)
+                .maybeSingle();
+            if (splitError) throw splitError;
+            if (!split) {
+                return res.status(404).json({
+                    success: false,
+                    message: "This group payment was not found.",
+                });
+            }
+            if (split.status === "paid") {
+                return res.status(409).json({
+                    success: false,
+                    message: "This group share is already settled.",
+                });
+            }
+            groupSplit = split;
+            receiver_identifier = split.kharcha_group_bills.created_by;
+            amount = Number(split.amount);
+            remarks = `Kharcha Group: ${split.kharcha_group_bills.title}`;
         }
 
         // ── Validation ────────────────────────────────────────
@@ -345,6 +375,34 @@ const transfer = async (req, res) => {
                 .from("transactions")
                 .update({ method: "QR Code" })
                 .eq("transaction_id", result.transaction_id);
+        }
+
+        if (groupSplit && result?.transaction_id) {
+            const { error: splitUpdateError } = await supabase
+                .from("kharcha_group_bill_splits")
+                .update({
+                    status: "paid",
+                    settlement_method: "kharcha",
+                    paid_at: new Date().toISOString(),
+                    transaction_id: result.transaction_id,
+                })
+                .eq("split_id", groupSplit.split_id)
+                .eq("status", "pending");
+            if (!splitUpdateError) {
+                const { count } = await supabase
+                    .from("kharcha_group_bill_splits")
+                    .select("split_id", { count: "exact", head: true })
+                    .eq("bill_id", groupSplit.bill_id)
+                    .neq("status", "paid");
+                if (count === 0) {
+                    await supabase
+                        .from("kharcha_group_bills")
+                        .update({ status: "settled" })
+                        .eq("bill_id", groupSplit.bill_id);
+                }
+            } else {
+                console.error("[transfer] Group settlement update failed", splitUpdateError);
+            }
         }
 
         // Fire webhook + mark session complete if this came from a dynamic QR scan

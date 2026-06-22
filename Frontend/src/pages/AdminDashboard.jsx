@@ -8,6 +8,7 @@ import {
   adminDeactivateGiftCard,
   adminListCardRequests,
   adminActivateCard,
+  adminRejectCardRequest,
 } from "../services/api";
 import "./AdminDashboard.css";
 
@@ -815,6 +816,9 @@ function CardRequestsSection({ toast }) {
   const [activateFor, setActivateFor] = useState(null);
   const [cardId, setCardId] = useState("");
   const [activating, setActivating] = useState(false);
+  const [rejectFor, setRejectFor] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -861,6 +865,35 @@ function CardRequestsSection({ toast }) {
     }
   };
 
+  const openReject = (req) => {
+    setRejectFor(req);
+    setRejectReason("");
+  };
+
+  const closeReject = () => {
+    if (rejecting) return;
+    setRejectFor(null);
+    setRejectReason("");
+  };
+
+  const rejectRequest = async () => {
+    if (!rejectReason.trim()) {
+      return toast("Please provide a rejection reason.", "error");
+    }
+    setRejecting(true);
+    try {
+      await adminRejectCardRequest(rejectFor.request_id, rejectReason.trim());
+      toast("Card request rejected.", "success");
+      setRejectFor(null);
+      setRejectReason("");
+      load();
+    } catch (e) {
+      toast(e.message || "Rejection failed.", "error");
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   return (
     <div className="adm-section">
       <div className="adm-section-header">
@@ -881,7 +914,7 @@ function CardRequestsSection({ toast }) {
           <div>
             <h2 className="adm-section-title">Kharcha Card Requests</h2>
             <p className="adm-section-sub">
-              Activate physical RFID cards for users
+              Review, reject, or activate physical RFID card requests
             </p>
           </div>
         </div>
@@ -922,7 +955,8 @@ function CardRequestsSection({ toast }) {
           <table className="adm-table">
             <thead>
               <tr>
-                <th>Account ID</th>
+                <th>Customer</th>
+                <th>Contact</th>
                 <th>Delivery Address</th>
                 <th>Submitted</th>
                 <th>Status</th>
@@ -932,7 +966,32 @@ function CardRequestsSection({ toast }) {
             <tbody>
               {requests.map((req) => (
                 <tr key={req.request_id} className="adm-table-row">
-                  <td className="adm-td-code">{req.account_id}</td>
+                  <td>
+                    <div className="adm-requester">
+                      <span className="adm-requester__avatar">
+                        {req.requester?.profile_picture_url ? (
+                          <img src={req.requester.profile_picture_url} alt="" />
+                        ) : (
+                          (req.requester?.full_name || "K")
+                            .split(/\s+/)
+                            .slice(0, 2)
+                            .map((part) => part[0])
+                            .join("")
+                            .toUpperCase()
+                        )}
+                      </span>
+                      <span className="adm-requester__copy">
+                        <strong>{req.requester?.full_name || "Kharcha User"}</strong>
+                        <small>Physical card request</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="adm-td-sub">
+                    <div className="adm-contact">
+                      <span>{req.requester?.phone_number || "No phone"}</span>
+                      <small>{req.requester?.email || "No email"}</small>
+                    </div>
+                  </td>
                   <td className="adm-td-sub">{req.delivery_address || "—"}</td>
                   <td className="adm-td-sub">{fmtDate(req.created_at)}</td>
                   <td>
@@ -941,12 +1000,25 @@ function CardRequestsSection({ toast }) {
                   <td>
                     {(req.status === "pending" ||
                       req.status === "approved") && (
-                      <button
-                        className="adm-row-btn"
-                        onClick={() => openActivate(req)}
-                      >
-                        Activate Card
-                      </button>
+                      <div className="adm-row-actions">
+                        <button
+                          className="adm-row-btn"
+                          onClick={() => openActivate(req)}
+                        >
+                          Activate Card
+                        </button>
+                        <button
+                          className="adm-row-btn adm-row-btn--danger"
+                          onClick={() => openReject(req)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {req.status === "rejected" && req.admin_notes && (
+                      <span className="adm-rejection-note" title={req.admin_notes}>
+                        {req.admin_notes}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -982,7 +1054,13 @@ function CardRequestsSection({ toast }) {
             <div className="adm-modal-body">
               <p className="adm-modal-hint">
                 Enter the RC522 card UID after programming it. This will link it
-                to account <code>{activateFor.account_id}</code>.
+                to{" "}
+                <strong>
+                  {activateFor.requester?.full_name || "this customer"}
+                </strong>
+                {activateFor.requester?.phone_number
+                  ? ` (${activateFor.requester.phone_number})`
+                  : ""}.
               </p>
               <div className="adm-field">
                 <label className="adm-label">Card UID</label>
@@ -1008,6 +1086,71 @@ function CardRequestsSection({ toast }) {
                 <button
                   className="adm-btn adm-btn--ghost"
                   onClick={closeActivate}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectFor && (
+        <div className="adm-modal-overlay" onClick={closeReject}>
+          <div
+            className="adm-modal adm-modal--sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="adm-modal-header">
+              <h3>Reject Card Request</h3>
+              <button className="adm-modal-close" onClick={closeReject}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="adm-modal-body">
+              <p className="adm-modal-hint">
+                Rejecting{" "}
+                <strong>
+                  {rejectFor.requester?.full_name || "this customer's"}
+                </strong>{" "}
+                request lets them submit a corrected request later.
+              </p>
+              <div className="adm-field">
+                <label className="adm-label">Reason for rejection</label>
+                <textarea
+                  className="adm-input adm-textarea"
+                  rows={4}
+                  maxLength={500}
+                  placeholder="For example: Delivery address is incomplete."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
+              </div>
+              <div className="adm-review-btns">
+                <button
+                  className="adm-btn adm-btn--reject"
+                  onClick={rejectRequest}
+                  disabled={rejecting || !rejectReason.trim()}
+                >
+                  {rejecting ? (
+                    <span className="adm-spinner adm-spinner--sm" />
+                  ) : null}
+                  {rejecting ? "Rejecting…" : "Reject Request"}
+                </button>
+                <button
+                  className="adm-btn adm-btn--ghost"
+                  onClick={closeReject}
+                  disabled={rejecting}
                 >
                   Cancel
                 </button>
